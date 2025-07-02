@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Thermometer, Droplets, Bell, Plus, Search, X, ChevronLeft, Image as ImageIcon, Star, Wind, Coffee, GlassWater, LoaderCircle, Sparkles, Box, Briefcase, LayoutGrid, List, BookOpen, Leaf, Flame, MapPin, Tag, Minus, Edit, Trash2, Upload, Link2, Settings, User, Database, Info, Download, UploadCloud, ChevronDown, Shield, FileText, LogOut, Palette, BarChart2, TrendingUp, PieChart as PieChartIcon } from 'lucide-react';
+import { Thermometer, Droplets, Bell, Plus, Search, X, ChevronLeft, Image as ImageIcon, Star, Wind, Coffee, GlassWater, LoaderCircle, Sparkles, Box, Briefcase, LayoutGrid, List, BookOpen, Leaf, Flame, MapPin, Tag, Minus, Edit, Trash2, Upload, Link2, Settings, User, Database, Info, Download, UploadCloud, ChevronDown, Shield, FileText, LogOut, Palette, BarChart2, TrendingUp, PieChart as PieChartIcon, Move, Check } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 
@@ -853,6 +853,46 @@ const ThemeModal = ({ currentTheme, setTheme, onClose }) => {
     );
 };
 
+const MoveCigarsModal = ({ onClose, onMove, destinationHumidors, theme }) => {
+    const [selectedHumidorId, setSelectedHumidorId] = useState(destinationHumidors[0]?.id || '');
+
+    const handleMove = () => {
+        if (selectedHumidorId) {
+            onMove(parseInt(selectedHumidorId));
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100]" onClick={onClose}>
+            <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-sm flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-bold text-amber-400 flex items-center"><Move className="w-5 h-5 mr-2"/> Move Cigars</h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button>
+                </div>
+                <div className="space-y-4">
+                    <p className="text-sm text-gray-400">Select the destination humidor for the selected cigars.</p>
+                    <div>
+                        <label className="text-sm font-medium text-gray-300 mb-1 block">Move to</label>
+                        <select
+                            value={selectedHumidorId}
+                            onChange={(e) => setSelectedHumidorId(e.target.value)}
+                            className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white"
+                        >
+                            {destinationHumidors.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+                        </select>
+                    </div>
+                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-700">
+                        <button onClick={onClose} className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors">Cancel</button>
+                        <button onClick={handleMove} disabled={!selectedHumidorId} className="bg-amber-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-amber-600 transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed">
+                            Move
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 // --- API CALL ---
 async function callGeminiAPI(prompt) {
@@ -881,50 +921,68 @@ async function callGeminiAPI(prompt) {
 }
 
 // --- CIGAR CARD COMPONENTS ---
-const GridCigarCard = ({ cigar, navigate }) => {
+const GridCigarCard = ({ cigar, navigate, isSelectMode, isSelected, onSelect }) => {
     const ratingColor = getRatingColor(cigar.rating);
+    const clickHandler = isSelectMode ? () => onSelect(cigar.id) : () => navigate('CigarDetail', { cigarId: cigar.id });
+    
     return (
-        <div className="bg-gray-800/50 rounded-xl overflow-hidden group cursor-pointer" onClick={() => navigate('CigarDetail', { cigarId: cigar.id })}>
-            <div className="relative">
-                <img src={cigar.image || `https://placehold.co/400x600/5a3825/ffffff?text=${cigar.brand.replace(/\s/g, '+')}`} alt={`${cigar.brand} ${cigar.name}`} className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300" />
-            </div>
-            <div className="p-3">
-                <p className="text-gray-400 text-xs font-semibold uppercase">{cigar.brand}</p>
-                <h3 className="text-white font-bold text-sm truncate">{cigar.name}</h3>
-                <div className="flex justify-between items-center mt-2">
-                    {cigar.rating > 0 && <div className={`text-xs font-bold text-white px-2 py-0.5 rounded-full border ${ratingColor}`}>{cigar.rating}</div>}
-                    <span className="text-xs bg-gray-700 text-white font-bold px-2 py-1 rounded-full">{cigar.quantity}</span>
+        <div className="relative" onClick={clickHandler}>
+             <div className={`bg-gray-800/50 rounded-xl overflow-hidden group cursor-pointer transition-all duration-200 ${isSelected ? 'ring-2 ring-amber-400' : ''}`}>
+                <div className="relative">
+                    <img src={cigar.image || `https://placehold.co/400x600/5a3825/ffffff?text=${cigar.brand.replace(/\s/g, '+')}`} alt={`${cigar.brand} ${cigar.name}`} className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300" />
+                </div>
+                <div className="p-3">
+                    <p className="text-gray-400 text-xs font-semibold uppercase">{cigar.brand}</p>
+                    <h3 className="text-white font-bold text-sm truncate">{cigar.name}</h3>
+                    <div className="flex justify-between items-center mt-2">
+                        {cigar.rating > 0 && <div className={`text-xs font-bold text-white px-2 py-0.5 rounded-full border ${ratingColor}`}>{cigar.rating}</div>}
+                        <span className="text-xs bg-gray-700 text-white font-bold px-2 py-1 rounded-full">{cigar.quantity}</span>
+                    </div>
                 </div>
             </div>
+            {isSelectMode && (
+                <div className={`absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center border-2 ${isSelected ? 'bg-amber-500 border-white' : 'bg-gray-900/50 border-gray-400'}`}>
+                    {isSelected && <Check className="w-4 h-4 text-white" />}
+                </div>
+            )}
         </div>
     );
 };
 
-const ListCigarCard = ({ cigar, navigate }) => {
+const ListCigarCard = ({ cigar, navigate, isSelectMode, isSelected, onSelect }) => {
     const ratingColor = getRatingColor(cigar.rating);
+    const clickHandler = isSelectMode ? () => onSelect(cigar.id) : () => navigate('CigarDetail', { cigarId: cigar.id });
+
     return (
-        <div className="bg-gray-800/50 rounded-xl overflow-hidden group cursor-pointer flex" onClick={() => navigate('CigarDetail', { cigarId: cigar.id })}>
-            <div className="relative flex-shrink-0">
-                <img src={cigar.image || `https://placehold.co/400x600/5a3825/ffffff?text=${cigar.brand.replace(/\s/g, '+')}`} alt={`${cigar.brand} ${cigar.name}`} className="w-28 h-full object-cover" />
+        <div className="relative" onClick={clickHandler}>
+            <div className={`bg-gray-800/50 rounded-xl overflow-hidden group cursor-pointer flex transition-all duration-200 ${isSelected ? 'ring-2 ring-amber-400' : ''}`}>
+                <div className="relative flex-shrink-0">
+                    <img src={cigar.image || `https://placehold.co/400x600/5a3825/ffffff?text=${cigar.brand.replace(/\s/g, '+')}`} alt={`${cigar.brand} ${cigar.name}`} className="w-28 h-full object-cover" />
+                </div>
+                <div className="p-3 flex-grow flex flex-col justify-between">
+                    <div>
+                        <p className="text-gray-400 text-xs font-semibold uppercase">{cigar.brand}</p>
+                        <h3 className="text-white font-bold text-base truncate">{cigar.name}</h3>
+                    </div>
+                    <div className="text-xs mt-2 space-y-1">
+                        <p className="text-gray-400">Origin: <span className="font-semibold text-gray-200">{cigar.country}</span></p>
+                        <p className="text-gray-400 truncate">Flavors: <span className="font-semibold text-gray-200">{cigar.flavorNotes.join(', ')}</span></p>
+                        {cigar.rating > 0 && <div className="flex items-center gap-2">
+                            <p className="text-gray-400">Rating:</p>
+                            <div className={`text-xs font-bold text-white px-2 py-0.5 rounded-full border ${ratingColor}`}>{cigar.rating}</div>
+                        </div>}
+                    </div>
+                    <div className="flex justify-between items-end mt-2">
+                         <p className="text-gray-400 text-xs">Strength: <span className="font-semibold text-gray-200">{cigar.strength}</span></p>
+                        <span className="text-lg font-bold bg-gray-700 text-white px-3 py-1 rounded-full">{cigar.quantity}</span>
+                    </div>
+                </div>
             </div>
-            <div className="p-3 flex-grow flex flex-col justify-between">
-                <div>
-                    <p className="text-gray-400 text-xs font-semibold uppercase">{cigar.brand}</p>
-                    <h3 className="text-white font-bold text-base truncate">{cigar.name}</h3>
+            {isSelectMode && (
+                 <div className={`absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center border-2 ${isSelected ? 'bg-amber-500 border-white' : 'bg-gray-900/50 border-gray-400'}`}>
+                    {isSelected && <Check className="w-4 h-4 text-white" />}
                 </div>
-                <div className="text-xs mt-2 space-y-1">
-                    <p className="text-gray-400">Origin: <span className="font-semibold text-gray-200">{cigar.country}</span></p>
-                    <p className="text-gray-400 truncate">Flavors: <span className="font-semibold text-gray-200">{cigar.flavorNotes.join(', ')}</span></p>
-                    {cigar.rating > 0 && <div className="flex items-center gap-2">
-                        <p className="text-gray-400">Rating:</p>
-                        <div className={`text-xs font-bold text-white px-2 py-0.5 rounded-full border ${ratingColor}`}>{cigar.rating}</div>
-                    </div>}
-                </div>
-                <div className="flex justify-between items-end mt-2">
-                     <p className="text-gray-400 text-xs">Strength: <span className="font-semibold text-gray-200">{cigar.strength}</span></p>
-                    <span className="text-lg font-bold bg-gray-700 text-white px-3 py-1 rounded-full">{cigar.quantity}</span>
-                </div>
-            </div>
+            )}
         </div>
     );
 };
@@ -1303,10 +1361,13 @@ const HumidorsScreen = ({ navigate, cigars, humidors }) => {
     );
 };
 
-const MyHumidor = ({ humidor, navigate, cigars }) => {
+const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, theme }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [suggestions, setSuggestions] = useState([]);
-    const [viewMode, setViewMode] = useState('list'); // Default to list view
+    const [viewMode, setViewMode] = useState('list');
+    const [isSelectMode, setIsSelectMode] = useState(false);
+    const [selectedCigarIds, setSelectedCigarIds] = useState([]);
+    const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
 
     const cigarsInHumidor = cigars.filter(c => c.humidorId === humidor.id);
     const totalQuantity = cigarsInHumidor.reduce((sum, c) => sum + c.quantity, 0);
@@ -1338,13 +1399,51 @@ const MyHumidor = ({ humidor, navigate, cigars }) => {
         cigar.brand.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const handleToggleSelectMode = () => {
+        setIsSelectMode(!isSelectMode);
+        setSelectedCigarIds([]);
+    };
+
+    const handleSelectCigar = (cigarId) => {
+        setSelectedCigarIds(prev =>
+            prev.includes(cigarId)
+                ? prev.filter(id => id !== cigarId)
+                : [...prev, cigarId]
+        );
+    };
+
+    const handleMoveCigars = (destinationHumidorId) => {
+        setCigars(prevCigars =>
+            prevCigars.map(cigar =>
+                selectedCigarIds.includes(cigar.id)
+                    ? { ...cigar, humidorId: destinationHumidorId }
+                    : cigar
+            )
+        );
+        setIsMoveModalOpen(false);
+        setIsSelectMode(false);
+        setSelectedCigarIds([]);
+        navigate('MyHumidor', { humidorId: destinationHumidorId });
+    };
+
     return (
         <div className="p-4 pb-24">
+             {isMoveModalOpen && (
+                <MoveCigarsModal
+                    onClose={() => setIsMoveModalOpen(false)}
+                    onMove={handleMoveCigars}
+                    destinationHumidors={humidors.filter(h => h.id !== humidor.id)}
+                    theme={theme}
+                />
+            )}
             <div className="flex items-center mb-6">
                 <button onClick={() => navigate('HumidorsScreen')} className="p-2 -ml-2 mr-2">
                     <ChevronLeft className="w-7 h-7 text-white" />
                 </button>
                 <h1 className="text-3xl font-bold text-white truncate">{humidor.name}</h1>
+                 <button onClick={() => navigate('EditHumidor', { humidorId: humidor.id })} className="p-2 ml-2">
+                    <Edit className="w-5 h-5 text-gray-400 hover:text-white" />
+                </button>
             </div>
             
             <div className="flex items-center mb-4 gap-4">
@@ -1381,17 +1480,19 @@ const MyHumidor = ({ humidor, navigate, cigars }) => {
                     <p className="text-sm text-gray-300"><span className="font-bold text-white">{filteredCigars.length}</span> Unique</p>
                     <p className="text-xs text-gray-400"><span className="font-bold text-gray-200">{totalQuantity}</span> Total Cigars</p>
                 </div>
-                <button onClick={() => navigate('AddCigar', { humidorId: humidor.id })} className="flex items-center gap-2 bg-amber-500 text-white font-bold text-sm px-4 py-2 rounded-full hover:bg-amber-600 transition-colors">
-                    <Plus className="w-4 h-4" />
-                    Add Cigar
-                </button>
+                <div>
+                    <button onClick={handleToggleSelectMode} className="flex items-center gap-2 bg-gray-700 text-white font-bold text-sm px-4 py-2 rounded-full hover:bg-gray-600 transition-colors">
+                        {isSelectMode ? <X className="w-4 h-4"/> : <Check className="w-4 h-4" />}
+                        {isSelectMode ? 'Cancel' : 'Select'}
+                    </button>
+                </div>
             </div>
 
             <div className={viewMode === 'grid' ? "grid grid-cols-2 gap-4" : "flex flex-col gap-4"}>
                 {filteredCigars.map(cigar => (
                     viewMode === 'grid'
-                        ? <GridCigarCard key={cigar.id} cigar={cigar} navigate={navigate} />
-                        : <ListCigarCard key={cigar.id} cigar={cigar} navigate={navigate} />
+                        ? <GridCigarCard key={cigar.id} cigar={cigar} navigate={navigate} isSelectMode={isSelectMode} isSelected={selectedCigarIds.includes(cigar.id)} onSelect={handleSelectCigar} />
+                        : <ListCigarCard key={cigar.id} cigar={cigar} navigate={navigate} isSelectMode={isSelectMode} isSelected={selectedCigarIds.includes(cigar.id)} onSelect={handleSelectCigar} />
                 ))}
                  {filteredCigars.length === 0 && (
                     <div className="col-span-full text-center py-10">
@@ -1399,6 +1500,14 @@ const MyHumidor = ({ humidor, navigate, cigars }) => {
                     </div>
                 )}
             </div>
+            {isSelectMode && selectedCigarIds.length > 0 && (
+                <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-md px-4">
+                    <button onClick={() => setIsMoveModalOpen(true)} className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-full hover:bg-amber-600 transition-colors shadow-lg">
+                        <Move className="w-5 h-5"/>
+                        Move Selected ({selectedCigarIds.length})
+                    </button>
+                </div>
+            )}
         </div>
     );
 };
@@ -2337,7 +2446,7 @@ export default function App() {
                 return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} theme={theme} />;
             case 'MyHumidor':
                 const humidor = humidors.find(h => h.id === params.humidorId);
-                return <MyHumidor humidor={humidor} navigate={navigate} cigars={cigars} theme={theme} />;
+                return <MyHumidor humidor={humidor} navigate={navigate} cigars={cigars} setCigars={setCigars} humidors={humidors} theme={theme} />;
             case 'CigarDetail':
                 const cigar = cigars.find(c => c.id === params.cigarId);
                 return <CigarDetail cigar={cigar} navigate={navigate} setCigars={setCigars} theme={theme} />;
