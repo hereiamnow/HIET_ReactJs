@@ -1,9 +1,9 @@
 // Import necessary libraries and components.
 // React is the main library for building the user interface.
-// useState, useEffect, useCallback, and useMemo are "hooks" that let us use state and other React features in functional components.
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+// useState, useEffect, and useMemo are "hooks" that let us use state and other React features in functional components.
+import React, { useState, useEffect, useMemo } from 'react';
 // lucide-react provides a set of clean, modern icons used throughout the app.
-import { Thermometer, Droplets, Bell, Plus, Search, X, ChevronLeft, Image as ImageIcon, Star, Wind, Coffee, GlassWater, LoaderCircle, Sparkles, Box, Briefcase, LayoutGrid, List, BookOpen, Leaf, Flame, MapPin, Tag, Minus, Edit, Trash2, Upload, Link2, Settings, User, Database, Info, Download, UploadCloud, ChevronDown, Shield, FileText, LogOut, Palette, BarChart2, TrendingUp, PieChart as PieChartIcon, Move, Check } from 'lucide-react';
+import { Thermometer, Droplets, Bell, Plus, Search, X, ChevronLeft, Image as ImageIcon, Star, Wind, Coffee, GlassWater, LoaderCircle, Sparkles, Box, Briefcase, LayoutGrid, List, BookOpen, Leaf, Flame, MapPin, Tag, Minus, Edit, Trash2, Upload, Link2, Settings, User, Database, Info, Download, UploadCloud, ChevronDown, Shield, FileText, LogOut, Palette, BarChart2, TrendingUp, PieChart as PieChartIcon, Move, Check, Zap } from 'lucide-react';
 // recharts is a library for creating the charts (bar, line, pie) on the dashboard.
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -74,8 +74,8 @@ const themes = {
 // This is placeholder data used to populate the app initially.
 // In a real application, this data would come from a database or API.
 const initialMockHumidors = [
-    { id: 1, name: 'Ironsides', description: 'My primary aging and storage unit.', size: '150-count', location: 'Office', image: 'https://placehold.co/600x400/3a2d27/ffffff?text=Ironsides', humidity: 70, temp: 68 },
-    { id: 2, name: 'Travel Case', description: 'For taking cigars on the go.', size: '5-count', location: 'Portable', image: 'https://placehold.co/600x400/5c4a42/ffffff?text=Travel+Case', humidity: 69, temp: 71 },
+    { id: 1, name: 'Ironsides', description: 'My primary aging and storage unit.', size: '150-count', location: 'Office', image: 'https://placehold.co/600x400/3a2d27/ffffff?text=Ironsides', humidity: 70, temp: 68, goveeDeviceId: null, goveeDeviceModel: null },
+    { id: 2, name: 'Travel Case', description: 'For taking cigars on the go.', size: '5-count', location: 'Portable', image: 'https://placehold.co/600x400/5c4a42/ffffff?text=Travel+Case', humidity: 69, temp: 71, goveeDeviceId: null, goveeDeviceModel: null },
 ];
 
 const initialMockCigars = [
@@ -751,6 +751,9 @@ const GeminiModal = ({ title, content, isLoading, onClose }) => (
     </div>
 );
 
+/**
+ * FlavorNotesModal is a pop-up for editing the flavor notes of a cigar.
+ */
 const FlavorNotesModal = ({ cigar, setCigars, onClose }) => {
     const [selectedNotes, setSelectedNotes] = useState(cigar.flavorNotes || []);
 
@@ -803,6 +806,9 @@ const FlavorNotesModal = ({ cigar, setCigars, onClose }) => {
     );
 };
 
+/**
+ * ImageEditModal is a pop-up for changing a cigar's image.
+ */
 const ImageEditModal = ({ cigar, setCigars, onClose }) => {
     const [imageUrl, setImageUrl] = useState(cigar.image || '');
 
@@ -865,6 +871,9 @@ const ImageEditModal = ({ cigar, setCigars, onClose }) => {
     );
 };
 
+/**
+ * ThemeModal is a pop-up for selecting a new app theme.
+ */
 const ThemeModal = ({ currentTheme, setTheme, onClose }) => {
     return (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100]" onClick={onClose}>
@@ -893,6 +902,9 @@ const ThemeModal = ({ currentTheme, setTheme, onClose }) => {
     );
 };
 
+/**
+ * MoveCigarsModal is a pop-up for moving selected cigars to another humidor.
+ */
 const MoveCigarsModal = ({ onClose, onMove, destinationHumidors, theme }) => {
     const [selectedHumidorId, setSelectedHumidorId] = useState(destinationHumidors[0]?.id || '');
 
@@ -1061,7 +1073,7 @@ const Dashboard = ({ navigate, cigars, theme }) => {
     const [isInventoryOpen, setIsInventoryOpen] = useState(true);
 
     useEffect(() => {
-        // Initial data generation
+        // Initial data generation for the environment chart
         const now = new Date();
         const initialData = Array.from({ length: 10 }, (_, i) => {
             const time = new Date(now.getTime() - (9 - i) * 5000);
@@ -1073,9 +1085,11 @@ const Dashboard = ({ navigate, cigars, theme }) => {
         });
         setEnvData(initialData);
         
+        // Pick a random tip from Roxy's corner
         setRoxyTip(roxysTips[Math.floor(Math.random() * roxysTips.length)]);
     }, []);
 
+    // useMemo is a performance optimization. It ensures that the chart data is only recalculated when the 'cigars' data changes.
     const { topBrandsData, topCountriesData, strengthDistributionData, totalValue, totalCigars } = useMemo(() => {
         const processChartData = (data, key) => {
             const groupedData = data.reduce((acc, cigar) => {
@@ -1104,6 +1118,7 @@ const Dashboard = ({ navigate, cigars, theme }) => {
         };
     }, [cigars]);
     
+    // This function calls the Gemini API to get a summary of the user's collection.
     const handleSummarizeCollection = async () => {
         setModalState({ isOpen: true, content: '', isLoading: true });
         const inventorySummary = cigars.map(c => `${c.quantity}x ${c.brand} ${c.name} (${c.strength}, from ${c.country})`).join('\n');
@@ -1113,6 +1128,7 @@ const Dashboard = ({ navigate, cigars, theme }) => {
         setModalState({ isOpen: true, content: result, isLoading: false });
     };
 
+    // Toggles the view of a chart between bar and pie.
     const handleChartViewToggle = (chartName) => {
         setChartViews(prev => ({
             ...prev,
@@ -1284,10 +1300,12 @@ const HumidorsScreen = ({ navigate, cigars, humidors }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [suggestions, setSuggestions] = useState([]);
     
+    // A custom SVG icon for the dollar sign, as it's not in the lucide-react library.
     const DollarSignIcon = (props) => (
         <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
     );
     
+    // Updates the search query and provides suggestions as the user types.
     const handleSearchChange = (e) => {
         const query = e.target.value;
         setSearchQuery(query);
@@ -1305,11 +1323,13 @@ const HumidorsScreen = ({ navigate, cigars, humidors }) => {
         }
     };
 
+    // Handles clicking a search suggestion.
     const handleSuggestionClick = (suggestion) => {
         setSearchQuery(suggestion);
         setSuggestions([]);
     };
 
+    // Filters cigars based on the search query.
     const filteredCigars = searchQuery
         ? cigars.filter(cigar =>
             cigar.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -1343,6 +1363,7 @@ const HumidorsScreen = ({ navigate, cigars, humidors }) => {
                 )}
             </div>
 
+            {/* If there's no search query, show the list of humidors. Otherwise, show search results. */}
             {searchQuery === '' ? (
                 <>
                     <div className="flex justify-between items-center mb-6 px-2">
@@ -1414,7 +1435,7 @@ const HumidorsScreen = ({ navigate, cigars, humidors }) => {
 const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, theme }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [suggestions, setSuggestions] = useState([]);
-    const [viewMode, setViewMode] = useState('list');
+    const [viewMode, setViewMode] = useState('list'); // 'list' or 'grid'
     const [isSelectMode, setIsSelectMode] = useState(false);
     const [selectedCigarIds, setSelectedCigarIds] = useState([]);
     const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
@@ -1449,11 +1470,13 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, theme }) =>
         cigar.brand.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    // Toggles the ability to select multiple cigars.
     const handleToggleSelectMode = () => {
         setIsSelectMode(!isSelectMode);
-        setSelectedCigarIds([]);
+        setSelectedCigarIds([]); // Clear selections when toggling mode
     };
 
+    // Adds or removes a cigar from the selection.
     const handleSelectCigar = (cigarId) => {
         setSelectedCigarIds(prev =>
             prev.includes(cigarId)
@@ -1462,6 +1485,7 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, theme }) =>
         );
     };
 
+    // Moves the selected cigars to a new humidor.
     const handleMoveCigars = (destinationHumidorId) => {
         setCigars(prevCigars =>
             prevCigars.map(cigar =>
@@ -1554,6 +1578,7 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, theme }) =>
                     </div>
                 )}
             </div>
+            {/* This bar appears at the bottom when in select mode and at least one cigar is selected */}
             {isSelectMode && selectedCigarIds.length > 0 && (
                 <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-md px-4">
                     <button onClick={() => setIsMoveModalOpen(true)} className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-full hover:bg-amber-600 transition-colors shadow-lg">
@@ -1571,6 +1596,7 @@ const CigarDetail = ({ cigar, navigate, setCigars }) => {
     const [isFlavorModalOpen, setIsFlavorModalOpen] = useState(false);
     const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
+    // Increases or decreases the quantity of the current cigar.
     const handleQuantityChange = (newQuantity) => {
         if (newQuantity < 0) return;
         setCigars(prevCigars =>
@@ -1580,6 +1606,7 @@ const CigarDetail = ({ cigar, navigate, setCigars }) => {
         );
     };
 
+    // Calls the Gemini API to get pairing suggestions.
     const handleSuggestPairings = async () => {
         setModalState({ isOpen: true, type: 'pairings', content: '', isLoading: true });
         const prompt = `You are a world-class sommelier and cigar expert. Given the following cigar:\n- Brand: ${cigar.brand}\n- Name: ${cigar.name}\n- Strength: ${cigar.strength}\n- Wrapper: ${cigar.wrapper}\n\nSuggest three diverse drink pairings (e.g., a spirit, a coffee, a non-alcoholic beverage). For each, provide a one-sentence explanation for why it works well. Format the response clearly with headings for each pairing.`;
@@ -1587,6 +1614,7 @@ const CigarDetail = ({ cigar, navigate, setCigars }) => {
         setModalState({ isOpen: true, type: 'pairings', content: result, isLoading: false });
     };
 
+    // Calls the Gemini API to generate a sample tasting note.
     const handleGenerateNote = async () => {
         setModalState({ isOpen: true, type: 'notes', content: '', isLoading: true });
         const prompt = `You are a seasoned cigar aficionado with a poetic command of language. Based on this cigar's profile:\n- Brand: ${cigar.brand}\n- Name: ${cigar.name}\n- Strength: ${cigar.strength}\n- Wrapper: ${cigar.wrapper}\n\nGenerate a short, evocative tasting note (2-3 sentences) that a user could use as inspiration for their own review. Focus on potential flavors and the overall experience.`;
@@ -1724,6 +1752,7 @@ const AddCigar = ({ navigate, setCigars, humidorId, theme }) => {
         setStrengthSuggestions([]);
     };
     
+    // Handles the image upload from the user's device.
     const handleImageUpload = (event) => {
         const file = event.target.files[0];
         if (file) {
@@ -1738,7 +1767,7 @@ const AddCigar = ({ navigate, setCigars, humidorId, theme }) => {
 
     const handleSave = () => {
         const newCigar = {
-            id: Date.now(),
+            id: Date.now(), // Use a timestamp for a unique ID
             humidorId: humidorId,
             flavorNotes: [],
             ...formData,
@@ -2065,7 +2094,9 @@ const AddHumidor = ({ navigate, setHumidors, theme }) => {
             ...formData,
             humidity: 70, // Default value
             temp: 68, // Default value
-            image: `https://placehold.co/600x400/3a2d27/ffffff?text=${formData.name.replace(/\s/g, '+')}`
+            image: `https://placehold.co/600x400/3a2d27/ffffff?text=${formData.name.replace(/\s/g, '+')}`,
+            goveeDeviceId: null,
+            goveeDeviceModel: null,
         };
         setHumidors(prev => [...prev, newHumidor]);
         navigate('HumidorsScreen');
@@ -2121,6 +2152,82 @@ const AddHumidor = ({ navigate, setHumidors, theme }) => {
     );
 };
 
+const EditHumidor = ({ navigate, setHumidors, humidor, goveeApiKey, theme }) => {
+    const [formData, setFormData] = useState(humidor);
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSave = () => {
+        setHumidors(prev => prev.map(h => h.id === formData.id ? formData : h));
+        navigate('MyHumidor', { humidorId: humidor.id });
+    };
+
+    const InputField = ({ name, label, placeholder, value }) => (
+        <div>
+            <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>{label}</label>
+            <input
+                type="text"
+                name={name}
+                placeholder={placeholder}
+                value={value}
+                onChange={handleInputChange}
+                className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} placeholder-gray-500 focus:outline-none focus:ring-2 ${theme.ring}`}
+            />
+        </div>
+    );
+
+    return (
+        <div className="p-4 pb-24">
+            <div className="flex items-center mb-6">
+                <button onClick={() => navigate('MyHumidor', { humidorId: humidor.id })} className="p-2 -ml-2 mr-2">
+                    <ChevronLeft className={`w-7 h-7 ${theme.text}`} />
+                </button>
+                <h1 className={`text-3xl font-bold ${theme.text}`}>Edit Humidor</h1>
+            </div>
+
+            <div className="space-y-4">
+                <InputField name="name" label="Humidor Name" placeholder="e.g., The Big One" value={formData.name} />
+                <InputField name="description" label="Description" placeholder="e.g., Main aging unit" value={formData.description} />
+                <div className="grid grid-cols-2 gap-4">
+                    <InputField name="size" label="Size" placeholder="e.g., 150-count" value={formData.size} />
+                    <InputField name="location" label="Location" placeholder="e.g., Office" value={formData.location} />
+                </div>
+                
+                {/* Govee Integration Section */}
+                <div>
+                    <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>Govee Sensor</label>
+                    <select
+                        disabled={!goveeApiKey}
+                        className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} disabled:bg-gray-800 disabled:cursor-not-allowed`}
+                    >
+                        <option value="">{goveeApiKey ? "Select a sensor" : "Connect Govee first"}</option>
+                        {/* We will populate this with real devices later */}
+                    </select>
+                </div>
+
+                <div className="pt-4 flex space-x-4">
+                    <button
+                        onClick={handleSave}
+                        className={`w-full ${theme.primaryBg} ${theme.text === 'text-white' ? 'text-white' : 'text-black'} font-bold py-3 rounded-lg ${theme.hoverPrimaryBg} transition-colors`}
+                    >
+                        Save Changes
+                    </button>
+                    <button
+                        onClick={() => navigate('MyHumidor', { humidorId: humidor.id })}
+                        className={`w-full ${theme.button} ${theme.text} font-bold py-3 rounded-lg transition-colors`}
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 const SettingsScreen = ({navigate, theme, setTheme}) => {
     const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
     
@@ -2143,6 +2250,7 @@ const SettingsScreen = ({navigate, theme, setTheme}) => {
             <div className="space-y-4">
                 <SettingItem icon={User} title="Profile" subtitle="Manage your account details" onClick={() => navigate('Profile')} />
                 <SettingItem icon={Bell} title="Notifications" subtitle="Set up alerts for humidity and temp" onClick={() => navigate('Alerts')} />
+                <SettingItem icon={Zap} title="Integrations" subtitle="Connect to Govee and other services" onClick={() => navigate('Integrations')} />
                 <SettingItem icon={Database} title="Data & Sync" subtitle="Export or import your collection" onClick={() => navigate('DataSync')} />
                 <SettingItem icon={Palette} title="Theme" subtitle={`Current: ${theme.name}`} onClick={() => setIsThemeModalOpen(true)} />
                 <SettingItem icon={Info} title="About Humidor Hub" subtitle="Version 1.0.0" onClick={() => navigate('About')} />
@@ -2150,6 +2258,62 @@ const SettingsScreen = ({navigate, theme, setTheme}) => {
         </div>
     );
 };
+
+const IntegrationsScreen = ({ navigate, goveeApiKey, setGoveeApiKey, theme }) => {
+    const [key, setKey] = useState(goveeApiKey || '');
+    const [status, setStatus] = useState(goveeApiKey ? 'Connected' : 'Not Connected');
+
+    const handleSave = () => {
+        // In a real app, we'd validate the key here by making an API call.
+        // For now, we'll just save it.
+        setGoveeApiKey(key);
+        setStatus('Connected');
+        // Maybe show a success message
+    };
+
+    return (
+        <div className="p-4 pb-24">
+            <div className="flex items-center mb-6">
+                <button onClick={() => navigate('Settings')} className="p-2 -ml-2 mr-2">
+                    <ChevronLeft className={`w-7 h-7 ${theme.text}`} />
+                </button>
+                <h1 className={`text-3xl font-bold ${theme.text}`}>Integrations</h1>
+            </div>
+            <div className="space-y-6">
+                <div className={`${theme.card} p-4 rounded-xl`}>
+                    <h3 className="font-bold text-xl text-amber-300 mb-2">Govee</h3>
+                    <p className={`${theme.subtleText} text-sm mb-4`}>
+                        Connect your Govee account to automatically sync temperature and humidity data from your Govee sensors.
+                    </p>
+                    <div className="space-y-2">
+                        <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>Govee API Key</label>
+                        <input
+                            type="text"
+                            placeholder="Enter your Govee API Key"
+                            value={key}
+                            onChange={(e) => setKey(e.target.value)}
+                            className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} placeholder-gray-500 focus:outline-none focus:ring-2 ${theme.ring}`}
+                        />
+                        <p className={`${theme.subtleText} text-xs`}>You can get this from the Govee Home app under "About Us {'>'} Apply for API Key".</p>
+                    </div>
+                    <div className="mt-4 flex justify-between items-center">
+                        <span className={`text-sm font-bold ${status === 'Connected' ? 'text-green-400' : 'text-red-400'}`}>
+                            Status: {status}
+                        </span>
+                        <button
+                            onClick={handleSave}
+                            className={`flex items-center gap-2 ${theme.primaryBg} text-white font-bold text-sm px-4 py-2 rounded-full ${theme.hoverPrimaryBg} transition-colors`}
+                        >
+                            <Zap className="w-4 h-4" />
+                            Connect
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 const DataSyncScreen = ({ navigate, setCigars, cigars, humidors }) => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -2198,10 +2362,10 @@ const ImportCsvModal = ({ humidors, setCigars, onClose, navigate }) => {
         const reader = new FileReader();
         reader.onload = (e) => {
             const text = e.target.result;
-            const lines = text.split('\n').slice(1); // Skip header
+            const lines = text.split('\n').slice(1); // Skip header row
             const newCigars = lines.map((line, index) => {
                 const columns = line.split(',');
-                if (columns.length < 14) return null;
+                if (columns.length < 14) return null; // Basic validation
                 return {
                     id: Date.now() + index,
                     humidorId: parseInt(selectedHumidor, 10),
@@ -2220,7 +2384,7 @@ const ImportCsvModal = ({ humidors, setCigars, onClose, navigate }) => {
                     price: parseFloat(columns[13]) || 0, 
                     image: ''
                 };
-            }).filter(Boolean);
+            }).filter(Boolean); // Filter out any null entries from invalid rows
 
             setCigars(prev => [...prev, ...newCigars]);
             onClose();
@@ -2258,6 +2422,7 @@ const ImportCsvModal = ({ humidors, setCigars, onClose, navigate }) => {
 };
 
 const ExportModal = ({ cigars, onClose }) => {
+    // Helper function to trigger a file download in the browser.
     const downloadFile = ({ data, fileName, fileType }) => {
         const blob = new Blob([data], { type: fileType });
         const a = document.createElement('a');
@@ -2276,6 +2441,7 @@ const ExportModal = ({ cigars, onClose }) => {
         let headers = ['id,name,brand,shape,size,country,wrapper,binder,filler,strength,flavorNotes,rating,quantity,price'];
         let usersCsv = cigars.reduce((acc, cigar) => {
             const { id, name, brand, shape, size, country, wrapper, binder, filler, strength, flavorNotes, rating, quantity, price } = cigar;
+            // Flavor notes are joined with a semicolon and wrapped in quotes to handle commas within the notes.
             acc.push([id, name, brand, shape, size, country, wrapper, binder, filler, strength, `"${flavorNotes.join(';')}"`, rating, quantity, price].join(','));
             return acc;
         }, []);
@@ -2289,7 +2455,7 @@ const ExportModal = ({ cigars, onClose }) => {
 
     const exportToJson = () => {
         downloadFile({
-            data: JSON.stringify(cigars, null, 2),
+            data: JSON.stringify(cigars, null, 2), // Pretty-print the JSON
             fileName: 'humidor_hub_export.json',
             fileType: 'application/json',
         });
@@ -2375,6 +2541,7 @@ const AboutScreen = ({ navigate }) => {
 
 const ProfileScreen = ({ navigate, cigars, theme }) => {
     const totalCigars = cigars.reduce((sum, c) => sum + c.quantity, 0);
+    // useMemo calculates the user's top 5 flavor preferences, only re-running when cigars change.
     const topFlavors = useMemo(() => {
         const flavorCounts = cigars.flatMap(c => c.flavorNotes).reduce((acc, flavor) => {
             acc[flavor] = (acc[flavor] || 0) + 1;
@@ -2444,6 +2611,8 @@ export default function App() {
     const [humidors, setHumidors] = useState(initialMockHumidors);
     // `theme` holds the currently selected theme object.
     const [theme, setTheme] = useState(themes["Humidor Hub"]);
+    // `goveeApiKey` stores the user's Govee API key.
+    const [goveeApiKey, setGoveeApiKey] = useState('');
 
     /**
      * The main navigation function. It's passed down to child components
@@ -2478,6 +2647,8 @@ export default function App() {
                 return <AlertsScreen navigate={navigate} theme={theme} />;
             case 'Settings':
                 return <SettingsScreen navigate={navigate} setTheme={setTheme} theme={theme} />;
+            case 'Integrations':
+                return <IntegrationsScreen navigate={navigate} goveeApiKey={goveeApiKey} setGoveeApiKey={setGoveeApiKey} theme={theme} />;
             case 'DataSync':
                 return <DataSyncScreen navigate={navigate} setCigars={setCigars} cigars={cigars} humidors={humidors} theme={theme} />;
             case 'About':
@@ -2494,6 +2665,10 @@ export default function App() {
                 return <EditCigar cigar={cigarToEdit} navigate={navigate} setCigars={setCigars} theme={theme} />;
             case 'AddHumidor':
                  return <AddHumidor navigate={navigate} setHumidors={setHumidors} theme={theme} />;
+            case 'EditHumidor':
+                 const humidorToEdit = humidors.find(h => h.id === params.humidorId);
+                 if (!humidorToEdit) return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} theme={theme} />; // Fallback
+                return <EditHumidor humidor={humidorToEdit} navigate={navigate} setHumidors={setHumidors} goveeApiKey={goveeApiKey} theme={theme} />;
             default:
                 return <Dashboard navigate={navigate} cigars={cigars} theme={theme} />;
         }
