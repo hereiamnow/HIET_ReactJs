@@ -970,6 +970,7 @@ async function callGeminiAPI(prompt) {
         if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
             return result.candidates[0].content.parts[0].text;
         } else {
+            console.error("Gemini API response was blocked or empty.", result);
             return `Content blocked or unavailable. Reason: ${result.promptFeedback?.blockReason || 'Unknown'}`;
         }
     } catch (error) {
@@ -1510,12 +1511,13 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, theme }) =>
                     theme={theme}
                 />
             )}
+            {/* FIXED: Corrected the layout for the header to ensure the edit button is always visible. */}
             <div className="flex items-center mb-6">
-                <button onClick={() => navigate('HumidorsScreen')} className="p-2 -ml-2 mr-2">
+                <button onClick={() => navigate('HumidorsScreen')} className="p-2 -ml-2 flex-shrink-0">
                     <ChevronLeft className="w-7 h-7 text-white" />
                 </button>
-                <h1 className="text-3xl font-bold text-white truncate">{humidor.name}</h1>
-                 <button onClick={() => navigate('EditHumidor', { humidorId: humidor.id })} className="p-2 ml-2">
+                <h1 className="text-3xl font-bold text-white truncate flex-grow mx-2">{humidor.name}</h1>
+                <button onClick={() => navigate('EditHumidor', { humidorId: humidor.id })} className="p-2 flex-shrink-0">
                     <Edit className="w-5 h-5 text-gray-400 hover:text-white" />
                 </button>
             </div>
@@ -1622,6 +1624,14 @@ const CigarDetail = ({ cigar, navigate, setCigars }) => {
         setModalState({ isOpen: true, type: 'notes', content: result, isLoading: false });
     };
 
+    // NEW: Calls the Gemini API to find similar cigars.
+    const handleFindSimilar = async () => {
+        setModalState({ isOpen: true, type: 'similar', content: '', isLoading: true });
+        const prompt = `You are a cigar expert. A user likes the '${cigar.brand} ${cigar.name}'. Based on its profile (Strength: ${cigar.strength}, Wrapper: ${cigar.wrapper}, Filler: ${cigar.filler}, Origin: ${cigar.country}, Flavors: ${cigar.flavorNotes.join(', ')}), suggest 3 other cigars that they might also enjoy. For each suggestion, provide the Brand and Name, and a 1-sentence reason why it's a good recommendation. Format as a list.`;
+        const result = await callGeminiAPI(prompt);
+        setModalState({ isOpen: true, type: 'similar', content: result, isLoading: false });
+    };
+
     const closeModal = () => setModalState({ isOpen: false, type: null, content: '', isLoading: false });
 
     const RatingBadge = ({ rating }) => {
@@ -1635,17 +1645,6 @@ const CigarDetail = ({ cigar, navigate, setCigars }) => {
         );
     };
     
-    const InfoSection = ({ icon: Icon, title, children }) => (
-        <div className="bg-gray-800/50 p-4 rounded-xl">
-            <h3 className="font-bold text-amber-300 text-lg mb-3 flex items-center">
-                <Icon className="w-5 h-5 mr-3 text-amber-400"/> {title}
-            </h3>
-            <div className="text-gray-300 text-sm font-light leading-relaxed space-y-2">
-                {children}
-            </div>
-        </div>
-    );
-    
     const DetailItem = ({ label, value }) => (
         <div>
             <p className="text-xs text-gray-400">{label}</p>
@@ -1655,7 +1654,7 @@ const CigarDetail = ({ cigar, navigate, setCigars }) => {
 
     return (
         <div className="pb-24">
-            {modalState.isOpen && <GeminiModal title={modalState.type === 'pairings' ? "Pairing Suggestions" : "Tasting Note Idea"} content={modalState.content} isLoading={modalState.isLoading} onClose={closeModal} />}
+            {modalState.isOpen && <GeminiModal title={modalState.type === 'pairings' ? "Pairing Suggestions" : modalState.type === 'notes' ? "Tasting Note Idea" : "Similar Smokes"} content={modalState.content} isLoading={modalState.isLoading} onClose={closeModal} />}
             {isFlavorModalOpen && <FlavorNotesModal cigar={cigar} setCigars={setCigars} onClose={() => setIsFlavorModalOpen(false)} />}
             {isImageModalOpen && <ImageEditModal cigar={cigar} setCigars={setCigars} onClose={() => setIsImageModalOpen(false)} />}
             
@@ -1719,6 +1718,7 @@ const CigarDetail = ({ cigar, navigate, setCigars }) => {
                 <div className="space-y-4 pt-2">
                     <button onClick={handleSuggestPairings} className="w-full flex items-center justify-center bg-amber-500/20 border border-amber-500 text-amber-300 font-bold py-3 rounded-lg hover:bg-amber-500/30 transition-colors"><Sparkles className="w-5 h-5 mr-2" /> Suggest Pairings</button>
                     <button onClick={handleGenerateNote} className="w-full flex items-center justify-center bg-sky-500/20 border border-sky-500 text-sky-300 font-bold py-3 rounded-lg hover:bg-sky-500/30 transition-colors"><Sparkles className="w-5 h-5 mr-2" /> Generate Note Idea</button>
+                    <button onClick={handleFindSimilar} className="w-full flex items-center justify-center bg-green-500/20 border border-green-500 text-green-300 font-bold py-3 rounded-lg hover:bg-green-500/30 transition-colors"><Sparkles className="w-5 h-5 mr-2" /> Find Similar Smokes</button>
                 </div>
             </div>
         </div>
@@ -1732,6 +1732,7 @@ const AddCigar = ({ navigate, setCigars, humidorId, theme }) => {
     const [strengthSuggestions, setStrengthSuggestions] = useState([]);
     const [imagePreview, setImagePreview] = useState(null);
     const fileInputRef = React.useRef(null);
+    const [isAutofilling, setIsAutofilling] = useState(false);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -1752,7 +1753,6 @@ const AddCigar = ({ navigate, setCigars, humidorId, theme }) => {
         setStrengthSuggestions([]);
     };
     
-    // Handles the image upload from the user's device.
     const handleImageUpload = (event) => {
         const file = event.target.files[0];
         if (file) {
@@ -1769,14 +1769,43 @@ const AddCigar = ({ navigate, setCigars, humidorId, theme }) => {
         const newCigar = {
             id: Date.now(), // Use a timestamp for a unique ID
             humidorId: humidorId,
-            flavorNotes: [],
             ...formData,
+            flavorNotes: Array.isArray(formData.flavorNotes) ? formData.flavorNotes : [],
             rating: Number(formData.rating) || 0,
             price: Number(formData.price) || 0,
             quantity: Number(formData.quantity) || 1,
         };
         setCigars(prev => [...prev, newCigar]);
         navigate('MyHumidor', { humidorId: humidorId });
+    };
+    
+    // NEW: Function to auto-fill cigar details using Gemini
+    const handleAutofill = async () => {
+        if (!formData.name) {
+            alert("Please enter a cigar name first.");
+            return;
+        }
+        setIsAutofilling(true);
+        const prompt = `You are a cigar database. Based on the cigar name "${formData.name}", provide its details as a JSON object. The schema MUST be: { "brand": "string", "shape": "string", "size": "string", "country": "string", "wrapper": "string", "binder": "string", "filler": "string", "strength": "Mild" | "Mild-Medium" | "Medium" | "Medium-Full" | "Full", "flavorNotes": ["string", "string", "string", "string"] }. If you cannot determine a value, use an empty string "" or an empty array []. Do not include any text or markdown formatting outside of the JSON object.`;
+        
+        const result = await callGeminiAPI(prompt);
+        
+        try {
+            // Clean the result to get only the JSON part
+            const jsonString = result.substring(result.indexOf('{'), result.lastIndexOf('}') + 1);
+            const parsedData = JSON.parse(jsonString);
+            
+            setFormData(prevData => ({
+                ...prevData,
+                ...parsedData,
+            }));
+
+        } catch (error) {
+            console.error("Failed to parse Gemini response:", error);
+            // You could show a user-facing error message here
+        }
+        
+        setIsAutofilling(false);
     };
 
     const InputField = ({ name, label, placeholder, type = 'text', value }) => (
@@ -1816,8 +1845,15 @@ const AddCigar = ({ navigate, setCigars, humidorId, theme }) => {
                         )}
                     </button>
                 </div>
-                <InputField name="brand" label="Brand" placeholder="e.g., Padrón" value={formData.brand} />
+                
                 <InputField name="name" label="Name / Line" placeholder="e.g., 1964 Anniversary" value={formData.name} />
+                
+                <button onClick={handleAutofill} disabled={isAutofilling} className="w-full flex items-center justify-center gap-2 bg-purple-600/20 border border-purple-500 text-purple-300 font-bold py-2 rounded-lg hover:bg-purple-600/30 transition-colors disabled:opacity-50">
+                    {isAutofilling ? <LoaderCircle className="w-5 h-5 animate-spin"/> : <Sparkles className="w-5 h-5" />}
+                    {isAutofilling ? 'Thinking...' : '✨ Auto-fill Details'}
+                </button>
+
+                <InputField name="brand" label="Brand" placeholder="e.g., Padrón" value={formData.brand} />
                 <div className="grid grid-cols-2 gap-4">
                     <InputField name="shape" label="Shape" placeholder="e.g., Toro" value={formData.shape} />
                     <InputField name="size" label="Size" placeholder="e.g., 5.5x50" value={formData.size} />
@@ -2152,6 +2188,7 @@ const AddHumidor = ({ navigate, setHumidors, theme }) => {
     );
 };
 
+// NEW: Component for editing an existing humidor's details.
 const EditHumidor = ({ navigate, setHumidors, humidor, goveeApiKey, theme }) => {
     const [formData, setFormData] = useState(humidor);
 
@@ -2665,6 +2702,7 @@ export default function App() {
                 return <EditCigar cigar={cigarToEdit} navigate={navigate} setCigars={setCigars} theme={theme} />;
             case 'AddHumidor':
                  return <AddHumidor navigate={navigate} setHumidors={setHumidors} theme={theme} />;
+            // FIXED: Added routing for the EditHumidor screen
             case 'EditHumidor':
                  const humidorToEdit = humidors.find(h => h.id === params.humidorId);
                  if (!humidorToEdit) return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} theme={theme} />; // Fallback
