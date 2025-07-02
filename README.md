@@ -1,70 +1,108 @@
-# Getting Started with Create React App
+# Humidor Hub - Cigar Collection Management App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Description
 
-## Available Scripts
+Humidor Hub is a web application designed for cigar aficionados to manage and track their personal cigar collections. It provides a detailed inventory system, allowing users to organize their cigars across multiple humidors, view detailed information about each cigar, and analyze their collection through various charts and AI-powered summaries.
 
-In the project directory, you can run:
+This application is built with React and features a modern, responsive interface styled with Tailwind CSS.
 
-### `npm start`
+## Key Features
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+* **Dashboard Overview:** A central hub to monitor the live environment (humidity & temperature) of your humidors, view key statistics, and get quick insights into your collection.
+* **Multi-Humidor Management:** Add, edit, and manage multiple humidors, each with its own set of cigars.
+* **Detailed Cigar Inventory:**
+    * Add new cigars with detailed attributes like brand, shape, size, origin, wrapper, binder, filler, strength, and flavor notes.
+    * View and edit details for each cigar.
+    * Upload custom images for your cigars.
+* **Bulk Cigar Management:**
+    * Move multiple cigars from one humidor to another with an intuitive selection tool.
+* **Data Analysis & Insights:**
+    * **AI-Powered Summaries:** Use the Gemini API to get narrative summaries and tasting notes for your collection.
+    * **Visual Charts:** View your inventory broken down by brand, country, and strength using both bar and pie charts.
+* **Customization & Settings:**
+    * **Theme Support:** Choose from multiple color themes (including light and dark modes) to personalize the app's appearance.
+    * **Data Portability:** Export your entire collection to CSV or JSON formats for backup or use in other applications.
+    * **Alerts:** Set up mock notifications for humidity and temperature thresholds for each humidor.
+* **Roxy's Corner:** Get helpful tips and facts about cigar storage and enjoyment.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Tech Stack
 
-### `npm test`
+* **Frontend:** React.js
+* **Styling:** Tailwind CSS
+* **Charting:** Recharts
+* **Icons:** Lucide React
+* **AI Features:** Google Gemini API
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Getting Started: Development Environment Setup
 
-### `npm run build`
+Follow these steps to get the Humidor Hub application running on your local machine.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Prerequisites
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+You'll need **Node.js** installed on your computer. This package includes **npm** (Node Package Manager), which you'll need to install the app's dependencies. You can download it from the official [Node.js website](https://nodejs.org/).
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Step-by-Step Guide
 
-### `npm run eject`
+1.  **Create a New React App:**
+    * Open your terminal or command prompt.
+    * Navigate to the folder where you want to store your project.
+    * Run the following command to create a new React project. You can replace `humidor-hub-app` with any name you like.
+        ```bash
+        npx create-react-app humidor-hub-app
+        ```
+    * Once it's finished, navigate into your new project folder:
+        ```bash
+        cd humidor-hub-app
+        ```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+2.  **Install Dependencies:**
+    * The app uses a few libraries for charts and icons. Install them by running this command in your terminal:
+        ```bash
+        npm install recharts lucide-react
+        ```
+    * Next, install Tailwind CSS and its necessary peer dependencies:
+        ```bash
+        npm install -D tailwindcss postcss autoprefixer
+        ```
+    * Now, run the Tailwind initialization command. This will create both a `tailwind.config.js` and a `postcss.config.js` file for you.
+        ```bash
+        npx tailwindcss init -p
+        ```
+    * **If the command above fails** with an error like "'tailwindcss' is not recognized...", use the following command instead:
+        ```bash
+        ./node_modules/.bin/tailwindcss init -p
+        ```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+3.  **Configure Tailwind CSS:**
+    * Open the `tailwind.config.js` file that was just created. Replace its contents with the following code to tell Tailwind which files to scan for its style classes.
+        ```js
+        /** @type {import('tailwindcss').Config} */
+        module.exports = {
+          content: [
+            "./src/**/*.{js,jsx,ts,tsx}",
+          ],
+          theme: {
+            extend: {},
+          },
+          plugins: [],
+        }
+        ```
+    * Next, open the `src/index.css` file and replace its entire contents with these three lines to include Tailwind's base styles:
+        ```css
+        @tailwind base;
+        @tailwind components;
+        @tailwind utilities;
+        ```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+4.  **Add the Application Code:**
+    * Open the `src/App.js` file located in your project's `src` folder.
+    * Delete all of the existing code inside it.
+    * Copy the **entire code** from the application I created for you and paste it into this empty `src/App.js` file.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+5.  **Start the App:**
+    * You're all set! Run the final command in your terminal from the project folder:
+        ```bash
+        npm start
+        ```
 
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Your web browser should automatically open to `http://localhost:3000`, where you'll see the Humidor Hub app running live.
