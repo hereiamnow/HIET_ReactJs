@@ -2481,3 +2481,4 @@ export default function App() {
         </div>
     );
 }
+localStorage
