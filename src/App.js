@@ -1,9 +1,16 @@
+// Import necessary libraries and components.
+// React is the main library for building the user interface.
+// useState, useEffect, useCallback, and useMemo are "hooks" that let us use state and other React features in functional components.
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+// lucide-react provides a set of clean, modern icons used throughout the app.
 import { Thermometer, Droplets, Bell, Plus, Search, X, ChevronLeft, Image as ImageIcon, Star, Wind, Coffee, GlassWater, LoaderCircle, Sparkles, Box, Briefcase, LayoutGrid, List, BookOpen, Leaf, Flame, MapPin, Tag, Minus, Edit, Trash2, Upload, Link2, Settings, User, Database, Info, Download, UploadCloud, ChevronDown, Shield, FileText, LogOut, Palette, BarChart2, TrendingUp, PieChart as PieChartIcon, Move, Check } from 'lucide-react';
+// recharts is a library for creating the charts (bar, line, pie) on the dashboard.
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-
 // --- THEME DATA ---
+// This object holds different color schemes for the app. This allows the user to change the look and feel.
+// Each theme has properties for background color (bg), card color, text color, etc.
+// These are defined using Tailwind CSS utility classes.
 const themes = {
     "Humidor Hub": {
         name: "Humidor Hub",
@@ -64,6 +71,8 @@ const themes = {
 };
 
 // --- MOCK DATA ---
+// This is placeholder data used to populate the app initially.
+// In a real application, this data would come from a database or API.
 const initialMockHumidors = [
     { id: 1, name: 'Ironsides', description: 'My primary aging and storage unit.', size: '150-count', location: 'Office', image: 'https://placehold.co/600x400/3a2d27/ffffff?text=Ironsides', humidity: 70, temp: 68 },
     { id: 2, name: 'Travel Case', description: 'For taking cigars on the go.', size: '5-count', location: 'Portable', image: 'https://placehold.co/600x400/5c4a42/ffffff?text=Travel+Case', humidity: 69, temp: 71 },
@@ -540,15 +549,18 @@ const initialMockCigars = [
   }
 ];
 
+// A comprehensive list of possible flavor notes a user can select.
 const allFlavorNotes = [
     'Earthy', 'Woody', 'Spicy', 'Nutty', 'Sweet', 'Fruity', 'Floral', 'Herbal',
     'Leather', 'Coffee', 'Cocoa', 'Chocolate', 'Creamy', 'Pepper', 'Cedar', 'Oak',
     'Cinnamon', 'Vanilla', 'Honey', 'Caramel', 'Citrus', 'Dried Fruit', 'Hay', 'Toasted',
     'Dark Cherry', 'Roasted Nuts', 'Toasted Bread'
-].sort();
+].sort(); // .sort() keeps the list alphabetical.
 
+// A predefined list of cigar strength options.
 const strengthOptions = ['Mild', 'Mild-Medium', 'Medium', 'Medium-Full', 'Full'];
 
+// A list of fun tips for Roxy's Corner on the dashboard.
 const roxysTips = [
     "Did you know? A steady 70% humidity is perfect for aging most cigars. Don't let it fluctuate!",
     "Remember to rotate your cigars every few months to ensure they age evenly. It's like a little cigar ballet!",
@@ -562,6 +574,12 @@ const roxysTips = [
 
 // --- HELPER & UI COMPONENTS ---
 
+/**
+ * A helper function to determine the color of a flavor tag based on the note.
+ * This makes the UI more visually interesting and informative.
+ * @param {string} note - The flavor note (e.g., 'Earthy', 'Spicy').
+ * @returns {string} A string of Tailwind CSS classes for styling.
+ */
 const getFlavorTagColor = (note) => {
     const lowerNote = note.toLowerCase();
     switch (lowerNote) {
@@ -625,6 +643,11 @@ const getFlavorTagColor = (note) => {
     }
 };
 
+/**
+ * A helper function to determine the color of the rating badge based on the score.
+ * @param {number} rating - The cigar's rating (0-100).
+ * @returns {string} A string of Tailwind CSS classes.
+ */
 const getRatingColor = (rating) => {
     if (rating >= 95) return 'bg-blue-500/80 border-blue-400';
     if (rating >= 90) return 'bg-green-500/80 border-green-400';
@@ -634,6 +657,10 @@ const getRatingColor = (rating) => {
 };
 
 
+/**
+ * Gauge component for displaying humidity and temperature.
+ * It uses SVG to draw a circular gauge.
+ */
 const Gauge = ({ value, maxValue, label, unit, icon: Icon }) => {
     const percentage = Math.min(Math.max(value / maxValue, 0), 1);
     const isOptimalHum = value >= 68 && value <= 72 && unit === '%';
@@ -643,7 +670,9 @@ const Gauge = ({ value, maxValue, label, unit, icon: Icon }) => {
     return (
         <div className="relative flex flex-col items-center justify-center w-40 h-40 sm:w-48 sm:h-48">
             <svg className="w-full h-full" viewBox="0 0 120 120">
+                {/* Background ring */}
                 <circle className="stroke-current text-gray-700" cx="60" cy="60" r="50" strokeWidth="10" fill="none" />
+                {/* Foreground (value) ring */}
                 <circle
                     className={`transform -rotate-90 origin-center transition-all duration-500 ${ringColor}`}
                     cx="60" cy="60" r="50" strokeWidth="10" fill="none"
@@ -659,6 +688,9 @@ const Gauge = ({ value, maxValue, label, unit, icon: Icon }) => {
     );
 };
 
+/**
+ * StatCard component for displaying a single statistic on the dashboard.
+ */
 const StatCard = ({ title, value, icon: Icon, theme }) => (
     <div className={`${theme.card} p-4 rounded-xl flex items-center space-x-4`}>
         <div className="p-3 rounded-lg" style={{backgroundColor: 'rgba(255,255,255,0.1)'}}>
@@ -671,9 +703,13 @@ const StatCard = ({ title, value, icon: Icon, theme }) => (
     </div>
 );
 
+/**
+ * BottomNav component for the main app navigation.
+ * It's fixed to the bottom of the screen.
+ */
 const BottomNav = ({ activeScreen, navigate, theme }) => {
     const navItems = [
-        { name: 'Dashboard', icon: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> },
+        { name: 'Dashboard', icon: BarChart2 },
         { name: 'HumidorsScreen', icon: Box },
         { name: 'Alerts', icon: Bell },
         { name: 'Settings', icon: Settings },
@@ -692,6 +728,10 @@ const BottomNav = ({ activeScreen, navigate, theme }) => {
     );
 };
 
+/**
+ * GeminiModal is a pop-up used to display content fetched from the Gemini API.
+ * It shows a loading spinner while waiting for the API response.
+ */
 const GeminiModal = ({ title, content, isLoading, onClose }) => (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100]" onClick={onClose}>
         <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
@@ -895,6 +935,11 @@ const MoveCigarsModal = ({ onClose, onMove, destinationHumidors, theme }) => {
 
 
 // --- API CALL ---
+/**
+ * Asynchronous function to make a POST request to the Gemini API.
+ * @param {string} prompt - The text prompt to send to the API.
+ * @returns {Promise<string>} A promise that resolves to the text response from the API.
+ */
 async function callGeminiAPI(prompt) {
     let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
     const payload = { contents: chatHistory };
@@ -909,6 +954,7 @@ async function callGeminiAPI(prompt) {
         });
         if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
         const result = await response.json();
+        // The response structure is checked to safely extract the text.
         if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
             return result.candidates[0].content.parts[0].text;
         } else {
@@ -921,6 +967,8 @@ async function callGeminiAPI(prompt) {
 }
 
 // --- CIGAR CARD COMPONENTS ---
+// These components define how a single cigar is displayed, either in a grid or a list.
+
 const GridCigarCard = ({ cigar, navigate, isSelectMode, isSelected, onSelect }) => {
     const ratingColor = getRatingColor(cigar.rating);
     const clickHandler = isSelectMode ? () => onSelect(cigar.id) : () => navigate('CigarDetail', { cigarId: cigar.id });
@@ -989,6 +1037,8 @@ const ListCigarCard = ({ cigar, navigate, isSelectMode, isSelected, onSelect }) 
 
 
 // --- SCREEN COMPONENTS ---
+// These are the main "pages" of the application. The `App` component decides which one to show.
+
 const ChartCard = ({ title, children, action }) => (
     <div className="bg-gray-800/50 p-4 rounded-xl">
         <div className="flex justify-between items-center mb-4">
@@ -1497,6 +1547,10 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, theme }) =>
                  {filteredCigars.length === 0 && (
                     <div className="col-span-full text-center py-10">
                         <p className="text-gray-400">No cigars found in this humidor.</p>
+                         <button onClick={() => navigate('AddCigar', { humidorId: humidor.id })} className="mt-4 flex items-center mx-auto gap-2 bg-amber-500 text-white font-bold text-sm px-4 py-2 rounded-full hover:bg-amber-600 transition-colors">
+                            <Plus className="w-4 h-4" />
+                            Add First Cigar
+                        </button>
                     </div>
                 )}
             </div>
@@ -1528,14 +1582,14 @@ const CigarDetail = ({ cigar, navigate, setCigars }) => {
 
     const handleSuggestPairings = async () => {
         setModalState({ isOpen: true, type: 'pairings', content: '', isLoading: true });
-        const prompt = `You are a world-class sommelier and cigar expert. Given the following cigar:\n- Brand: ${cigar.brand}\n- Name: ${cigar.name}\n- Strength: ${cigar.strength}\n- Wrapper: ${cigar.wrapper}\n- Description: ${cigar.description}\n\nSuggest three diverse drink pairings (e.g., a spirit, a coffee, a non-alcoholic beverage). For each, provide a one-sentence explanation for why it works well. Format the response clearly with headings for each pairing.`;
+        const prompt = `You are a world-class sommelier and cigar expert. Given the following cigar:\n- Brand: ${cigar.brand}\n- Name: ${cigar.name}\n- Strength: ${cigar.strength}\n- Wrapper: ${cigar.wrapper}\n\nSuggest three diverse drink pairings (e.g., a spirit, a coffee, a non-alcoholic beverage). For each, provide a one-sentence explanation for why it works well. Format the response clearly with headings for each pairing.`;
         const result = await callGeminiAPI(prompt);
         setModalState({ isOpen: true, type: 'pairings', content: result, isLoading: false });
     };
 
     const handleGenerateNote = async () => {
         setModalState({ isOpen: true, type: 'notes', content: '', isLoading: true });
-        const prompt = `You are a seasoned cigar aficionado with a poetic command of language. Based on this cigar's profile:\n- Brand: ${cigar.brand}\n- Name: ${cigar.name}\n- Strength: ${cigar.strength}\n- Wrapper: ${cigar.wrapper}\n- Description: ${cigar.description}\n\nGenerate a short, evocative tasting note (2-3 sentences) that a user could use as inspiration for their own review. Focus on potential flavors and the overall experience.`;
+        const prompt = `You are a seasoned cigar aficionado with a poetic command of language. Based on this cigar's profile:\n- Brand: ${cigar.brand}\n- Name: ${cigar.name}\n- Strength: ${cigar.strength}\n- Wrapper: ${cigar.wrapper}\n\nGenerate a short, evocative tasting note (2-3 sentences) that a user could use as inspiration for their own review. Focus on potential flavors and the overall experience.`;
         const result = await callGeminiAPI(prompt);
         setModalState({ isOpen: true, type: 'notes', content: result, isLoading: false });
     };
@@ -1634,42 +1688,6 @@ const CigarDetail = ({ cigar, navigate, setCigars }) => {
                     </div>
                 </div>
 
-                {cigar.story && (
-                    <InfoSection icon={BookOpen} title="The Story">
-                        <p>{cigar.story}</p>
-                    </InfoSection>
-                )}
-
-                {cigar.manufacturing && (
-                    <InfoSection icon={Leaf} title="From Leaf to Legend">
-                        <div>
-                            <h4 className="font-semibold text-white mb-1">Fermentation</h4>
-                            <p>{cigar.manufacturing.fermentation}</p>
-                        </div>
-                         <div>
-                            <h4 className="font-semibold text-white mb-1">Aging</h4>
-                            <p>{cigar.manufacturing.aging}</p>
-                        </div>
-                    </InfoSection>
-                )}
-                
-                {cigar.tastingJourney && (
-                    <InfoSection icon={Flame} title="Tasting Journey">
-                        <div>
-                            <h4 className="font-semibold text-white mb-1">First Third</h4>
-                            <p>{cigar.tastingJourney.firstThird}</p>
-                        </div>
-                         <div>
-                            <h4 className="font-semibold text-white mb-1">Second Third</h4>
-                            <p>{cigar.tastingJourney.secondThird}</p>
-                        </div>
-                         <div>
-                            <h4 className="font-semibold text-white mb-1">Final Third</h4>
-                            <p>{cigar.tastingJourney.finalThird}</p>
-                        </div>
-                    </InfoSection>
-                )}
-
                 <div className="space-y-4 pt-2">
                     <button onClick={handleSuggestPairings} className="w-full flex items-center justify-center bg-amber-500/20 border border-amber-500 text-amber-300 font-bold py-3 rounded-lg hover:bg-amber-500/30 transition-colors"><Sparkles className="w-5 h-5 mr-2" /> Suggest Pairings</button>
                     <button onClick={handleGenerateNote} className="w-full flex items-center justify-center bg-sky-500/20 border border-sky-500 text-sky-300 font-bold py-3 rounded-lg hover:bg-sky-500/30 transition-colors"><Sparkles className="w-5 h-5 mr-2" /> Generate Note Idea</button>
@@ -1680,7 +1698,9 @@ const CigarDetail = ({ cigar, navigate, setCigars }) => {
 };
 
 const AddCigar = ({ navigate, setCigars, humidorId, theme }) => {
-    const [formData, setFormData] = useState({});
+    const [formData, setFormData] = useState({
+        brand: '', name: '', shape: '', size: '', wrapper: '', binder: '', filler: '', country: '', strength: '', price: '', rating: '', quantity: 1, image: ''
+    });
     const [strengthSuggestions, setStrengthSuggestions] = useState([]);
     const [imagePreview, setImagePreview] = useState(null);
     const fileInputRef = React.useRef(null);
@@ -1720,9 +1740,11 @@ const AddCigar = ({ navigate, setCigars, humidorId, theme }) => {
         const newCigar = {
             id: Date.now(),
             humidorId: humidorId,
-            rating: 0,
             flavorNotes: [],
-            ...formData
+            ...formData,
+            rating: Number(formData.rating) || 0,
+            price: Number(formData.price) || 0,
+            quantity: Number(formData.quantity) || 1,
         };
         setCigars(prev => [...prev, newCigar]);
         navigate('MyHumidor', { humidorId: humidorId });
@@ -1798,7 +1820,10 @@ const AddCigar = ({ navigate, setCigars, humidorId, theme }) => {
                     </div>
                     <InputField name="price" label="Price Paid" placeholder="e.g., 15.50" type="number" value={formData.price} />
                 </div>
-                <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} />
+                <div className="grid grid-cols-2 gap-4">
+                    <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} />
+                    <InputField name="quantity" label="Quantity" placeholder="e.g., 5" type="number" value={formData.quantity} />
+                </div>
 
                 <div className="pt-4 flex space-x-4">
                     <button
@@ -1871,12 +1896,6 @@ const EditCigar = ({ navigate, setCigars, cigar }) => {
             </div>
 
             <div className="space-y-4">
-                <div className="flex justify-center mb-4">
-                    <button className="w-32 h-40 bg-gray-800 border-2 border-dashed border-gray-600 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:bg-gray-700 hover:border-amber-500 transition-colors">
-                        <ImageIcon className="w-10 h-10 mb-2" />
-                        <span className="text-xs text-center">Change Image</span>
-                    </button>
-                </div>
                 <InputField name="brand" label="Brand" placeholder="e.g., Padrón" />
                 <InputField name="name" label="Name / Line" placeholder="e.g., 1964 Anniversary" />
                 <div className="grid grid-cols-2 gap-4">
@@ -2132,13 +2151,13 @@ const SettingsScreen = ({navigate, theme, setTheme}) => {
     );
 };
 
-const DataSyncScreen = ({ navigate, setCigars, cigars }) => {
+const DataSyncScreen = ({ navigate, setCigars, cigars, humidors }) => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
     return (
         <div className="p-4 pb-24">
-            {isImportModalOpen && <ImportCsvModal humidors={initialMockHumidors} setCigars={setCigars} navigate={navigate} onClose={() => setIsImportModalOpen(false)} />}
+            {isImportModalOpen && <ImportCsvModal humidors={humidors} setCigars={setCigars} navigate={navigate} onClose={() => setIsImportModalOpen(false)} />}
             {isExportModalOpen && <ExportModal cigars={cigars} onClose={() => setIsExportModalOpen(false)} />}
             <div className="flex items-center mb-6">
                 <button onClick={() => navigate('Settings')} className="p-2 -ml-2 mr-2">
@@ -2182,23 +2201,23 @@ const ImportCsvModal = ({ humidors, setCigars, onClose, navigate }) => {
             const lines = text.split('\n').slice(1); // Skip header
             const newCigars = lines.map((line, index) => {
                 const columns = line.split(',');
-                if (columns.length < 16) return null;
+                if (columns.length < 14) return null;
                 return {
                     id: Date.now() + index,
                     humidorId: parseInt(selectedHumidor, 10),
                     name: columns[1],
                     brand: columns[2],
-                    shape: columns[4],
-                    size: columns[7].replace(/"/g, ''),
-                    country: columns[8],
-                    wrapper: columns[9],
-                    binder: columns[10],
-                    filler: columns[11],
-                    strength: columns[12],
-                    flavorNotes: columns[13].split(';').map(s => s.trim()),
-                    rating: parseInt(columns[14].replace('-rated', '')) || 0,
-                    quantity: parseInt(columns[15]) || 0,
-                    price: 0, // Assuming no price in CSV
+                    shape: columns[3],
+                    size: columns[4],
+                    country: columns[5],
+                    wrapper: columns[6],
+                    binder: columns[7],
+                    filler: columns[8],
+                    strength: columns[9],
+                    flavorNotes: columns[10].replace(/"/g, '').split(';').map(s => s.trim()),
+                    rating: parseInt(columns[11]) || 0,
+                    quantity: parseInt(columns[12]) || 0,
+                    price: parseFloat(columns[13]) || 0, 
                     image: ''
                 };
             }).filter(Boolean);
@@ -2254,7 +2273,7 @@ const ExportModal = ({ cigars, onClose }) => {
     };
 
     const exportToCsv = () => {
-        let headers = ['ID,Name,Brand,Shape,Size,Country,Wrapper,Binder,Filler,Strength,FlavorNotes,Rating,Quantity,Price'];
+        let headers = ['id,name,brand,shape,size,country,wrapper,binder,filler,strength,flavorNotes,rating,quantity,price'];
         let usersCsv = cigars.reduce((acc, cigar) => {
             const { id, name, brand, shape, size, country, wrapper, binder, filler, strength, flavorNotes, rating, quantity, price } = cigar;
             acc.push([id, name, brand, shape, size, country, wrapper, binder, filler, strength, `"${flavorNotes.join(';')}"`, rating, quantity, price].join(','));
@@ -2302,8 +2321,8 @@ const AboutScreen = ({ navigate }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalContent, setModalContent] = useState({ title: '', text: '' });
 
-    const privacyPolicyText = "Your data is stored locally on your device and is not shared with any third parties. We respect your privacy.\n\nEffective Date: July 1, 2025";
-    const termsOfServiceText = "By using Humidor Hub, you agree to track your cigars responsibly. This app is for informational purposes only. Enjoy your collection!\n\nLast Updated: July 1, 2025";
+    const privacyPolicyText = "Your data is stored locally on your device and is not shared with any third parties. We respect your privacy.\n\nEffective Date: July 2, 2025";
+    const termsOfServiceText = "By using Humidor Hub, you agree to track your cigars responsibly. This app is for informational purposes only. Enjoy your collection!\n\nLast Updated: July 2, 2025";
 
     const showModal = (type) => {
         if (type === 'privacy') {
@@ -2364,18 +2383,6 @@ const ProfileScreen = ({ navigate, cigars, theme }) => {
         return Object.entries(flavorCounts).sort((a, b) => b[1] - a[1]).slice(0, 5).map(entry => entry[0]);
     }, [cigars]);
 
-    const strengthDistribution = useMemo(() => {
-        const strengthCounts = cigars.reduce((acc, cigar) => {
-            acc[cigar.strength] = (acc[cigar.strength] || 0) + cigar.quantity;
-            return acc;
-        }, {});
-        const total = Object.values(strengthCounts).reduce((sum, count) => sum + count, 0);
-        return Object.entries(strengthCounts).map(([strength, count]) => ({
-            name: strength,
-            value: (count / total) * 100
-        }));
-    }, [cigars]);
-
     return (
         <div className="p-4 pb-24">
             <div className="flex items-center mb-6">
@@ -2427,16 +2434,32 @@ const ProfileScreen = ({ navigate, cigars, theme }) => {
 
 
 // --- MAIN APP COMPONENT ---
+// This is the root component of the entire application.
 export default function App() {
+    // Top-level state for the whole application.
+    // `navigation` object tracks the current screen and any parameters.
     const [navigation, setNavigation] = useState({ screen: 'Dashboard', params: {} });
+    // `cigars` and `humidors` arrays hold all the application's data.
     const [cigars, setCigars] = useState(initialMockCigars);
     const [humidors, setHumidors] = useState(initialMockHumidors);
+    // `theme` holds the currently selected theme object.
     const [theme, setTheme] = useState(themes["Humidor Hub"]);
 
+    /**
+     * The main navigation function. It's passed down to child components
+     * so they can change screens.
+     * @param {string} screen - The name of the screen to navigate to.
+     * @param {object} params - Any data to pass to the new screen.
+     */
     const navigate = (screen, params = {}) => {
+        window.scrollTo(0, 0); // Scroll to the top of the page on every navigation.
         setNavigation({ screen, params });
     };
 
+    /**
+     * This function acts as a router. It reads the `navigation` state
+     * and returns the correct screen component to display.
+     */
     const renderScreen = () => {
         const { screen, params } = navigation;
         switch (screen) {
@@ -2449,21 +2472,25 @@ export default function App() {
                 return <MyHumidor humidor={humidor} navigate={navigate} cigars={cigars} setCigars={setCigars} humidors={humidors} theme={theme} />;
             case 'CigarDetail':
                 const cigar = cigars.find(c => c.id === params.cigarId);
+                if (!cigar) return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} theme={theme} />; // Fallback
                 return <CigarDetail cigar={cigar} navigate={navigate} setCigars={setCigars} theme={theme} />;
             case 'Alerts':
                 return <AlertsScreen navigate={navigate} theme={theme} />;
             case 'Settings':
                 return <SettingsScreen navigate={navigate} setTheme={setTheme} theme={theme} />;
             case 'DataSync':
-                return <DataSyncScreen navigate={navigate} setCigars={setCigars} cigars={cigars} theme={theme} />;
+                return <DataSyncScreen navigate={navigate} setCigars={setCigars} cigars={cigars} humidors={humidors} theme={theme} />;
             case 'About':
                 return <AboutScreen navigate={navigate} theme={theme} />;
             case 'Profile':
                 return <ProfileScreen navigate={navigate} cigars={cigars} theme={theme} />;
             case 'AddCigar':
+                 const humidorForNewCigar = humidors.find(h => h.id === params.humidorId);
+                 if (!humidorForNewCigar) return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} theme={theme} />; // Fallback
                 return <AddCigar navigate={navigate} setCigars={setCigars} humidorId={params.humidorId} theme={theme} />;
             case 'EditCigar':
                  const cigarToEdit = cigars.find(c => c.id === params.cigarId);
+                 if (!cigarToEdit) return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} theme={theme} />; // Fallback
                 return <EditCigar cigar={cigarToEdit} navigate={navigate} setCigars={setCigars} theme={theme} />;
             case 'AddHumidor':
                  return <AddHumidor navigate={navigate} setHumidors={setHumidors} theme={theme} />;
@@ -2472,13 +2499,23 @@ export default function App() {
         }
     };
 
+    // This is the final JSX that gets rendered to the DOM.
     return (
+        // The main container div applies the current theme's background and text colors.
         <div className={`font-sans antialiased ${theme.bg} ${theme.text} min-h-screen`} style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23a0522d\' fill-opacity=\'0.05\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }}>
+            {/* This inner container centers the app and gives it a max-width. */}
             <div className={`max-w-md mx-auto ${theme.bg}/95 min-h-screen shadow-2xl shadow-black relative`}>
+                {/* Fades at the top and bottom for a nicer visual effect */}
+                <div className="fixed top-0 left-0 right-0 max-w-md mx-auto h-8 z-50" style={{background: 'linear-gradient(to bottom, rgba(0,0,0,0.3), transparent)'}}></div>
+                
+                {/* Call the renderScreen function to display the current page */}
                 {renderScreen()}
+                
+                <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto h-24 z-40" style={{background: 'linear-gradient(to top, rgba(0,0,0,0.3), transparent)'}}></div>
+                
+                {/* Render the bottom navigation bar */}
                 <BottomNav activeScreen={navigation.screen} navigate={navigate} theme={theme} />
             </div>
         </div>
     );
 }
-localStorage
