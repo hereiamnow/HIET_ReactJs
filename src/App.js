@@ -1048,6 +1048,21 @@ const ListCigarCard = ({ cigar, navigate, isSelectMode, isSelected, onSelect }) 
     );
 };
 
+// FIXED: Moved InputField outside of the components that use it to prevent re-rendering and focus loss.
+const InputField = ({ name, label, placeholder, type = 'text', value, onChange, theme }) => (
+    <div>
+        <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>{label}</label>
+        <input
+            type={type}
+            name={name}
+            placeholder={placeholder}
+            value={value || ''}
+            onChange={onChange}
+            className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} placeholder-gray-500 focus:outline-none focus:ring-2 ${theme.ring}`}
+        />
+    </div>
+);
+
 
 // --- SCREEN COMPONENTS ---
 // These are the main "pages" of the application. The `App` component decides which one to show.
@@ -1808,20 +1823,6 @@ const AddCigar = ({ navigate, setCigars, humidorId, theme }) => {
         setIsAutofilling(false);
     };
 
-    const InputField = ({ name, label, placeholder, type = 'text', value }) => (
-        <div>
-            <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>{label}</label>
-            <input
-                type={type}
-                name={name}
-                placeholder={placeholder}
-                value={value || ''}
-                onChange={handleInputChange}
-                className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} placeholder-gray-500 focus:outline-none focus:ring-2 ${theme.ring}`}
-            />
-        </div>
-    );
-
     return (
         <div className="p-4 pb-24">
             <div className="flex items-center mb-6">
@@ -1846,29 +1847,29 @@ const AddCigar = ({ navigate, setCigars, humidorId, theme }) => {
                     </button>
                 </div>
                 
-                <InputField name="name" label="Name / Line" placeholder="e.g., 1964 Anniversary" value={formData.name} />
+                <InputField name="name" label="Name / Line" placeholder="e.g., 1964 Anniversary" value={formData.name} onChange={handleInputChange} theme={theme} />
                 
                 <button onClick={handleAutofill} disabled={isAutofilling} className="w-full flex items-center justify-center gap-2 bg-purple-600/20 border border-purple-500 text-purple-300 font-bold py-2 rounded-lg hover:bg-purple-600/30 transition-colors disabled:opacity-50">
                     {isAutofilling ? <LoaderCircle className="w-5 h-5 animate-spin"/> : <Sparkles className="w-5 h-5" />}
                     {isAutofilling ? 'Thinking...' : '✨ Auto-fill Details'}
                 </button>
 
-                <InputField name="brand" label="Brand" placeholder="e.g., Padrón" value={formData.brand} />
+                <InputField name="brand" label="Brand" placeholder="e.g., Padrón" value={formData.brand} onChange={handleInputChange} theme={theme} />
                 <div className="grid grid-cols-2 gap-4">
-                    <InputField name="shape" label="Shape" placeholder="e.g., Toro" value={formData.shape} />
-                    <InputField name="size" label="Size" placeholder="e.g., 5.5x50" value={formData.size} />
+                    <InputField name="shape" label="Shape" placeholder="e.g., Toro" value={formData.shape} onChange={handleInputChange} theme={theme} />
+                    <InputField name="size" label="Size" placeholder="e.g., 5.5x50" value={formData.size} onChange={handleInputChange} theme={theme} />
                 </div>
                  <div className="grid grid-cols-2 gap-4">
-                    <InputField name="wrapper" label="Wrapper" placeholder="e.g., Maduro" value={formData.wrapper} />
-                    <InputField name="binder" label="Binder" placeholder="e.g., Nicaraguan" value={formData.binder} />
+                    <InputField name="wrapper" label="Wrapper" placeholder="e.g., Maduro" value={formData.wrapper} onChange={handleInputChange} theme={theme} />
+                    <InputField name="binder" label="Binder" placeholder="e.g., Nicaraguan" value={formData.binder} onChange={handleInputChange} theme={theme} />
                 </div>
                  <div className="grid grid-cols-2 gap-4">
-                    <InputField name="filler" label="Filler" placeholder="e.g., Nicaraguan" value={formData.filler} />
-                    <InputField name="country" label="Country" placeholder="e.g., Nicaragua" value={formData.country} />
+                    <InputField name="filler" label="Filler" placeholder="e.g., Nicaraguan" value={formData.filler} onChange={handleInputChange} theme={theme} />
+                    <InputField name="country" label="Country" placeholder="e.g., Nicaragua" value={formData.country} onChange={handleInputChange} theme={theme} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div className="relative">
-                        <InputField name="strength" label="Strength" placeholder="e.g., Full" value={formData.strength} />
+                        <InputField name="strength" label="Strength" placeholder="e.g., Full" value={formData.strength} onChange={handleInputChange} theme={theme} />
                         {strengthSuggestions.length > 0 && (
                             <div className="absolute top-full left-0 right-0 bg-gray-700 border border-gray-600 rounded-b-xl mt-1 z-20 overflow-hidden">
                                 {strengthSuggestions.map(suggestion => (
@@ -1883,11 +1884,11 @@ const AddCigar = ({ navigate, setCigars, humidorId, theme }) => {
                             </div>
                         )}
                     </div>
-                    <InputField name="price" label="Price Paid" placeholder="e.g., 15.50" type="number" value={formData.price} />
+                    <InputField name="price" label="Price Paid" placeholder="e.g., 15.50" type="number" value={formData.price} onChange={handleInputChange} theme={theme} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                    <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} />
-                    <InputField name="quantity" label="Quantity" placeholder="e.g., 5" type="number" value={formData.quantity} />
+                    <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} onChange={handleInputChange} theme={theme} />
+                    <InputField name="quantity" label="Quantity" placeholder="e.g., 5" type="number" value={formData.quantity} onChange={handleInputChange} theme={theme} />
                 </div>
 
                 <div className="pt-4 flex space-x-4">
@@ -1909,7 +1910,7 @@ const AddCigar = ({ navigate, setCigars, humidorId, theme }) => {
     );
 };
 
-const EditCigar = ({ navigate, setCigars, cigar }) => {
+const EditCigar = ({ navigate, setCigars, cigar, theme }) => {
     const [formData, setFormData] = useState(cigar);
     const [strengthSuggestions, setStrengthSuggestions] = useState([]);
 
@@ -1937,20 +1938,6 @@ const EditCigar = ({ navigate, setCigars, cigar }) => {
         navigate('CigarDetail', { cigarId: cigar.id });
     };
 
-    const InputField = ({ name, label, placeholder, type = 'text' }) => (
-        <div>
-            <label className="text-sm font-medium text-gray-300 mb-1 block">{label}</label>
-            <input
-                type={type}
-                name={name}
-                placeholder={placeholder}
-                value={formData[name] || ''}
-                onChange={handleInputChange}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg py-2 px-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
-            />
-        </div>
-    );
-
     return (
         <div className="p-4 pb-24">
             <div className="flex items-center mb-6">
@@ -1961,23 +1948,23 @@ const EditCigar = ({ navigate, setCigars, cigar }) => {
             </div>
 
             <div className="space-y-4">
-                <InputField name="brand" label="Brand" placeholder="e.g., Padrón" />
-                <InputField name="name" label="Name / Line" placeholder="e.g., 1964 Anniversary" />
+                <InputField name="brand" label="Brand" placeholder="e.g., Padrón" value={formData.brand} onChange={handleInputChange} theme={theme} />
+                <InputField name="name" label="Name / Line" placeholder="e.g., 1964 Anniversary" value={formData.name} onChange={handleInputChange} theme={theme} />
                 <div className="grid grid-cols-2 gap-4">
-                    <InputField name="shape" label="Shape" placeholder="e.g., Toro" />
-                    <InputField name="size" label="Size" placeholder="e.g., 5.5x50" />
+                    <InputField name="shape" label="Shape" placeholder="e.g., Toro" value={formData.shape} onChange={handleInputChange} theme={theme} />
+                    <InputField name="size" label="Size" placeholder="e.g., 5.5x50" value={formData.size} onChange={handleInputChange} theme={theme} />
                 </div>
                  <div className="grid grid-cols-2 gap-4">
-                    <InputField name="wrapper" label="Wrapper" placeholder="e.g., Maduro" />
-                    <InputField name="binder" label="Binder" placeholder="e.g., Nicaraguan" />
+                    <InputField name="wrapper" label="Wrapper" placeholder="e.g., Maduro" value={formData.wrapper} onChange={handleInputChange} theme={theme} />
+                    <InputField name="binder" label="Binder" placeholder="e.g., Nicaraguan" value={formData.binder} onChange={handleInputChange} theme={theme} />
                 </div>
                  <div className="grid grid-cols-2 gap-4">
-                    <InputField name="filler" label="Filler" placeholder="e.g., Nicaraguan" />
-                    <InputField name="country" label="Country" placeholder="e.g., Nicaragua" />
+                    <InputField name="filler" label="Filler" placeholder="e.g., Nicaraguan" value={formData.filler} onChange={handleInputChange} theme={theme} />
+                    <InputField name="country" label="Country" placeholder="e.g., Nicaragua" value={formData.country} onChange={handleInputChange} theme={theme} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div className="relative">
-                        <InputField name="strength" label="Strength" placeholder="e.g., Full" />
+                        <InputField name="strength" label="Strength" placeholder="e.g., Full" value={formData.strength} onChange={handleInputChange} theme={theme} />
                         {strengthSuggestions.length > 0 && (
                             <div className="absolute top-full left-0 right-0 bg-gray-700 border border-gray-600 rounded-b-xl mt-1 z-20 overflow-hidden">
                                 {strengthSuggestions.map(suggestion => (
@@ -1992,9 +1979,9 @@ const EditCigar = ({ navigate, setCigars, cigar }) => {
                             </div>
                         )}
                     </div>
-                    <InputField name="price" label="Price Paid" placeholder="e.g., 15.50" type="number" />
+                    <InputField name="price" label="Price Paid" placeholder="e.g., 15.50" type="number" value={formData.price} onChange={handleInputChange} theme={theme} />
                 </div>
-                <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" />
+                <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} onChange={handleInputChange} theme={theme} />
 
                 <div className="pt-4 flex space-x-4">
                     <button
@@ -2138,20 +2125,6 @@ const AddHumidor = ({ navigate, setHumidors, theme }) => {
         navigate('HumidorsScreen');
     };
 
-    const InputField = ({ name, label, placeholder, value }) => (
-        <div>
-            <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>{label}</label>
-            <input
-                type="text"
-                name={name}
-                placeholder={placeholder}
-                value={value}
-                onChange={handleInputChange}
-                className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} placeholder-gray-500 focus:outline-none focus:ring-2 ${theme.ring}`}
-            />
-        </div>
-    );
-
     return (
         <div className="p-4 pb-24">
             <div className="flex items-center mb-6">
@@ -2162,11 +2135,11 @@ const AddHumidor = ({ navigate, setHumidors, theme }) => {
             </div>
 
             <div className="space-y-4">
-                <InputField name="name" label="Humidor Name" placeholder="e.g., The Big One" value={formData.name} />
-                <InputField name="description" label="Description" placeholder="e.g., Main aging unit" value={formData.description} />
+                <InputField name="name" label="Humidor Name" placeholder="e.g., The Big One" value={formData.name} onChange={handleInputChange} theme={theme} />
+                <InputField name="description" label="Description" placeholder="e.g., Main aging unit" value={formData.description} onChange={handleInputChange} theme={theme} />
                 <div className="grid grid-cols-2 gap-4">
-                    <InputField name="size" label="Size" placeholder="e.g., 150-count" value={formData.size} />
-                    <InputField name="location" label="Location" placeholder="e.g., Office" value={formData.location} />
+                    <InputField name="size" label="Size" placeholder="e.g., 150-count" value={formData.size} onChange={handleInputChange} theme={theme} />
+                    <InputField name="location" label="Location" placeholder="e.g., Office" value={formData.location} onChange={handleInputChange} theme={theme} />
                 </div>
 
                 <div className="pt-4 flex space-x-4">
@@ -2202,20 +2175,6 @@ const EditHumidor = ({ navigate, setHumidors, humidor, goveeApiKey, theme }) => 
         navigate('MyHumidor', { humidorId: humidor.id });
     };
 
-    const InputField = ({ name, label, placeholder, value }) => (
-        <div>
-            <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>{label}</label>
-            <input
-                type="text"
-                name={name}
-                placeholder={placeholder}
-                value={value}
-                onChange={handleInputChange}
-                className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} placeholder-gray-500 focus:outline-none focus:ring-2 ${theme.ring}`}
-            />
-        </div>
-    );
-
     return (
         <div className="p-4 pb-24">
             <div className="flex items-center mb-6">
@@ -2226,11 +2185,11 @@ const EditHumidor = ({ navigate, setHumidors, humidor, goveeApiKey, theme }) => 
             </div>
 
             <div className="space-y-4">
-                <InputField name="name" label="Humidor Name" placeholder="e.g., The Big One" value={formData.name} />
-                <InputField name="description" label="Description" placeholder="e.g., Main aging unit" value={formData.description} />
+                <InputField name="name" label="Humidor Name" placeholder="e.g., The Big One" value={formData.name} onChange={handleInputChange} theme={theme} />
+                <InputField name="description" label="Description" placeholder="e.g., Main aging unit" value={formData.description} onChange={handleInputChange} theme={theme} />
                 <div className="grid grid-cols-2 gap-4">
-                    <InputField name="size" label="Size" placeholder="e.g., 150-count" value={formData.size} />
-                    <InputField name="location" label="Location" placeholder="e.g., Office" value={formData.location} />
+                    <InputField name="size" label="Size" placeholder="e.g., 150-count" value={formData.size} onChange={handleInputChange} theme={theme} />
+                    <InputField name="location" label="Location" placeholder="e.g., Office" value={formData.location} onChange={handleInputChange} theme={theme} />
                 </div>
                 
                 {/* Govee Integration Section */}
