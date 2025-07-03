@@ -567,7 +567,7 @@ const roxysTips = [
     "The wrapper provides a large part of a cigar's flavor. A darker wrapper often means a sweeter, richer taste.",
     "Pairing a cigar with the right drink can elevate the experience. Try a medium-bodied cigar with a good rum!",
     "Patience is a virtue for a cigar lover. Letting a cigar rest in your humidor for a few weeks after purchase can improve its flavor.",
-    "The 'vitola' of a cigar refers to its size and shape. Different vitolas can offer surprisingly different smoking experiences, even with the same tobacco blend.",
+    "The 'vitola' of a cigar refers to its size and shape. Different vitolas can offer surprisingly different smoking experiences, even with the same tobacco tobacco blend.",
     "Don't inhale cigar smoke! The rich flavors are meant to be savored in your mouth, much like a fine wine.",
     "A good cut is crucial. A dull cutter can tear the wrapper and ruin the draw. Keep your tools sharp!"
 ];
@@ -1690,10 +1690,13 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
     const [selectedCigarIds, setSelectedCigarIds] = useState([]);
     const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
     const [isDeleteHumidorModalOpen, setIsDeleteHumidorModalOpen] = useState(false); // State for humidor delete modal
-    const [isDeleteCigarsModalOpen, setIsDeleteCigarsModalOpen] = useState(false); // NEW: State for selected cigars delete modal
+    const [isDeleteCigarsModalOpen, setIsDeleteCigarsModalOpen] = useState(false); // State for selected cigars delete modal
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false); // NEW: State for export modal
 
     const cigarsInHumidor = cigars.filter(c => c.humidorId === humidor.id);
     const totalQuantity = cigarsInHumidor.reduce((sum, c) => sum + c.quantity, 0);
+    // NEW: Calculate estimated value for cigars in this humidor
+    const humidorValue = cigarsInHumidor.reduce((sum, c) => sum + (c.quantity * c.price), 0);
 
     const handleSearchChange = (e) => {
         const query = e.target.value;
@@ -1786,7 +1789,7 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
         navigate('HumidorsScreen');
     };
 
-    // NEW: Function to handle the confirmed deletion of selected cigars
+    // Function to handle the confirmed deletion of selected cigars
     const handleConfirmDeleteCigars = () => {
         setCigars(prevCigars => prevCigars.filter(cigar => !selectedCigarIds.includes(cigar.id)));
         setIsDeleteCigarsModalOpen(false);
@@ -1815,7 +1818,7 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
                 otherHumidors={humidors.filter(h => h.id !== humidor.id)}
                 theme={theme}
             />
-            {/* NEW: Render the DeleteCigarsModal */}
+            {/* Render the DeleteCigarsModal */}
             <DeleteCigarsModal
                 isOpen={isDeleteCigarsModalOpen}
                 onClose={() => setIsDeleteCigarsModalOpen(false)}
@@ -1823,6 +1826,13 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
                 count={selectedCigarIds.length}
                 theme={theme}
             />
+            {/* NEW: Render the ExportModal for current humidor's cigars */}
+            {isExportModalOpen && (
+                <ExportModal
+                    cigars={cigarsInHumidor} // Pass only cigars in the current humidor
+                    onClose={() => setIsExportModalOpen(false)}
+                />
+            )}
 
             <div className="flex items-center mb-4">
                 {/* Back button to return to the list of humidors */}
@@ -1850,6 +1860,14 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
                     <Plus className="w-5 h-5" />
                     <span className="text-xs font-medium">Add Cigar</span>
                 </button>
+                {/* NEW: Export Button for current humidor */}
+                <button 
+                    onClick={() => setIsExportModalOpen(true)} 
+                    className="flex-1 flex flex-col items-center gap-1 text-gray-300 hover:text-green-400 transition-colors"
+                >
+                    <Download className="w-5 h-5" />
+                    <span className="text-xs font-medium">Export</span>
+                </button>
                 {/* UPDATED: Delete button now opens the humidor delete modal */}
                 <button 
                     onClick={() => setIsDeleteHumidorModalOpen(true)} 
@@ -1860,6 +1878,33 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
                 </button>
             </div>
             
+            {/* NEW: Display Temperature, Humidity, and Estimated Cost */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="flex items-center space-x-2 bg-gray-800/50 p-3 rounded-xl">
+                    <Droplets className="w-6 h-6 text-blue-400" />
+                    <div>
+                        <p className="text-sm text-gray-400">Humidity</p>
+                        <p className="font-bold text-white text-lg">{humidor.humidity}%</p>
+                    </div>
+                </div>
+                <div className="flex items-center space-x-2 bg-gray-800/50 p-3 rounded-xl">
+                    <Thermometer className="w-6 h-6 text-red-400" />
+                    <div>
+                        <p className="text-sm text-gray-400">Temperature</p>
+                        <p className="font-bold text-white text-lg">{humidor.temp}°F</p>
+                    </div>
+                </div>
+                <div className="col-span-2 flex items-center space-x-2 bg-gray-800/50 p-3 rounded-xl">
+                    {/* A custom SVG icon for the dollar sign, as it's not in the lucide-react library. */}
+                    <svg className="w-6 h-6 text-green-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    <div>
+                        <p className="text-sm text-gray-400">Estimated Value</p>
+                        <p className="font-bold text-white text-lg">${humidorValue.toFixed(2)}</p>
+                    </div>
+                </div>
+            </div>
+
+
             <div className="flex items-center mb-4 gap-4">
                 <div className="relative flex-grow">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
