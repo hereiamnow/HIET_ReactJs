@@ -1906,7 +1906,8 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
             </div>
 
 
-            <div className="flex items-center mb-4 gap-4">
+            {/* Consolidated Search, View Mode, and Select/Cancel buttons */}
+            <div className="flex items-center mb-4 gap-2"> {/* Reduced gap for compactness */}
                 <div className="relative flex-grow">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <input type="text" placeholder="Search this humidor..." value={searchQuery} onChange={handleSearchChange}
@@ -1925,7 +1926,7 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
                         </div>
                     )}
                 </div>
-                <div className="flex bg-gray-800 border border-gray-700 rounded-full p-1">
+                <div className="flex bg-gray-800 border border-gray-700 rounded-full p-1 flex-shrink-0"> {/* Added flex-shrink-0 */}
                     <button onClick={() => setViewMode('grid')} className={`p-2 rounded-full transition-colors duration-200 ${viewMode === 'grid' ? 'bg-amber-500 text-white' : 'text-gray-400'}`}>
                         <LayoutGrid className="w-5 h-5" />
                     </button>
@@ -1933,18 +1934,18 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
                         <List className="w-5 h-5" />
                     </button>
                 </div>
+                {/* Moved Select/Cancel button here */}
+                <button onClick={handleToggleSelectMode} className="flex items-center gap-2 bg-gray-700 text-white font-bold text-sm px-4 py-2 rounded-full hover:bg-gray-600 transition-colors flex-shrink-0"> {/* Added flex-shrink-0 */}
+                    {isSelectMode ? <X className="w-4 h-4"/> : <Check className="w-4 h-4" />}
+                    {isSelectMode ? 'Cancel' : 'Select'}
+                </button>
             </div>
 
+            {/* Moved cigar counts here, below the consolidated search/view/select row */}
             <div className="flex justify-between items-center mb-6 px-2">
                 <div>
                     <p className="text-sm text-gray-300"><span className="font-bold text-white">{filteredCigars.length}</span> Unique</p>
                     <p className="text-xs text-gray-400"><span className="font-bold text-gray-200">{totalQuantity}</span> Total Cigars</p>
-                </div>
-                <div>
-                    <button onClick={handleToggleSelectMode} className="flex items-center gap-2 bg-gray-700 text-white font-bold text-sm px-4 py-2 rounded-full hover:bg-gray-600 transition-colors">
-                        {isSelectMode ? <X className="w-4 h-4"/> : <Check className="w-4 h-4" />}
-                        {isSelectMode ? 'Cancel' : 'Select'}
-                    </button>
                 </div>
             </div>
 
