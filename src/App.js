@@ -3,7 +3,7 @@
 // useState, useEffect, and useMemo are "hooks" that let us use state and other React features in functional components.
 import React, { useState, useEffect, useMemo } from 'react';
 // lucide-react provides a set of clean, modern icons used throughout the app.
-import { Thermometer, Droplets, Bell, Plus, Search, X, ChevronLeft, Image as ImageIcon, Star, Wind, Coffee, GlassWater, LoaderCircle, Sparkles, Box, Briefcase, LayoutGrid, List, BookOpen, Leaf, Flame, MapPin, Tag, Minus, Edit, Trash2, Upload, Link2, Settings, User, Database, Info, Download, UploadCloud, ChevronDown, Shield, FileText, LogOut, Palette, BarChart2, TrendingUp, PieChart as PieChartIcon, Move, Check, Zap } from 'lucide-react';
+import { Thermometer, Droplets, Bell, Plus, Search, X, ChevronLeft, Image as ImageIcon, Star, Wind, Coffee, GlassWater, LoaderCircle, Sparkles, Box, Briefcase, LayoutGrid, List, BookOpen, Leaf, Flame, MapPin, Tag, Minus, Edit, Trash2, Upload, Link2, Settings, User, Database, Info, Download, UploadCloud, ChevronDown, Shield, FileText, LogOut, Palette, BarChart2, TrendingUp, PieChart as PieChartIcon, Move, Check, Zap, AlertTriangle } from 'lucide-react';
 // recharts is a library for creating the charts (bar, line, pie) on the dashboard.
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -513,7 +513,7 @@ const initialMockCigars = [
   },
   {
     "id": 25,
-    "humidorId": 1,
+    "humidorId": 2,
     "name": "Romeo y Julieta Viejo R",
     "brand": "Romeo y Julieta",
     "shape": "Robusto",
@@ -531,7 +531,7 @@ const initialMockCigars = [
   },
   {
     "id": 26,
-    "humidorId": 1,
+    "humidorId": 2,
     "name": "Saison by Oliva Robusto",
     "brand": "Oliva Cigars",
     "shape": "Robusto",
@@ -573,6 +573,29 @@ const roxysTips = [
 ];
 
 // --- HELPER & UI COMPONENTS ---
+
+/**
+ * A helper function to trigger a file download in the browser.
+ * This is used for exporting data.
+ * @param {object} options - The options for the download.
+ * @param {string} options.data - The data to be downloaded.
+ * @param {string} options.fileName - The name of the file.
+ * @param {string} options.fileType - The MIME type of the file.
+ */
+const downloadFile = ({ data, fileName, fileType }) => {
+    const blob = new Blob([data], { type: fileType });
+    const a = document.createElement('a');
+    a.download = fileName;
+    a.href = window.URL.createObjectURL(blob);
+    const clickEvt = new MouseEvent('click', {
+        view: window,
+        bubbles: true,
+        cancelable: true,
+    });
+    a.dispatchEvent(clickEvt);
+    a.remove();
+};
+
 
 /**
  * A helper function to determine the color of a flavor tag based on the note.
@@ -939,6 +962,138 @@ const MoveCigarsModal = ({ onClose, onMove, destinationHumidors, theme }) => {
                             Move
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- NEW COMPONENT: DeleteHumidorModal ---
+/**
+ * A modal for confirming the deletion of a humidor. It provides options for handling
+ * any cigars within the humidor, such as moving them or exporting them.
+ */
+const DeleteHumidorModal = ({ isOpen, onClose, onConfirm, humidor, cigarsInHumidor, otherHumidors, theme }) => {
+    const [deleteAction, setDeleteAction] = useState('move'); // 'move', 'export', 'deleteAll'
+    const [destinationHumidorId, setDestinationHumidorId] = useState(otherHumidors[0]?.id || '');
+
+    // Reset state when the modal is closed or the humidor changes
+    useEffect(() => {
+        if (isOpen) {
+            setDeleteAction(otherHumidors.length > 0 ? 'move' : 'deleteAll');
+            setDestinationHumidorId(otherHumidors[0]?.id || '');
+        }
+    }, [isOpen, otherHumidors]);
+
+    if (!isOpen) return null;
+
+    const hasCigars = cigarsInHumidor.length > 0;
+    const hasOtherHumidors = otherHumidors.length > 0;
+
+    const handleConfirm = () => {
+        onConfirm({
+            action: hasCigars ? deleteAction : 'deleteEmpty',
+            destinationHumidorId: deleteAction === 'move' ? parseInt(destinationHumidorId) : null,
+        });
+    };
+    
+    const exportToCsv = () => {
+        let headers = ['id,name,brand,shape,size,country,wrapper,binder,filler,strength,flavorNotes,rating,quantity,price'];
+        let usersCsv = cigarsInHumidor.reduce((acc, cigar) => {
+            const { id, name, brand, shape, size, country, wrapper, binder, filler, strength, flavorNotes, rating, quantity, price } = cigar;
+            acc.push([id, name, brand, shape, size, country, wrapper, binder, filler, strength, `"${flavorNotes.join(';')}"`, rating, quantity, price].join(','));
+            return acc;
+        }, []);
+        downloadFile({
+            data: [...headers, ...usersCsv].join('\n'),
+            fileName: `${humidor.name}_export.csv`,
+            fileType: 'text/csv',
+        });
+    };
+
+    const exportToJson = () => {
+        downloadFile({
+            data: JSON.stringify(cigarsInHumidor, null, 2),
+            fileName: `${humidor.name}_export.json`,
+            fileType: 'application/json',
+        });
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100]" onClick={onClose}>
+            <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-md flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-xl font-bold text-red-400 flex items-center"><AlertTriangle className="w-5 h-5 mr-2"/> Delete Humidor</h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button>
+                </div>
+                <p className="text-gray-300 mb-4">Are you sure you want to delete <span className="font-bold text-white">"{humidor.name}"</span>?</p>
+                
+                {hasCigars ? (
+                    <div className="space-y-4">
+                        <div className="bg-red-900/40 border border-red-700 p-3 rounded-lg">
+                            <p className="text-sm text-red-200">This humidor contains <span className="font-bold">{cigarsInHumidor.length}</span> cigar(s). Please choose what to do with them.</p>
+                        </div>
+
+                        {/* Action selection */}
+                        <div className="space-y-2">
+                           {hasOtherHumidors && (
+                             <label className={`flex items-center p-3 rounded-lg cursor-pointer ${deleteAction === 'move' ? 'bg-amber-600/30 border-amber-500' : 'bg-gray-700/50 border-gray-600'} border`}>
+                                <input type="radio" name="deleteAction" value="move" checked={deleteAction === 'move'} onChange={(e) => setDeleteAction(e.target.value)} className="hidden" />
+                                <Move className="w-5 h-5 mr-3 text-amber-400"/>
+                                <div>
+                                    <p className="font-bold text-white">Move Cigars</p>
+                                    <p className="text-xs text-gray-300">Move cigars to another humidor.</p>
+                                </div>
+                            </label>
+                           )}
+                            <label className={`flex items-center p-3 rounded-lg cursor-pointer ${deleteAction === 'export' ? 'bg-amber-600/30 border-amber-500' : 'bg-gray-700/50 border-gray-600'} border`}>
+                                <input type="radio" name="deleteAction" value="export" checked={deleteAction === 'export'} onChange={(e) => setDeleteAction(e.target.value)} className="hidden" />
+                                <Download className="w-5 h-5 mr-3 text-amber-400"/>
+                                <div>
+                                    <p className="font-bold text-white">Export and Delete</p>
+                                    <p className="text-xs text-gray-300">Save cigar data to a file, then delete.</p>
+                                </div>
+                            </label>
+                            <label className={`flex items-center p-3 rounded-lg cursor-pointer ${deleteAction === 'deleteAll' ? 'bg-red-600/30 border-red-500' : 'bg-gray-700/50 border-gray-600'} border`}>
+                                <input type="radio" name="deleteAction" value="deleteAll" checked={deleteAction === 'deleteAll'} onChange={(e) => setDeleteAction(e.target.value)} className="hidden" />
+                                <Trash2 className="w-5 h-5 mr-3 text-red-400"/>
+                                <div>
+                                    <p className="font-bold text-white">Delete Everything</p>
+                                    <p className="text-xs text-gray-300">Permanently delete humidor and all cigars inside.</p>
+                                </div>
+                            </label>
+                        </div>
+
+                        {/* Action-specific options */}
+                        {deleteAction === 'move' && hasOtherHumidors && (
+                            <div className="pl-4 border-l-2 border-amber-500 ml-3">
+                                <label className="text-sm font-medium text-gray-300 mb-1 block">Destination Humidor</label>
+                                <select value={destinationHumidorId} onChange={(e) => setDestinationHumidorId(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white">
+                                    {otherHumidors.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+                                </select>
+                            </div>
+                        )}
+                         {deleteAction === 'export' && (
+                            <div className="pl-4 border-l-2 border-amber-500 ml-3 flex gap-2">
+                               <button onClick={exportToCsv} className="flex-1 text-sm flex items-center justify-center gap-2 bg-green-600/80 text-white font-bold py-2 rounded-lg hover:bg-green-700 transition-colors">Export CSV</button>
+                               <button onClick={exportToJson} className="flex-1 text-sm flex items-center justify-center gap-2 bg-blue-600/80 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition-colors">Export JSON</button>
+                            </div>
+                        )}
+                         {deleteAction === 'deleteAll' && (
+                             <div className="pl-4 border-l-2 border-red-500 ml-3 text-sm text-red-300">
+                                This action cannot be undone. All associated cigar data will be lost forever.
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <p className="text-sm text-gray-400">This action cannot be undone.</p>
+                )}
+
+                <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-gray-700">
+                    <button onClick={onClose} className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors">Cancel</button>
+                    <button onClick={handleConfirm} disabled={deleteAction === 'move' && !destinationHumidorId} className="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors disabled:bg-red-800 disabled:cursor-not-allowed">
+                        Confirm
+                    </button>
                 </div>
             </div>
         </div>
@@ -1455,6 +1610,7 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
     const [isSelectMode, setIsSelectMode] = useState(false);
     const [selectedCigarIds, setSelectedCigarIds] = useState([]);
     const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // New state for delete modal
 
     const cigarsInHumidor = cigars.filter(c => c.humidorId === humidor.id);
     const totalQuantity = cigarsInHumidor.reduce((sum, c) => sum + c.quantity, 0);
@@ -1516,18 +1672,40 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
         navigate('MyHumidor', { humidorId: destinationHumidorId });
     };
 
-    // Function to handle deleting the current humidor
-    const handleDeleteHumidor = () => {
-        // Confirm with the user before deleting a humidor and its associated cigars.
-        if (window.confirm(`Are you sure you want to delete "${humidor.name}"? All ${cigarsInHumidor.length} cigars in this humidor will also be deleted.`)) {
-            // Remove the humidor from the list of humidors
-            setHumidors(prevHumidors => prevHumidors.filter(h => h.id !== humidor.id));
-            // Remove all cigars associated with this humidor
-            setCigars(prevCigars => prevCigars.filter(c => c.humidorId !== humidor.id));
-            // Navigate back to the main Humidors screen after deletion
-            navigate('HumidorsScreen');
+    // --- NEW: Function to handle the confirmed deletion from the modal ---
+    const handleConfirmDelete = ({ action, destinationHumidorId }) => {
+        switch (action) {
+            case 'move':
+                // Move cigars to the selected destination
+                setCigars(prevCigars =>
+                    prevCigars.map(cigar =>
+                        cigar.humidorId === humidor.id
+                            ? { ...cigar, humidorId: destinationHumidorId }
+                            : cigar
+                    )
+                );
+                break;
+            case 'export':
+            case 'deleteAll':
+                // Delete all cigars associated with this humidor
+                setCigars(prevCigars => prevCigars.filter(c => c.humidorId !== humidor.id));
+                break;
+            case 'deleteEmpty':
+                // No cigars to worry about, just delete the humidor
+                break;
+            default:
+                // Do nothing if action is unknown
+                return;
         }
+
+        // In all cases, delete the humidor itself
+        setHumidors(prevHumidors => prevHumidors.filter(h => h.id !== humidor.id));
+        
+        // Close the modal and navigate back to the main Humidors screen
+        setIsDeleteModalOpen(false);
+        navigate('HumidorsScreen');
     };
+
 
     return (
         <div className="p-4 pb-24">
@@ -1539,6 +1717,17 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
                     theme={theme}
                 />
             )}
+            {/* --- NEW: Render the DeleteHumidorModal --- */}
+            <DeleteHumidorModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                humidor={humidor}
+                cigarsInHumidor={cigarsInHumidor}
+                otherHumidors={humidors.filter(h => h.id !== humidor.id)}
+                theme={theme}
+            />
+
             <div className="flex items-center mb-4">
                 {/* Back button to return to the list of humidors */}
                 <button onClick={() => navigate('HumidorsScreen')} className="p-2 -ml-2 flex-shrink-0">
@@ -1565,9 +1754,9 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
                     <Plus className="w-5 h-5" />
                     <span className="text-xs font-medium">Add Cigar</span>
                 </button>
-                {/* Button to delete the current humidor */}
+                {/* --- UPDATED: Delete button now opens the modal --- */}
                 <button 
-                    onClick={handleDeleteHumidor} 
+                    onClick={() => setIsDeleteModalOpen(true)} 
                     className="flex-1 flex flex-col items-center gap-1 text-gray-300 hover:text-red-500 transition-colors"
                 >
                     <Trash2 className="w-5 h-5" />
@@ -2456,21 +2645,6 @@ const ImportCsvModal = ({ humidors, setCigars, onClose, navigate }) => {
 };
 
 const ExportModal = ({ cigars, onClose }) => {
-    // Helper function to trigger a file download in the browser.
-    const downloadFile = ({ data, fileName, fileType }) => {
-        const blob = new Blob([data], { type: fileType });
-        const a = document.createElement('a');
-        a.download = fileName;
-        a.href = window.URL.createObjectURL(blob);
-        const clickEvt = new MouseEvent('click', {
-            view: window,
-            bubbles: true,
-            cancelable: true,
-        });
-        a.dispatchEvent(clickEvt);
-        a.remove();
-    };
-
     const exportToCsv = () => {
         let headers = ['id,name,brand,shape,size,country,wrapper,binder,filler,strength,flavorNotes,rating,quantity,price'];
         let usersCsv = cigars.reduce((acc, cigar) => {
