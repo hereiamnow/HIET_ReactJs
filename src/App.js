@@ -2297,19 +2297,21 @@ const AddCigar = ({ navigate, setCigars, humidorId, theme }) => {
             </div>
 
             <div className="space-y-4">
+                {/* Changes Start Here: Increased size of the image upload placeholder */}
                 <div className="flex justify-center mb-4">
                     <input type="file" ref={fileInputRef} onChange={handleImageUpload} style={{ display: 'none' }} accept="image/*" />
-                    <button onClick={() => fileInputRef.current.click()} className="w-32 h-40 bg-gray-800 border-2 border-dashed border-gray-600 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:bg-gray-700 hover:border-amber-500 transition-colors overflow-hidden">
+                    <button onClick={() => fileInputRef.current.click()} className="w-48 h-64 bg-gray-800 border-2 border-dashed border-gray-600 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:bg-gray-700 hover:border-amber-500 transition-colors overflow-hidden">
                         {imagePreview ? (
                             <img src={imagePreview} alt="Preview" className="w-full h-full object-cover"/>
                         ) : (
                             <>
-                                <ImageIcon className="w-10 h-10 mb-2" />
-                                <span className="text-xs text-center">Upload Image</span>
+                                <ImageIcon className="w-12 h-12 mb-2" /> {/* Increased icon size */}
+                                <span className="text-sm text-center">Upload Image</span> {/* Adjusted text size */}
                             </>
                         )}
                     </button>
                 </div>
+                {/* Changes End Here */}
                 
                 <InputField name="name" label="Name / Line" placeholder="e.g., 1964 Anniversary" value={formData.name} onChange={handleInputChange} theme={theme} />
                 
@@ -2436,16 +2438,16 @@ const EditCigar = ({ navigate, setCigars, cigar, theme }) => {
             </div>
 
             <div className="space-y-4">
-                {/* Image Upload Section */}
+                {/* Changes Start Here: Increased size of the image upload placeholder */}
                 <div className="flex justify-center mb-4">
                     <input type="file" ref={fileInputRef} onChange={handleImageUpload} style={{ display: 'none' }} accept="image/*" />
-                    <button onClick={() => fileInputRef.current.click()} className="w-32 h-40 bg-gray-800 border-2 border-dashed border-gray-600 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:bg-gray-700 hover:border-amber-500 transition-colors overflow-hidden">
+                    <button onClick={() => fileInputRef.current.click()} className="w-48 h-64 bg-gray-800 border-2 border-dashed border-gray-600 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:bg-gray-700 hover:border-amber-500 transition-colors overflow-hidden">
                         {imagePreview ? (
                             <img src={imagePreview} alt="Cigar Preview" className="w-full h-full object-cover"/>
                         ) : (
                             <>
-                                <ImageIcon className="w-10 h-10 mb-2" />
-                                <span className="text-xs text-center">Upload Image</span>
+                                <ImageIcon className="w-12 h-12 mb-2" /> {/* Increased icon size */}
+                                <span className="text-sm text-center">Upload Image</span> {/* Adjusted text size */}
                             </>
                         )}
                     </button>
@@ -2458,6 +2460,7 @@ const EditCigar = ({ navigate, setCigars, cigar, theme }) => {
                         <Trash2 className="w-4 h-4"/> Remove Image
                     </button>
                 )}
+                {/* Changes End Here */}
 
                 <InputField name="brand" label="Brand" placeholder="e.g., Padrón" value={formData.brand} onChange={handleInputChange} theme={theme} />
                 <InputField name="name" label="Name / Line" placeholder="e.g., 1964 Anniversary" value={formData.name} onChange={handleInputChange} theme={theme} />
