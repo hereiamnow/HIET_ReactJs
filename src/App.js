@@ -1448,7 +1448,7 @@ const HumidorsScreen = ({ navigate, cigars, humidors }) => {
     );
 };
 
-const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, theme }) => {
+const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors, theme }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [suggestions, setSuggestions] = useState([]);
     const [viewMode, setViewMode] = useState('list'); // 'list' or 'grid'
@@ -1516,6 +1516,19 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, theme }) =>
         navigate('MyHumidor', { humidorId: destinationHumidorId });
     };
 
+    // Function to handle deleting the current humidor
+    const handleDeleteHumidor = () => {
+        // Confirm with the user before deleting a humidor and its associated cigars.
+        if (window.confirm(`Are you sure you want to delete "${humidor.name}"? All ${cigarsInHumidor.length} cigars in this humidor will also be deleted.`)) {
+            // Remove the humidor from the list of humidors
+            setHumidors(prevHumidors => prevHumidors.filter(h => h.id !== humidor.id));
+            // Remove all cigars associated with this humidor
+            setCigars(prevCigars => prevCigars.filter(c => c.humidorId !== humidor.id));
+            // Navigate back to the main Humidors screen after deletion
+            navigate('HumidorsScreen');
+        }
+    };
+
     return (
         <div className="p-4 pb-24">
              {isMoveModalOpen && (
@@ -1526,14 +1539,39 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, theme }) =>
                     theme={theme}
                 />
             )}
-            {/* FIXED: Corrected the layout for the header to ensure the edit button is always visible. */}
-            <div className="flex items-center mb-6">
+            <div className="flex items-center mb-4">
+                {/* Back button to return to the list of humidors */}
                 <button onClick={() => navigate('HumidorsScreen')} className="p-2 -ml-2 flex-shrink-0">
                     <ChevronLeft className="w-7 h-7 text-white" />
                 </button>
+                {/* Humidor name, truncated if too long */}
                 <h1 className="text-3xl font-bold text-white truncate flex-grow mx-2">{humidor.name}</h1>
-                <button onClick={() => navigate('EditHumidor', { humidorId: humidor.id })} className="p-2 flex-shrink-0">
-                    <Edit className="w-5 h-5 text-gray-400 hover:text-white" />
+            </div>
+            {/* Toolbar for humidor actions */}
+            <div className="flex justify-around items-center bg-gray-800/50 p-3 rounded-xl mb-6">
+                {/* Button to navigate to the Edit Humidor screen */}
+                <button 
+                    onClick={() => navigate('EditHumidor', { humidorId: humidor.id })} 
+                    className="flex-1 flex flex-col items-center gap-1 text-gray-300 hover:text-amber-400 transition-colors"
+                >
+                    <Edit className="w-5 h-5" />
+                    <span className="text-xs font-medium">Edit</span>
+                </button>
+                {/* Button to navigate to the Add Cigar screen for this humidor */}
+                <button 
+                    onClick={() => navigate('AddCigar', { humidorId: humidor.id })} 
+                    className="flex-1 flex flex-col items-center gap-1 text-gray-300 hover:text-amber-400 transition-colors"
+                >
+                    <Plus className="w-5 h-5" />
+                    <span className="text-xs font-medium">Add Cigar</span>
+                </button>
+                {/* Button to delete the current humidor */}
+                <button 
+                    onClick={handleDeleteHumidor} 
+                    className="flex-1 flex flex-col items-center gap-1 text-gray-300 hover:text-red-500 transition-colors"
+                >
+                    <Trash2 className="w-5 h-5" />
+                    <span className="text-xs font-medium">Delete</span>
                 </button>
             </div>
             
@@ -2634,7 +2672,9 @@ export default function App() {
                 return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} theme={theme} />;
             case 'MyHumidor':
                 const humidor = humidors.find(h => h.id === params.humidorId);
-                return <MyHumidor humidor={humidor} navigate={navigate} cigars={cigars} setCigars={setCigars} humidors={humidors} theme={theme} />;
+                // Ensure humidor exists before rendering
+                if (!humidor) return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} theme={theme} />; 
+                return <MyHumidor humidor={humidor} navigate={navigate} cigars={cigars} setCigars={setCigars} humidors={humidors} setHumidors={setHumidors} theme={theme} />;
             case 'CigarDetail':
                 const cigar = cigars.find(c => c.id === params.cigarId);
                 if (!cigar) return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} theme={theme} />; // Fallback
