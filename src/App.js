@@ -212,7 +212,7 @@ const initialMockCigars = [
     "brand": "Man Made",
     "shape": "Toro",
     "size": "6\"x50",
-    "country": "Nicaragua", // Fixed: Removed extra double quote before "country"
+    "country": "Nicaragua",
     "wrapper": "Habano",
     "binder": "Nicaraguan",
     "filler": "Nicaraguan",
@@ -1100,6 +1100,33 @@ const DeleteHumidorModal = ({ isOpen, onClose, onConfirm, humidor, cigarsInHumid
     );
 };
 
+/**
+ * NEW COMPONENT: DeleteCigarsModal
+ * A modal for confirming the deletion of multiple selected cigars.
+ */
+const DeleteCigarsModal = ({ isOpen, onClose, onConfirm, count, theme }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100]" onClick={onClose}>
+            <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-sm flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-xl font-bold text-red-400 flex items-center"><AlertTriangle className="w-5 h-5 mr-2"/> Delete Cigars</h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button>
+                </div>
+                <p className="text-gray-300 mb-4">Are you sure you want to delete <span className="font-bold text-white">{count}</span> selected cigar(s)? This action cannot be undone.</p>
+                
+                <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-gray-700">
+                    <button onClick={onClose} className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors">Cancel</button>
+                    <button onClick={onConfirm} className="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors">
+                        Confirm Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 // --- API CALL ---
 /**
@@ -1634,7 +1661,8 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
     const [isSelectMode, setIsSelectMode] = useState(false);
     const [selectedCigarIds, setSelectedCigarIds] = useState([]);
     const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // New state for delete modal
+    const [isDeleteHumidorModalOpen, setIsDeleteHumidorModalOpen] = useState(false); // State for humidor delete modal
+    const [isDeleteCigarsModalOpen, setIsDeleteCigarsModalOpen] = useState(false); // NEW: State for selected cigars delete modal
 
     const cigarsInHumidor = cigars.filter(c => c.humidorId === humidor.id);
     const totalQuantity = cigarsInHumidor.reduce((sum, c) => sum + c.quantity, 0);
@@ -1696,8 +1724,8 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
         navigate('MyHumidor', { humidorId: destinationHumidorId });
     };
 
-    // --- NEW: Function to handle the confirmed deletion from the modal ---
-    const handleConfirmDelete = ({ action, destinationHumidorId }) => {
+    // Function to handle the confirmed deletion of the humidor from its modal
+    const handleConfirmDeleteHumidor = ({ action, destinationHumidorId }) => {
         switch (action) {
             case 'move':
                 // Move cigars to the selected destination
@@ -1726,8 +1754,16 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
         setHumidors(prevHumidors => prevHumidors.filter(h => h.id !== humidor.id));
         
         // Close the modal and navigate back to the main Humidors screen
-        setIsDeleteModalOpen(false);
+        setIsDeleteHumidorModalOpen(false);
         navigate('HumidorsScreen');
+    };
+
+    // NEW: Function to handle the confirmed deletion of selected cigars
+    const handleConfirmDeleteCigars = () => {
+        setCigars(prevCigars => prevCigars.filter(cigar => !selectedCigarIds.includes(cigar.id)));
+        setIsDeleteCigarsModalOpen(false);
+        setIsSelectMode(false);
+        setSelectedCigarIds([]);
     };
 
 
@@ -1741,14 +1777,22 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
                     theme={theme}
                 />
             )}
-            {/* --- NEW: Render the DeleteHumidorModal --- */}
+            {/* Render the DeleteHumidorModal */}
             <DeleteHumidorModal
-                isOpen={isDeleteModalOpen}
-                onClose={() => setIsDeleteModalOpen(false)}
-                onConfirm={handleConfirmDelete}
+                isOpen={isDeleteHumidorModalOpen}
+                onClose={() => setIsDeleteHumidorModalOpen(false)}
+                onConfirm={handleConfirmDeleteHumidor}
                 humidor={humidor}
                 cigarsInHumidor={cigarsInHumidor}
                 otherHumidors={humidors.filter(h => h.id !== humidor.id)}
+                theme={theme}
+            />
+            {/* NEW: Render the DeleteCigarsModal */}
+            <DeleteCigarsModal
+                isOpen={isDeleteCigarsModalOpen}
+                onClose={() => setIsDeleteCigarsModalOpen(false)}
+                onConfirm={handleConfirmDeleteCigars}
+                count={selectedCigarIds.length}
                 theme={theme}
             />
 
@@ -1778,9 +1822,9 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
                     <Plus className="w-5 h-5" />
                     <span className="text-xs font-medium">Add Cigar</span>
                 </button>
-                {/* --- UPDATED: Delete button now opens the modal --- */}
+                {/* UPDATED: Delete button now opens the humidor delete modal */}
                 <button 
-                    onClick={() => setIsDeleteModalOpen(true)} 
+                    onClick={() => setIsDeleteHumidorModalOpen(true)} 
                     className="flex-1 flex flex-col items-center gap-1 text-gray-300 hover:text-red-500 transition-colors"
                 >
                     <Trash2 className="w-5 h-5" />
@@ -1848,10 +1892,15 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
             </div>
             {/* This bar appears at the bottom when in select mode and at least one cigar is selected */}
             {isSelectMode && selectedCigarIds.length > 0 && (
-                <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-md px-4">
-                    <button onClick={() => setIsMoveModalOpen(true)} className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-full hover:bg-amber-600 transition-colors shadow-lg">
+                <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-md px-4 flex gap-2"> {/* Added flex and gap for buttons */}
+                    <button onClick={() => setIsMoveModalOpen(true)} className="flex-1 flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-full hover:bg-amber-600 transition-colors shadow-lg">
                         <Move className="w-5 h-5"/>
-                        Move Selected ({selectedCigarIds.length})
+                        Move ({selectedCigarIds.length})
+                    </button>
+                    {/* NEW: Delete Selected button */}
+                    <button onClick={() => setIsDeleteCigarsModalOpen(true)} className="flex-1 flex items-center justify-center gap-2 bg-red-600 text-white font-bold py-3 rounded-full hover:bg-red-700 transition-colors shadow-lg">
+                        <Trash2 className="w-5 h-5"/>
+                        Delete ({selectedCigarIds.length})
                     </button>
                 </div>
             )}
