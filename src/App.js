@@ -2615,7 +2615,7 @@ export default function App() {
      * so they can change screens.
      * @param {string} screen - The name of the screen to navigate to.
      * @param {object} params - Any data to pass to the new screen.
-     */
+     */ 
     const navigate = (screen, params = {}) => {
         window.scrollTo(0, 0); // Scroll to the top of the page on every navigation.
         setNavigation({ screen, params });
