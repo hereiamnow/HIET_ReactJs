@@ -1127,6 +1127,59 @@ const DeleteCigarsModal = ({ isOpen, onClose, onConfirm, count, theme }) => {
     );
 };
 
+/**
+ * NEW COMPONENT: ManualReadingModal
+ * A modal for manually inputting temperature and humidity readings for a humidor.
+ */
+const ManualReadingModal = ({ isOpen, onClose, onSave, initialTemp, initialHumidity, theme }) => {
+    const [temp, setTemp] = useState(initialTemp);
+    const [humidity, setHumidity] = useState(initialHumidity);
+
+    if (!isOpen) return null;
+
+    const handleSave = () => {
+        onSave(parseFloat(temp), parseFloat(humidity));
+        onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100]" onClick={onClose}>
+            <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-sm flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-bold text-amber-400 flex items-center"><Thermometer className="w-5 h-5 mr-2"/> Take Manual Reading</h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button>
+                </div>
+                <div className="space-y-4">
+                    <div>
+                        <label className="text-sm font-medium text-gray-300 mb-1 block">Temperature (°F)</label>
+                        <input
+                            type="number"
+                            value={temp}
+                            onChange={(e) => setTemp(e.target.value)}
+                            className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            placeholder="e.g., 68"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-sm font-medium text-gray-300 mb-1 block">Humidity (%)</label>
+                        <input
+                            type="number"
+                            value={humidity}
+                            onChange={(e) => setHumidity(e.target.value)}
+                            className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            placeholder="e.g., 70"
+                        />
+                    </div>
+                </div>
+                <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-gray-700">
+                    <button onClick={onClose} className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors">Cancel</button>
+                    <button onClick={handleSave} className="bg-amber-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-amber-600 transition-colors">Save Reading</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 // --- API CALL ---
 /**
@@ -1692,6 +1745,7 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
     const [isDeleteHumidorModalOpen, setIsDeleteHumidorModalOpen] = useState(false); // State for humidor delete modal
     const [isDeleteCigarsModalOpen, setIsDeleteCigarsModalOpen] = useState(false); // State for selected cigars delete modal
     const [isExportModalOpen, setIsExportModalOpen] = useState(false); // State for export modal
+    const [isManualReadingModalOpen, setIsManualReadingModalOpen] = useState(false); // NEW: State for manual reading modal
 
     const cigarsInHumidor = cigars.filter(c => c.humidorId === humidor.id);
     const totalQuantity = cigarsInHumidor.reduce((sum, c) => sum + c.quantity, 0);
@@ -1797,6 +1851,16 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
         setSelectedCigarIds([]);
     };
 
+    // NEW: Function to handle saving manual reading from the modal
+    const handleSaveManualReading = (newTemp, newHumidity) => {
+        setHumidors(prevHumidors =>
+            prevHumidors.map(h =>
+                h.id === humidor.id ? { ...h, temp: newTemp, humidity: newHumidity } : h
+            )
+        );
+        setIsManualReadingModalOpen(false);
+    };
+
 
     return (
         <div className="p-4 pb-24">
@@ -1833,6 +1897,17 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
                     onClose={() => setIsExportModalOpen(false)}
                 />
             )}
+            {/* NEW: Render the ManualReadingModal */}
+            {isManualReadingModalOpen && (
+                <ManualReadingModal
+                    isOpen={isManualReadingModalOpen}
+                    onClose={() => setIsManualReadingModalOpen(false)}
+                    onSave={handleSaveManualReading}
+                    initialTemp={humidor.temp}
+                    initialHumidity={humidor.humidity}
+                    theme={theme}
+                />
+            )}
 
             <div className="flex items-center mb-4">
                 {/* Back button to return to the list of humidors */}
@@ -1859,6 +1934,14 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
                 >
                     <Plus className="w-5 h-5" />
                     <span className="text-xs font-medium">Add Cigar</span>
+                </button>
+                {/* NEW: Take Reading Button */}
+                <button 
+                    onClick={() => setIsManualReadingModalOpen(true)} 
+                    className="flex-1 flex flex-col items-center gap-1 text-gray-300 hover:text-blue-400 transition-colors"
+                >
+                    <FileText className="w-5 h-5" />
+                    <span className="text-xs font-medium">Take Reading</span>
                 </button>
                 {/* Export Button for current humidor */}
                 <button 
