@@ -1691,11 +1691,11 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
     const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
     const [isDeleteHumidorModalOpen, setIsDeleteHumidorModalOpen] = useState(false); // State for humidor delete modal
     const [isDeleteCigarsModalOpen, setIsDeleteCigarsModalOpen] = useState(false); // State for selected cigars delete modal
-    const [isExportModalOpen, setIsExportModalOpen] = useState(false); // NEW: State for export modal
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false); // State for export modal
 
     const cigarsInHumidor = cigars.filter(c => c.humidorId === humidor.id);
     const totalQuantity = cigarsInHumidor.reduce((sum, c) => sum + c.quantity, 0);
-    // NEW: Calculate estimated value for cigars in this humidor
+    // Calculate estimated value for cigars in this humidor
     const humidorValue = cigarsInHumidor.reduce((sum, c) => sum + (c.quantity * c.price), 0);
 
     const handleSearchChange = (e) => {
@@ -1826,7 +1826,7 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
                 count={selectedCigarIds.length}
                 theme={theme}
             />
-            {/* NEW: Render the ExportModal for current humidor's cigars */}
+            {/* Render the ExportModal for current humidor's cigars */}
             {isExportModalOpen && (
                 <ExportModal
                     cigars={cigarsInHumidor} // Pass only cigars in the current humidor
@@ -1860,7 +1860,7 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
                     <Plus className="w-5 h-5" />
                     <span className="text-xs font-medium">Add Cigar</span>
                 </button>
-                {/* NEW: Export Button for current humidor */}
+                {/* Export Button for current humidor */}
                 <button 
                     onClick={() => setIsExportModalOpen(true)} 
                     className="flex-1 flex flex-col items-center gap-1 text-gray-300 hover:text-green-400 transition-colors"
@@ -1878,29 +1878,30 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
                 </button>
             </div>
             
-            {/* NEW: Display Temperature, Humidity, and Estimated Cost */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="flex items-center space-x-2 bg-gray-800/50 p-3 rounded-xl">
-                    <Droplets className="w-6 h-6 text-blue-400" />
-                    <div>
-                        <p className="text-sm text-gray-400">Humidity</p>
-                        <p className="font-bold text-white text-lg">{humidor.humidity}%</p>
-                    </div>
+            {/* Refactored: Display Temperature, Humidity, and Estimated Cost in a single row */}
+            <div className="flex justify-around items-center bg-gray-800/50 p-3 rounded-xl mb-6 text-center">
+                {/* Humidity Display */}
+                <div className="flex flex-col items-center">
+                    <Droplets className="w-5 h-5 text-blue-400 mb-1" />
+                    <p className="text-sm text-gray-400">Humidity</p>
+                    <p className="font-bold text-white text-base">{humidor.humidity}%</p>
                 </div>
-                <div className="flex items-center space-x-2 bg-gray-800/50 p-3 rounded-xl">
-                    <Thermometer className="w-6 h-6 text-red-400" />
-                    <div>
-                        <p className="text-sm text-gray-400">Temperature</p>
-                        <p className="font-bold text-white text-lg">{humidor.temp}°F</p>
-                    </div>
+                {/* Separator */}
+                <div className="h-10 w-px bg-gray-700"></div>
+                {/* Temperature Display */}
+                <div className="flex flex-col items-center">
+                    <Thermometer className="w-5 h-5 text-red-400 mb-1" />
+                    <p className="text-sm text-gray-400">Temperature</p>
+                    <p className="font-bold text-white text-base">{humidor.temp}°F</p>
                 </div>
-                <div className="col-span-2 flex items-center space-x-2 bg-gray-800/50 p-3 rounded-xl">
-                    {/* A custom SVG icon for the dollar sign, as it's not in the lucide-react library. */}
-                    <svg className="w-6 h-6 text-green-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                    <div>
-                        <p className="text-sm text-gray-400">Estimated Value</p>
-                        <p className="font-bold text-white text-lg">${humidorValue.toFixed(2)}</p>
-                    </div>
+                {/* Separator */}
+                <div className="h-10 w-px bg-gray-700"></div>
+                {/* Estimated Value Display */}
+                <div className="flex flex-col items-center">
+                    {/* A custom SVG icon for the dollar sign */}
+                    <svg className="w-5 h-5 text-green-400 mb-1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    <p className="text-sm text-gray-400">Est. Value</p>
+                    <p className="font-bold text-white text-base">${humidorValue.toFixed(2)}</p>
                 </div>
             </div>
 
