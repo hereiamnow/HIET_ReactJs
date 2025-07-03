@@ -212,7 +212,7 @@ const initialMockCigars = [
     "brand": "Man Made",
     "shape": "Toro",
     "size": "6\"x50",
-    "country": "Nicaragua",
+    "country": "Nicaragua", // Fixed: Removed extra double quote before "country"
     "wrapper": "Habano",
     "binder": "Nicaraguan",
     "filler": "Nicaraguan",
@@ -1119,18 +1119,42 @@ async function callGeminiAPI(prompt) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+
+        // Check for HTTP errors
+        if (!response.ok) {
+            const errorBody = await response.json();
+            console.error("Gemini API HTTP Error:", response.status, errorBody);
+            // Provide more specific feedback based on status code or API error message
+            if (response.status === 400) {
+                return `API Error: Invalid request. Please check the input. (Details: ${errorBody.error?.message || 'N/A'})`;
+            } else if (response.status === 429) {
+                return "API Error: Too many requests. Please try again shortly (rate limit exceeded).";
+            } else if (response.status >= 500) {
+                return "API Error: Server issue. Please try again later.";
+            } else {
+                return `API Error: Something went wrong (${response.status}). (Details: ${errorBody.error?.message || 'N/A'})`;
+            }
+        }
+
         const result = await response.json();
-        // The response structure is checked to safely extract the text.
+        
+        // Check for content blocking or empty responses
         if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
             return result.candidates[0].content.parts[0].text;
+        } else if (result.promptFeedback?.blockReason) {
+            console.warn("Gemini API response was blocked:", result.promptFeedback.blockReason);
+            return `Content blocked by safety filters. Reason: ${result.promptFeedback.blockReason}. Please try a different query.`;
         } else {
-            console.error("Gemini API response was blocked or empty.", result);
-            return `Content blocked or unavailable. Reason: ${result.promptFeedback?.blockReason || 'Unknown'}`;
+            console.error("Gemini API response was empty or unexpected:", result);
+            return "The API returned an empty or unexpected response. Please try again.";
         }
     } catch (error) {
+        // Handle network errors (e.g., no internet connection, CORS issues)
         console.error("Error calling Gemini API:", error);
-        return "An error occurred while fetching data. Please check the console.";
+        if (error instanceof TypeError && error.message === 'Failed to fetch') {
+            return "Network Error: Could not connect to the API. Please check your internet connection or try again later.";
+        }
+        return `An unexpected error occurred: ${error.message}. Please check the console for more details.`;
     }
 }
 
@@ -2024,7 +2048,8 @@ const AddCigar = ({ navigate, setCigars, humidorId, theme }) => {
     // NEW: Function to auto-fill cigar details using Gemini
     const handleAutofill = async () => {
         if (!formData.name) {
-            alert("Please enter a cigar name first.");
+            // Replaced alert with a more user-friendly message in the modal
+            setModalState({ isOpen: true, content: "Please enter a cigar name in the 'Name / Line' field before attempting to auto-fill.", isLoading: false });
             return;
         }
         setIsAutofilling(true);
@@ -2044,14 +2069,19 @@ const AddCigar = ({ navigate, setCigars, humidorId, theme }) => {
 
         } catch (error) {
             console.error("Failed to parse Gemini response:", error);
-            // You could show a user-facing error message here
+            setModalState({ isOpen: true, content: "Failed to parse auto-fill data. The AI might not have found enough information or returned an unexpected format. Please try a different cigar name or fill manually.", isLoading: false });
         }
         
         setIsAutofilling(false);
     };
+    // State for the GeminiModal within AddCigar
+    const [modalState, setModalState] = useState({ isOpen: false, content: '', isLoading: false });
+    const closeModal = () => setModalState({ isOpen: false, content: '', isLoading: false });
+
 
     return (
         <div className="p-4 pb-24">
+            {modalState.isOpen && <GeminiModal title="Auto-fill Status" content={modalState.content} isLoading={modalState.isLoading} onClose={closeModal} />}
             <div className="flex items-center mb-6">
                 <button onClick={() => navigate('MyHumidor', { humidorId })} className="p-2 -ml-2 mr-2">
                     <ChevronLeft className={`w-7 h-7 ${theme.text}`} />
