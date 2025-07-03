@@ -1185,6 +1185,34 @@ async function callGeminiAPI(prompt) {
     }
 }
 
+// NEW FUNCTION: Simulate fetching Govee devices
+/**
+ * Simulates fetching a list of Govee devices. In a real application, this would
+ * make an actual API call to Govee using the provided API key.
+ * @param {string} apiKey - The Govee API key.
+ * @returns {Promise<Array<Object>>} A promise that resolves to an array of mock Govee devices.
+ */
+async function fetchGoveeDevices(apiKey) {
+    // In a real scenario, you'd use the apiKey to make a fetch call to Govee's API.
+    // Example: const response = await fetch('https://api.govee.com/v1/devices', { headers: { 'Govee-API-Key': apiKey } });
+    // For now, we return mock data.
+    console.log(`Simulating Govee device fetch with API Key: ${apiKey}`);
+    return new Promise(resolve => {
+        setTimeout(() => {
+            if (apiKey && apiKey.startsWith('TEST_KEY')) { // Simulate a valid key
+                resolve([
+                    { device: 'AA:BB:CC:DD:EE:F1', model: 'H5075', deviceName: 'Office Humidor Sensor' },
+                    { device: 'AA:BB:CC:DD:EE:F2', model: 'H5074', deviceName: 'Travel Case Sensor' },
+                    { device: 'AA:BB:CC:DD:EE:F3', model: 'H5100', deviceName: 'Living Room Sensor' },
+                ]);
+            } else { // Simulate an invalid key or no devices found
+                resolve([]);
+            }
+        }, 1500); // Simulate network delay
+    });
+}
+
+
 // --- CIGAR CARD COMPONENTS ---
 // These components define how a single cigar is displayed, either in a grid or a list.
 
@@ -2468,12 +2496,22 @@ const AddHumidor = ({ navigate, setHumidors, theme }) => {
 };
 
 // NEW: Component for editing an existing humidor's details.
-const EditHumidor = ({ navigate, setHumidors, humidor, goveeApiKey, theme }) => {
+const EditHumidor = ({ navigate, setHumidors, humidor, goveeApiKey, goveeDevices, theme }) => {
     const [formData, setFormData] = useState(humidor);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleGoveeDeviceChange = (e) => {
+        const selectedDeviceId = e.target.value;
+        const selectedDevice = goveeDevices.find(d => d.device === selectedDeviceId);
+        setFormData(prev => ({
+            ...prev,
+            goveeDeviceId: selectedDevice ? selectedDevice.device : null,
+            goveeDeviceModel: selectedDevice ? selectedDevice.model : null,
+        }));
     };
 
     const handleSave = () => {
@@ -2502,12 +2540,30 @@ const EditHumidor = ({ navigate, setHumidors, humidor, goveeApiKey, theme }) => 
                 <div>
                     <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>Govee Sensor</label>
                     <select
-                        disabled={!goveeApiKey}
+                        value={formData.goveeDeviceId || ''}
+                        onChange={handleGoveeDeviceChange}
+                        disabled={!goveeApiKey || goveeDevices.length === 0} // Enabled only if API key is present AND devices are fetched
                         className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} disabled:bg-gray-800 disabled:cursor-not-allowed`}
                     >
-                        <option value="">{goveeApiKey ? "Select a sensor" : "Connect Govee first"}</option>
-                        {/* We will populate this with real devices later */}
+                        <option value="">
+                            {!goveeApiKey ? "Connect Govee first" : (goveeDevices.length === 0 ? "No sensors found" : "Select a sensor")}
+                        </option>
+                        {goveeDevices.map(device => (
+                            <option key={device.device} value={device.device}>
+                                {device.deviceName} ({device.model})
+                            </option>
+                        ))}
                     </select>
+                    {!goveeApiKey && (
+                        <p className="text-xs text-red-300 mt-1">
+                            Please connect your Govee API key in Integrations settings to link a sensor.
+                        </p>
+                    )}
+                    {goveeApiKey && goveeDevices.length === 0 && (
+                         <p className="text-xs text-yellow-300 mt-1">
+                            No Govee sensors found with your API key. Ensure they are online and correctly configured in the Govee app.
+                        </p>
+                    )}
                 </div>
 
                 <div className="pt-4 flex space-x-4">
@@ -2561,16 +2617,45 @@ const SettingsScreen = ({navigate, theme, setTheme}) => {
     );
 };
 
-const IntegrationsScreen = ({ navigate, goveeApiKey, setGoveeApiKey, theme }) => {
+const IntegrationsScreen = ({ navigate, goveeApiKey, setGoveeApiKey, goveeDevices, setGoveeDevices, theme }) => {
     const [key, setKey] = useState(goveeApiKey || '');
     const [status, setStatus] = useState(goveeApiKey ? 'Connected' : 'Not Connected');
+    const [isLoading, setIsLoading] = useState(false);
+    const [message, setMessage] = useState('');
 
-    const handleSave = () => {
-        // In a real app, we'd validate the key here by making an API call.
-        // For now, we'll just save it.
-        setGoveeApiKey(key);
-        setStatus('Connected');
-        // Maybe show a success message
+    const handleConnectGovee = async () => {
+        setIsLoading(true);
+        setMessage('');
+        setGoveeDevices([]); // Clear previous devices
+
+        if (!key) {
+            setMessage('Please enter a Govee API Key.');
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            const devices = await fetchGoveeDevices(key);
+            if (devices.length > 0) {
+                setGoveeApiKey(key); // Save the key if devices are found
+                setGoveeDevices(devices);
+                setStatus('Connected');
+                setMessage(`Successfully connected! Found ${devices.length} Govee device(s).`);
+            } else {
+                setGoveeApiKey(''); // Clear key if no devices found or key is invalid
+                setGoveeDevices([]);
+                setStatus('Not Connected');
+                setMessage('No Govee devices found with this API key. Please check your key and ensure devices are online.');
+            }
+        } catch (error) {
+            console.error("Error connecting to Govee:", error);
+            setGoveeApiKey('');
+            setGoveeDevices([]);
+            setStatus('Not Connected');
+            setMessage(`Failed to connect to Govee: ${error.message}.`);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -2591,25 +2676,41 @@ const IntegrationsScreen = ({ navigate, goveeApiKey, setGoveeApiKey, theme }) =>
                         <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>Govee API Key</label>
                         <input
                             type="text"
-                            placeholder="Enter your Govee API Key"
+                            placeholder="Enter your Govee API Key (e.g., TEST_KEY_123)"
                             value={key}
-                            onChange={(e) => setKey(e.target.value)}
+                            onChange={(e) => { setKey(e.target.value); setStatus('Not Connected'); setMessage(''); }} // Reset status/message on key change
                             className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} placeholder-gray-500 focus:outline-none focus:ring-2 ${theme.ring}`}
                         />
                         <p className={`${theme.subtleText} text-xs`}>You can get this from the Govee Home app under "About Us {'>'} Apply for API Key".</p>
                     </div>
                     <div className="mt-4 flex justify-between items-center">
                         <span className={`text-sm font-bold ${status === 'Connected' ? 'text-green-400' : 'text-red-400'}`}>
-                            Status: {status}
+                            Status: {isLoading ? 'Connecting...' : status}
                         </span>
                         <button
-                            onClick={handleSave}
-                            className={`flex items-center gap-2 ${theme.primaryBg} text-white font-bold text-sm px-4 py-2 rounded-full ${theme.hoverPrimaryBg} transition-colors`}
+                            onClick={handleConnectGovee}
+                            disabled={isLoading}
+                            className={`flex items-center gap-2 ${theme.primaryBg} text-white font-bold text-sm px-4 py-2 rounded-full ${theme.hoverPrimaryBg} transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
-                            <Zap className="w-4 h-4" />
-                            Connect
+                            {isLoading ? <LoaderCircle className="w-4 h-4 animate-spin"/> : <Zap className="w-4 h-4" />}
+                            {isLoading ? 'Connecting...' : 'Connect'}
                         </button>
                     </div>
+                    {message && (
+                        <p className={`mt-3 text-sm ${status === 'Connected' ? 'text-green-300' : 'text-red-300'}`}>
+                            {message}
+                        </p>
+                    )}
+                     {goveeDevices.length > 0 && (
+                        <div className="mt-4 p-3 bg-gray-700 rounded-lg">
+                            <p className="text-sm text-gray-300 font-semibold mb-2">Found Devices:</p>
+                            <ul className="list-disc list-inside text-gray-400 text-xs">
+                                {goveeDevices.map(d => (
+                                    <li key={d.device}>{d.deviceName} ({d.model})</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -2900,6 +3001,8 @@ export default function App() {
     const [theme, setTheme] = useState(themes["Humidor Hub"]);
     // `goveeApiKey` stores the user's Govee API key.
     const [goveeApiKey, setGoveeApiKey] = useState('');
+    // NEW STATE: Stores fetched Govee devices
+    const [goveeDevices, setGoveeDevices] = useState([]);
 
     /**
      * The main navigation function. It's passed down to child components
@@ -2937,7 +3040,7 @@ export default function App() {
             case 'Settings':
                 return <SettingsScreen navigate={navigate} setTheme={setTheme} theme={theme} />;
             case 'Integrations':
-                return <IntegrationsScreen navigate={navigate} goveeApiKey={goveeApiKey} setGoveeApiKey={setGoveeApiKey} theme={theme} />;
+                return <IntegrationsScreen navigate={navigate} goveeApiKey={goveeApiKey} setGoveeApiKey={setGoveeApiKey} goveeDevices={goveeDevices} setGoveeDevices={setGoveeDevices} theme={theme} />;
             case 'DataSync':
                 return <DataSyncScreen navigate={navigate} setCigars={setCigars} cigars={cigars} humidors={humidors} theme={theme} />;
             case 'About':
@@ -2958,7 +3061,7 @@ export default function App() {
             case 'EditHumidor':
                  const humidorToEdit = humidors.find(h => h.id === params.humidorId);
                  if (!humidorToEdit) return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} theme={theme} />; // Fallback
-                return <EditHumidor humidor={humidorToEdit} navigate={navigate} setHumidors={setHumidors} goveeApiKey={goveeApiKey} theme={theme} />;
+                return <EditHumidor humidor={humidorToEdit} navigate={navigate} setHumidors={setHumidors} goveeApiKey={goveeApiKey} goveeDevices={goveeDevices} theme={theme} />;
             default:
                 return <Dashboard navigate={navigate} cigars={cigars} theme={theme} />;
         }
