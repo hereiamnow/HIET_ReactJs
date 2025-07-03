@@ -2377,6 +2377,10 @@ const AddCigar = ({ navigate, setCigars, humidorId, theme }) => {
 const EditCigar = ({ navigate, setCigars, cigar, theme }) => {
     const [formData, setFormData] = useState(cigar);
     const [strengthSuggestions, setStrengthSuggestions] = useState([]);
+    // State for image preview, initialized with the current cigar image
+    const [imagePreview, setImagePreview] = useState(cigar.image || null);
+    // Ref for the hidden file input
+    const fileInputRef = React.useRef(null);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -2397,6 +2401,26 @@ const EditCigar = ({ navigate, setCigars, cigar, theme }) => {
         setStrengthSuggestions([]);
     };
 
+    // Handler for file input change
+    const handleImageUpload = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result); // Set preview to base64 data URL
+                setFormData(prev => ({ ...prev, image: reader.result })); // Update form data with base64
+            };
+            reader.readAsDataURL(file); // Read file as data URL
+        }
+    };
+
+    // Handler to remove the image and set a placeholder
+    const handleRemoveImage = () => {
+        const placeholder = `https://placehold.co/400x600/5a3825/ffffff?text=${cigar.brand.replace(/\s/g, '+')}`;
+        setImagePreview(placeholder);
+        setFormData(prev => ({ ...prev, image: placeholder }));
+    };
+
     const handleSave = () => {
         setCigars(prev => prev.map(c => c.id === formData.id ? formData : c));
         navigate('CigarDetail', { cigarId: cigar.id });
@@ -2412,6 +2436,29 @@ const EditCigar = ({ navigate, setCigars, cigar, theme }) => {
             </div>
 
             <div className="space-y-4">
+                {/* Image Upload Section */}
+                <div className="flex justify-center mb-4">
+                    <input type="file" ref={fileInputRef} onChange={handleImageUpload} style={{ display: 'none' }} accept="image/*" />
+                    <button onClick={() => fileInputRef.current.click()} className="w-32 h-40 bg-gray-800 border-2 border-dashed border-gray-600 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:bg-gray-700 hover:border-amber-500 transition-colors overflow-hidden">
+                        {imagePreview ? (
+                            <img src={imagePreview} alt="Cigar Preview" className="w-full h-full object-cover"/>
+                        ) : (
+                            <>
+                                <ImageIcon className="w-10 h-10 mb-2" />
+                                <span className="text-xs text-center">Upload Image</span>
+                            </>
+                        )}
+                    </button>
+                </div>
+                {imagePreview && (
+                    <button
+                        onClick={handleRemoveImage}
+                        className="w-full flex items-center justify-center gap-2 bg-red-800/80 text-white font-bold py-2 rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                        <Trash2 className="w-4 h-4"/> Remove Image
+                    </button>
+                )}
+
                 <InputField name="brand" label="Brand" placeholder="e.g., Padrón" value={formData.brand} onChange={handleInputChange} theme={theme} />
                 <InputField name="name" label="Name / Line" placeholder="e.g., 1964 Anniversary" value={formData.name} onChange={handleInputChange} theme={theme} />
                 <div className="grid grid-cols-2 gap-4">
@@ -2531,7 +2578,7 @@ const AlertsScreen = ({ navigate }) => {
                                      <div className="flex items-center space-x-2">
                                         <label className="text-sm text-gray-400">Max:</label>
                                         <input type="number" value={setting.maxHumidity} onChange={(e) => handleValueChange(setting.humidorId, 'maxHumidity', e.target.value)} className="w-16 bg-gray-700 text-white text-center rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500" />
-                                        <span className="text-gray-400">%</span>
+                                        <span className="text-gray-400">°F</span>
                                     </div>
                                 </div>
                             )}
