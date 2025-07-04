@@ -2618,25 +2618,54 @@ const AlertsScreen = ({ navigate }) => {
 };
 
 const AddHumidor = ({ navigate, setHumidors, theme }) => {
-    const [formData, setFormData] = useState({ name: '', description: '', size: '', location: '' });
+    // Initialize formData with an empty image string
+    const [formData, setFormData] = useState({ name: '', description: '', size: '', location: '', image: '' });
+    // State to hold the image preview URL (base64 or placeholder)
+    const [imagePreview, setImagePreview] = useState(null);
+    // Ref for the hidden file input element
+    const fileInputRef = React.useRef(null);
 
+    // Handles changes to form input fields
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    // Handles when a file is selected for upload
+    const handleImageUpload = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result); // Set the image preview to the base64 data URL
+                setFormData(prev => ({ ...prev, image: reader.result })); // Update form data with the base64 image
+            };
+            reader.readAsDataURL(file); // Read the file as a data URL (base64 encoded)
+        }
+    };
+
+    // Handles removing the currently selected image, reverting to a placeholder
+    const handleRemoveImage = () => {
+        // Create a dynamic placeholder image URL based on the humidor name
+        const placeholder = `https://placehold.co/600x400/3a2d27/ffffff?text=${formData.name.replace(/\s/g, '+') || 'Humidor'}`;
+        setImagePreview(placeholder); // Set the preview to the placeholder
+        setFormData(prev => ({ ...prev, image: placeholder })); // Update form data with the placeholder URL
+    };
+
+    // Handles saving the new humidor data
     const handleSave = () => {
         const newHumidor = {
-            id: Date.now(),
+            id: Date.now(), // Generate a unique ID using timestamp
             ...formData,
-            humidity: 70, // Default value
-            temp: 68, // Default value
-            image: `https://placehold.co/600x400/3a2d27/ffffff?text=${formData.name.replace(/\s/g, '+')}`,
+            humidity: 70, // Default humidity
+            temp: 68, // Default temperature
+            // Use the uploaded image from formData, or generate a placeholder if no image was uploaded
+            image: formData.image || `https://placehold.co/600x400/3a2d27/ffffff?text=${formData.name.replace(/\s/g, '+') || 'New+Humidor'}`,
             goveeDeviceId: null,
             goveeDeviceModel: null,
         };
-        setHumidors(prev => [...prev, newHumidor]);
-        navigate('HumidorsScreen');
+        setHumidors(prev => [...prev, newHumidor]); // Add the new humidor to the list
+        navigate('HumidorsScreen'); // Navigate back to the humidors list
     };
 
     return (
@@ -2649,6 +2678,35 @@ const AddHumidor = ({ navigate, setHumidors, theme }) => {
             </div>
 
             <div className="space-y-4">
+                {/* Image Upload Section for Humidor */}
+                <div className="flex justify-center mb-4">
+                    {/* Hidden file input element */}
+                    <input type="file" ref={fileInputRef} onChange={handleImageUpload} style={{ display: 'none' }} accept="image/*" />
+                    {/* Button to trigger the file input */}
+                    <button onClick={() => fileInputRef.current.click()} className="w-48 h-32 bg-gray-800 border-2 border-dashed border-gray-600 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:bg-gray-700 hover:border-amber-500 transition-colors overflow-hidden">
+                        {imagePreview ? (
+                            // Display the selected image preview
+                            <img src={imagePreview} alt="Humidor Preview" className="w-full h-full object-cover"/>
+                        ) : (
+                            // Display placeholder icon and text if no image is selected
+                            <>
+                                <ImageIcon className="w-10 h-10 mb-2" />
+                                <span className="text-xs text-center">Upload Image</span>
+                            </>
+                        )}
+                    </button>
+                </div>
+                {/* Show Remove Image button only if an image is currently previewed */}
+                {imagePreview && (
+                    <button
+                        onClick={handleRemoveImage}
+                        className="w-full flex items-center justify-center gap-2 bg-red-800/80 text-white font-bold py-2 rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                        <Trash2 className="w-4 h-4"/> Remove Image
+                    </button>
+                )}
+                {/* End Image Upload Section */}
+
                 <InputField name="name" label="Humidor Name" placeholder="e.g., The Big One" value={formData.name} onChange={handleInputChange} theme={theme} />
                 <InputField name="description" label="Description" placeholder="e.g., Main aging unit" value={formData.description} onChange={handleInputChange} theme={theme} />
                 <div className="grid grid-cols-2 gap-4">
