@@ -2236,36 +2236,59 @@ export default function App() {
     // One-time Firebase initialization and authentication
     useEffect(() => {
         try {
+            // Check if the Firebase config object is available.
             if (Object.keys(firebaseConfig).length === 0) {
                 console.error("Firebase config is empty. App cannot initialize.");
                 setIsLoading(false);
                 return;
             }
+            
+            // Initialize the Firebase app with the provided configuration.
             const app = initializeApp(firebaseConfig);
+            // Get instances of Firestore and Authentication services.
             const firestoreDb = getFirestore(app);
             const firebaseAuth = getAuth(app);
 
+            // --- LOCAL DEVELOPMENT EMULATOR SETUP ---
+            // This checks if the app is running on 'localhost'.
+            // If it is, it connects to the local Firebase emulators instead of the live cloud services.
+            // This is crucial for development to avoid touching production data.
             const isLocalDev = window.location.hostname === 'localhost';
-
             if (isLocalDev) {
                 console.log("Connecting to local Firebase emulators...");
+                // Connect to the Auth emulator. The default port is 9099.
                 connectAuthEmulator(firebaseAuth, "http://localhost:9099");
+                // Connect to the Firestore emulator. The default port is 8080.
                 connectFirestoreEmulator(firestoreDb, 'localhost', 8080);
             }
+            // --- END OF EMULATOR SETUP ---
 
+            // Set the initialized db and auth instances to state.
             setDb(firestoreDb);
             setAuth(firebaseAuth);
 
+            // This listener checks for changes in the user's authentication state.
             onAuthStateChanged(firebaseAuth, async (user) => {
                 if (user) {
+                    // If a user is signed in (either through a real account or anonymously),
+                    // set their unique ID to state. This ID is used to fetch their data.
                     setUserId(user.uid);
                 } else {
+                    // If no user is signed in, we need to sign them in.
+                    // This logic handles both local development and the live environment.
                     if (isLocalDev || !initialAuthToken) {
+                        // If we are on localhost OR there is no secure token provided,
+                        // sign the user in anonymously. This allows the app to work locally
+                        // without needing a real user account.
                         await signInAnonymously(firebaseAuth);
                     } else {
+                        // If we are in the live environment AND a secure token is available,
+                        // use it to sign the user in.
                         try {
                             await signInWithCustomToken(firebaseAuth, initialAuthToken);
                         } catch (error) {
+                            // If the custom token fails for any reason, fall back to anonymous sign-in
+                            // to ensure the app doesn't crash.
                             console.error("Error signing in with custom token, falling back to anonymous:", error);
                             await signInAnonymously(firebaseAuth);
                         }
@@ -2274,41 +2297,49 @@ export default function App() {
             });
         } catch (error) {
             console.error("Firebase initialization error:", error);
-            setIsLoading(false);
+            setIsLoading(false); // Stop loading if there's a critical error.
         }
     }, []);
 
     // Effect to fetch data from Firestore once user is authenticated
     useEffect(() => {
+        // Don't run this effect if we don't have a database connection or a user ID.
         if (!db || !userId) return;
 
+        // Set loading to true while we fetch data.
         setIsLoading(true);
         
+        // Define the paths to the user's data collections in Firestore.
         const humidorsPath = `artifacts/${appId}/users/${userId}/humidors`;
         const cigarsPath = `artifacts/${appId}/users/${userId}/cigars`;
         
         const humidorsColRef = collection(db, humidorsPath);
         const cigarsColRef = collection(db, cigarsPath);
 
+        // onSnapshot creates a real-time listener for the humidors collection.
+        // It will automatically update the UI whenever the data changes in the database.
         const unsubscribeHumidors = onSnapshot(humidorsColRef, (snapshot) => {
             const humidorsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setHumidors(humidorsData);
         }, (error) => console.error("Error fetching humidors:", error));
 
+        // Create a real-time listener for the cigars collection.
         const unsubscribeCigars = onSnapshot(cigarsColRef, (snapshot) => {
             const cigarsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setCigars(cigarsData);
-            setIsLoading(false); 
+            setIsLoading(false); // Set loading to false once we have the cigar data.
         }, (error) => {
             console.error("Error fetching cigars:", error);
             setIsLoading(false);
         });
 
+        // This is a cleanup function. When the component unmounts (e.g., user closes the app),
+        // it unsubscribes from the listeners to prevent memory leaks.
         return () => {
             unsubscribeHumidors();
             unsubscribeCigars();
         };
-    }, [db, userId]);
+    }, [db, userId]); // This effect re-runs if the db or userId changes.
 
     const navigate = (screen, params = {}) => {
         window.scrollTo(0, 0);
