@@ -2352,25 +2352,23 @@ const AddCigar = ({ navigate, setCigars, humidorId, theme }) => {
                     </div>
                     <InputField name="price" label="Price Paid" placeholder="e.g., 15.50" type="number" value={formData.price} onChange={handleInputChange} theme={theme} />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} onChange={handleInputChange} theme={theme} />
-                    <InputField name="quantity" label="Quantity" placeholder="e.g., 5" type="number" value={formData.quantity} onChange={handleInputChange} theme={theme} />
-                </div>
+                <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} onChange={handleInputChange} theme={theme} />
+                <InputField name="quantity" label="Quantity" placeholder="e.g., 5" type="number" value={formData.quantity} onChange={handleInputChange} theme={theme} />
+            </div>
 
-                <div className="pt-4 flex space-x-4">
-                    <button
-                        onClick={handleSave}
-                        className={`w-full ${theme.primaryBg} ${theme.text === 'text-white' ? 'text-white' : 'text-black'} font-bold py-3 rounded-lg ${theme.hoverPrimaryBg} transition-colors`}
-                    >
-                        Save Cigar
-                    </button>
-                    <button
-                        onClick={() => navigate('MyHumidor', { humidorId })}
-                        className={`w-full ${theme.button} ${theme.text} font-bold py-3 rounded-lg transition-colors`}
-                    >
-                        Cancel
-                    </button>
-                </div>
+            <div className="pt-4 flex space-x-4">
+                <button
+                    onClick={handleSave}
+                    className={`w-full ${theme.primaryBg} ${theme.text === 'text-white' ? 'text-white' : 'text-black'} font-bold py-3 rounded-lg ${theme.hoverPrimaryBg} transition-colors`}
+                >
+                    Save Cigar
+                </button>
+                <button
+                    onClick={() => navigate('MyHumidor', { humidorId })}
+                    className={`w-full ${theme.button} ${theme.text} font-bold py-3 rounded-lg transition-colors`}
+                >
+                    Cancel
+                </button>
             </div>
         </div>
     );
@@ -2735,17 +2733,23 @@ const AddHumidor = ({ navigate, setHumidors, theme }) => {
 
 // NEW: Component for editing an existing humidor's details.
 const EditHumidor = ({ navigate, setHumidors, humidor, goveeApiKey, goveeDevices, theme }) => {
-    const [formData, setFormData] = useState(humidor);
+    // Initialize formData with the humidor object, and add trackingMethod based on existing Govee device
+    const [formData, setFormData] = useState({
+        ...humidor,
+        trackingMethod: humidor.goveeDeviceId ? 'govee' : 'manual' // Initialize tracking method
+    });
     // State for image preview, initialized with the current humidor image
     const [imagePreview, setImagePreview] = useState(humidor.image || null);
     // Ref for the hidden file input
     const fileInputRef = React.useRef(null);
 
+    // Handles changes to form input fields
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    // Handles changes to the Govee device selection
     const handleGoveeDeviceChange = (e) => {
         const selectedDeviceId = e.target.value;
         const selectedDevice = goveeDevices.find(d => d.device === selectedDeviceId);
@@ -2776,9 +2780,20 @@ const EditHumidor = ({ navigate, setHumidors, humidor, goveeApiKey, goveeDevices
         setFormData(prev => ({ ...prev, image: placeholder }));
     };
 
+    // Handles saving the humidor data
     const handleSave = () => {
-        setHumidors(prev => prev.map(h => h.id === formData.id ? formData : h));
-        navigate('MyHumidor', { humidorId: humidor.id });
+        // Create a new humidor object with updated data
+        const updatedHumidor = {
+            ...formData,
+            // If tracking method is manual, clear Govee device info
+            goveeDeviceId: formData.trackingMethod === 'manual' ? null : formData.goveeDeviceId,
+            goveeDeviceModel: formData.trackingMethod === 'manual' ? null : formData.goveeDeviceModel,
+            // Ensure image is set, using a dynamic placeholder if none is provided
+            image: formData.image || `https://placehold.co/600x400/3a2d27/ffffff?text=${formData.name.replace(/\s/g, '+') || 'Humidor'}`,
+        };
+        // Update the humidors list in the parent state
+        setHumidors(prev => prev.map(h => h.id === updatedHumidor.id ? updatedHumidor : h));
+        navigate('MyHumidor', { humidorId: humidor.id }); // Navigate back to the humidor detail screen
     };
 
     return (
@@ -2791,7 +2806,7 @@ const EditHumidor = ({ navigate, setHumidors, humidor, goveeApiKey, goveeDevices
             </div>
 
             <div className="space-y-4">
-                {/* Image Upload Section for Humidor (Added) */}
+                {/* Image Upload Section for Humidor */}
                 <div className="flex justify-center mb-4">
                     <input type="file" ref={fileInputRef} onChange={handleImageUpload} style={{ display: 'none' }} accept="image/*" />
                     <button onClick={() => fileInputRef.current.click()} className="w-48 h-32 bg-gray-800 border-2 border-dashed border-gray-600 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:bg-gray-700 hover:border-amber-500 transition-colors overflow-hidden">
@@ -2822,35 +2837,115 @@ const EditHumidor = ({ navigate, setHumidors, humidor, goveeApiKey, goveeDevices
                     <InputField name="location" label="Location" placeholder="e.g., Office" value={formData.location} onChange={handleInputChange} theme={theme} />
                 </div>
                 
-                {/* Govee Integration Section */}
-                <div>
-                    <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>Govee Sensor</label>
-                    <select
-                        value={formData.goveeDeviceId || ''}
-                        onChange={handleGoveeDeviceChange}
-                        disabled={!goveeApiKey || goveeDevices.length === 0} // Enabled only if API key is present AND devices are fetched
-                        className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} disabled:bg-gray-800 disabled:cursor-not-allowed`}
-                    >
-                        <option value="">
-                            {!goveeApiKey ? "Connect Govee first" : (goveeDevices.length === 0 ? "No sensors found" : "Select a sensor")}
-                        </option>
-                        {goveeDevices.map(device => (
-                            <option key={device.device} value={device.device}>
-                                {device.deviceName} ({device.model})
-                            </option>
-                        ))}
-                    </select>
-                    {!goveeApiKey && (
-                        <p className="text-xs text-red-300 mt-1">
-                            Please connect your Govee API key in Integrations settings to link a sensor.
-                        </p>
-                    )}
-                    {goveeApiKey && goveeDevices.length === 0 && (
-                         <p className="text-xs text-yellow-300 mt-1">
-                            No Govee sensors found with your API key. Ensure they are online and correctly configured in the Govee app.
-                        </p>
-                    )}
+                {/* Environment Tracking Section (New) */}
+                <div className={`${theme.card} p-4 rounded-xl`}>
+                    <h3 className="font-bold text-xl text-amber-300 mb-4 flex items-center"><MapPin className="w-5 h-5 mr-2"/> Environment Tracking</h3>
+                    <div className="space-y-4">
+                        {/* Tracking Method Selection */}
+                        <div>
+                            <label className={`text-sm font-medium ${theme.subtleText} mb-2 block`}>Tracking Method</label>
+                            <div className="flex space-x-4">
+                                <label className="inline-flex items-center">
+                                    <input
+                                        type="radio"
+                                        name="trackingMethod"
+                                        value="manual"
+                                        checked={formData.trackingMethod === 'manual'}
+                                        onChange={handleInputChange}
+                                        className="form-radio text-amber-500 h-4 w-4"
+                                    />
+                                    <span className={`ml-2 ${theme.text}`}>Manual Input</span>
+                                </label>
+                                <label className="inline-flex items-center">
+                                    <input
+                                        type="radio"
+                                        name="trackingMethod"
+                                        value="govee"
+                                        checked={formData.trackingMethod === 'govee'}
+                                        onChange={handleInputChange}
+                                        className="form-radio text-amber-500 h-4 w-4"
+                                    />
+                                    <span className={`ml-2 ${theme.text}`}>Govee Sensor</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* Conditional Input Fields based on Tracking Method */}
+                        {formData.trackingMethod === 'manual' ? (
+                            <div className="grid grid-cols-2 gap-4">
+                                <InputField
+                                    name="temp"
+                                    label="Temperature (°F)"
+                                    placeholder="e.g., 68"
+                                    type="number"
+                                    value={formData.temp}
+                                    onChange={handleInputChange}
+                                    theme={theme}
+                                />
+                                <InputField
+                                    name="humidity"
+                                    label="Humidity (%)"
+                                    placeholder="e.g., 70"
+                                    type="number"
+                                    value={formData.humidity}
+                                    onChange={handleInputChange}
+                                    theme={theme}
+                                />
+                            </div>
+                        ) : (
+                            <div>
+                                <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>Govee Sensor</label>
+                                <select
+                                    value={formData.goveeDeviceId || ''}
+                                    onChange={handleGoveeDeviceChange}
+                                    disabled={!goveeApiKey || goveeDevices.length === 0}
+                                    className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} disabled:bg-gray-800 disabled:cursor-not-allowed`}
+                                >
+                                    <option value="">
+                                        {!goveeApiKey ? "Connect Govee first" : (goveeDevices.length === 0 ? "No sensors found" : "Select a sensor")}
+                                    </option>
+                                    {goveeDevices.map(device => (
+                                        <option key={device.device} value={device.device}>
+                                            {device.deviceName} ({device.model})
+                                        </option>
+                                    ))}
+                                </select>
+                                {!goveeApiKey && (
+                                    <p className="text-xs text-red-300 mt-1">
+                                        Please connect your Govee API key in Integrations settings to link a sensor.
+                                    </p>
+                                )}
+                                {goveeApiKey && goveeDevices.length === 0 && (
+                                    <p className="text-xs text-yellow-300 mt-1">
+                                        No Govee sensors found with your API key. Ensure they are online and correctly configured in the Govee app.
+                                    </p>
+                                )}
+                                {/* Display current readings from the humidor object (read-only) */}
+                                <div className="grid grid-cols-2 gap-4 mt-4">
+                                    <InputField
+                                        name="temp"
+                                        label="Current Temp (°F)"
+                                        value={humidor.temp} // Display current humidor temp
+                                        type="number"
+                                        onChange={() => {}} // Read-only
+                                        theme={theme}
+                                        disabled={true}
+                                    />
+                                    <InputField
+                                        name="humidity"
+                                        label="Current Humidity (%)"
+                                        value={humidor.humidity} // Display current humidor humidity
+                                        type="number"
+                                        onChange={() => {}} // Read-only
+                                        theme={theme}
+                                        disabled={true}
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
+                {/* End Environment Tracking Section */}
 
                 <div className="pt-4 flex space-x-4">
                     <button
