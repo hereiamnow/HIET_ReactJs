@@ -8,8 +8,8 @@ import { Thermometer, Droplets, Bell, Plus, Search, X, ChevronLeft, Image as Ima
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 // Import Firebase libraries for database and authentication
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, writeBatch } from "firebase/firestore";
-import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "firebase/auth";
+import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, writeBatch, connectFirestoreEmulator } from "firebase/firestore";
+import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, connectAuthEmulator } from "firebase/auth";
 
 
 // --- FIREBASE CONFIGURATION ---
@@ -1716,25 +1716,11 @@ const AddHumidor = ({ navigate, db, appId, userId, theme }) => {
         temp: 70,
         humidity: 70,
     });
-    const [imagePreview, setImagePreview] = useState(null);
-    const fileInputRef = React.useRef(null);
     const [trackEnvironment, setTrackEnvironment] = useState(false);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleImageUpload = (event) => {
-        const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result);
-                setFormData(prev => ({ ...prev, image: reader.result }));
-            };
-            reader.readAsDataURL(file);
-        }
     };
 
     const handleSave = async () => {
@@ -1761,17 +1747,7 @@ const AddHumidor = ({ navigate, db, appId, userId, theme }) => {
             </div>
 
             <div className="space-y-6">
-                <input type="file" ref={fileInputRef} onChange={handleImageUpload} style={{ display: 'none' }} accept="image/*" />
-                <button onClick={() => fileInputRef.current.click()} className={`w-full h-40 ${theme.inputBg} border-2 border-dashed ${theme.borderColor} rounded-lg flex flex-col items-center justify-center ${theme.subtleText} hover:bg-gray-700 hover:border-amber-500 transition-colors overflow-hidden`}>
-                    {imagePreview ? (
-                        <img src={imagePreview} alt="Humidor Preview" className="w-full h-full object-cover"/>
-                    ) : (
-                        <>
-                            <ImageIcon className="w-10 h-10 mb-2" />
-                            <span className="text-sm text-center">Upload Image</span>
-                        </>
-                    )}
-                </button>
+                <InputField name="image" label="Image URL" placeholder="https://example.com/humidor.png" value={formData.image} onChange={handleInputChange} theme={theme} />
                 
                 <InputField name="name" label="Humidor Name" placeholder="e.g., The Big One" value={formData.name} onChange={handleInputChange} theme={theme} />
                 <InputField name="shortDescription" label="Short Description" placeholder="e.g., Main aging unit" value={formData.shortDescription} onChange={handleInputChange} theme={theme} />
@@ -1830,8 +1806,6 @@ const EditHumidor = ({ navigate, db, appId, userId, humidor, goveeApiKey, goveeD
         longDescription: humidor.longDescription || humidor.description || '', // Migrate old description
         trackingMethod: humidor.goveeDeviceId ? 'govee' : 'manual' 
     });
-    const [imagePreview, setImagePreview] = useState(humidor.image || null);
-    const fileInputRef = React.useRef(null);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -1842,24 +1816,6 @@ const EditHumidor = ({ navigate, db, appId, userId, humidor, goveeApiKey, goveeD
         const selectedDeviceId = e.target.value;
         const selectedDevice = goveeDevices.find(d => d.device === selectedDeviceId);
         setFormData(prev => ({ ...prev, goveeDeviceId: selectedDevice?.device || null, goveeDeviceModel: selectedDevice?.model || null }));
-    };
-
-    const handleImageUpload = (event) => {
-        const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result);
-                setFormData(prev => ({ ...prev, image: reader.result }));
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const handleRemoveImage = () => {
-        const placeholder = `https://placehold.co/600x400/3a2d27/ffffff?text=${humidor.name.replace(/\s/g, '+') || 'Humidor'}`;
-        setImagePreview(placeholder);
-        setFormData(prev => ({ ...prev, image: placeholder }));
     };
 
     const handleSave = async () => {
@@ -1883,14 +1839,7 @@ const EditHumidor = ({ navigate, db, appId, userId, humidor, goveeApiKey, goveeD
             </div>
 
             <div className="space-y-4">
-                <div className="flex justify-center mb-4">
-                    <input type="file" ref={fileInputRef} onChange={handleImageUpload} style={{ display: 'none' }} accept="image/*" />
-                    <button onClick={() => fileInputRef.current.click()} className="w-48 h-32 bg-gray-800 border-2 border-dashed border-gray-600 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:bg-gray-700 hover:border-amber-500 transition-colors overflow-hidden">
-                        {imagePreview ? (<img src={imagePreview} alt="Humidor Preview" className="w-full h-full object-cover"/>) : (<><ImageIcon className="w-10 h-10 mb-2" /><span className="text-xs text-center">Upload Image</span></>)}
-                    </button>
-                </div>
-                {imagePreview && (<button onClick={handleRemoveImage} className="w-full flex items-center justify-center gap-2 bg-red-800/80 text-white font-bold py-2 rounded-lg hover:bg-red-700 transition-colors"><Trash2 className="w-4 h-4"/> Remove Image</button>)}
-
+                <InputField name="image" label="Image URL" placeholder="https://example.com/humidor.png" value={formData.image} onChange={handleInputChange} theme={theme} />
                 <InputField name="name" label="Humidor Name" placeholder="e.g., The Big One" value={formData.name} onChange={handleInputChange} theme={theme} />
                 <InputField name="shortDescription" label="Short Description" placeholder="e.g., Main aging unit" value={formData.shortDescription} onChange={handleInputChange} theme={theme} />
                 <TextAreaField name="longDescription" label="Long Description" placeholder="e.g., A 150-count mahogany humidor..." value={formData.longDescription} onChange={handleInputChange} theme={theme} />
@@ -2295,6 +2244,15 @@ export default function App() {
             const app = initializeApp(firebaseConfig);
             const firestoreDb = getFirestore(app);
             const firebaseAuth = getAuth(app);
+
+            const isLocalDev = window.location.hostname === 'localhost';
+
+            if (isLocalDev) {
+                console.log("Connecting to local Firebase emulators...");
+                connectAuthEmulator(firebaseAuth, "http://localhost:9099");
+                connectFirestoreEmulator(firestoreDb, 'localhost', 8080);
+            }
+
             setDb(firestoreDb);
             setAuth(firebaseAuth);
 
@@ -2302,15 +2260,15 @@ export default function App() {
                 if (user) {
                     setUserId(user.uid);
                 } else {
-                    if (initialAuthToken) {
+                    if (isLocalDev || !initialAuthToken) {
+                        await signInAnonymously(firebaseAuth);
+                    } else {
                         try {
                             await signInWithCustomToken(firebaseAuth, initialAuthToken);
                         } catch (error) {
-                            console.error("Error signing in with custom token:", error);
+                            console.error("Error signing in with custom token, falling back to anonymous:", error);
                             await signInAnonymously(firebaseAuth);
                         }
-                    } else {
-                        await signInAnonymously(firebaseAuth);
                     }
                 }
             });
