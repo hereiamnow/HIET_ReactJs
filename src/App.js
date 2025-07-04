@@ -2736,6 +2736,10 @@ const AddHumidor = ({ navigate, setHumidors, theme }) => {
 // NEW: Component for editing an existing humidor's details.
 const EditHumidor = ({ navigate, setHumidors, humidor, goveeApiKey, goveeDevices, theme }) => {
     const [formData, setFormData] = useState(humidor);
+    // State for image preview, initialized with the current humidor image
+    const [imagePreview, setImagePreview] = useState(humidor.image || null);
+    // Ref for the hidden file input
+    const fileInputRef = React.useRef(null);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -2750,6 +2754,26 @@ const EditHumidor = ({ navigate, setHumidors, humidor, goveeApiKey, goveeDevices
             goveeDeviceId: selectedDevice ? selectedDevice.device : null,
             goveeDeviceModel: selectedDevice ? selectedDevice.model : null,
         }));
+    };
+
+    // Handler for file input change
+    const handleImageUpload = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result); // Set preview to base64 data URL
+                setFormData(prev => ({ ...prev, image: reader.result })); // Update form data with base64
+            };
+            reader.readAsDataURL(file); // Read file as data URL
+        }
+    };
+
+    // Handler to remove the image and set a placeholder
+    const handleRemoveImage = () => {
+        const placeholder = `https://placehold.co/600x400/3a2d27/ffffff?text=${humidor.name.replace(/\s/g, '+') || 'Humidor'}`;
+        setImagePreview(placeholder);
+        setFormData(prev => ({ ...prev, image: placeholder }));
     };
 
     const handleSave = () => {
@@ -2767,6 +2791,30 @@ const EditHumidor = ({ navigate, setHumidors, humidor, goveeApiKey, goveeDevices
             </div>
 
             <div className="space-y-4">
+                {/* Image Upload Section for Humidor (Added) */}
+                <div className="flex justify-center mb-4">
+                    <input type="file" ref={fileInputRef} onChange={handleImageUpload} style={{ display: 'none' }} accept="image/*" />
+                    <button onClick={() => fileInputRef.current.click()} className="w-48 h-32 bg-gray-800 border-2 border-dashed border-gray-600 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:bg-gray-700 hover:border-amber-500 transition-colors overflow-hidden">
+                        {imagePreview ? (
+                            <img src={imagePreview} alt="Humidor Preview" className="w-full h-full object-cover"/>
+                        ) : (
+                            <>
+                                <ImageIcon className="w-10 h-10 mb-2" />
+                                <span className="text-xs text-center">Upload Image</span>
+                            </>
+                        )}
+                    </button>
+                </div>
+                {imagePreview && (
+                    <button
+                        onClick={handleRemoveImage}
+                        className="w-full flex items-center justify-center gap-2 bg-red-800/80 text-white font-bold py-2 rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                        <Trash2 className="w-4 h-4"/> Remove Image
+                    </button>
+                )}
+                {/* End Image Upload Section */}
+
                 <InputField name="name" label="Humidor Name" placeholder="e.g., The Big One" value={formData.name} onChange={handleInputChange} theme={theme} />
                 <InputField name="description" label="Description" placeholder="e.g., Main aging unit" value={formData.description} onChange={handleInputChange} theme={theme} />
                 <div className="grid grid-cols-2 gap-4">
