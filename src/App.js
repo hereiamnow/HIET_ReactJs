@@ -3,7 +3,7 @@
 // useState, useEffect, and useMemo are "hooks" that let us use state and other React features in functional components.
 import React, { useState, useEffect, useMemo } from 'react';
 // lucide-react provides a set of clean, modern icons used throughout the app.
-import { Thermometer, Droplets, Bell, Plus, Search, X, ChevronLeft, Image as ImageIcon, Star, Wind, Coffee, GlassWater, LoaderCircle, Sparkles, Box, Briefcase, LayoutGrid, List, BookOpen, Leaf, Flame, MapPin, Tag, Minus, Edit, Trash2, Upload, Link2, Settings, User, Database, Info, Download, UploadCloud, ChevronDown, Shield, FileText, LogOut, Palette, BarChart2, TrendingUp, PieChart as PieChartIcon, Move, Check, Zap, AlertTriangle } from 'lucide-react';
+import { Thermometer, Droplets, Bell, Plus, Search, X, ChevronLeft, Image as ImageIcon, Star, Wind, Coffee, GlassWater, LoaderCircle, Sparkles, Box, Briefcase, LayoutGrid, List, BookOpen, Leaf, Flame, MapPin, Tag, Minus, Edit, Trash2, Upload, Link2, Settings, User, Database, Info, Download, UploadCloud, ChevronDown, Shield, FileText, LogOut, Palette, BarChart2, TrendingUp, PieChart as PieChartIcon, Move, Check, Zap, AlertTriangle, Filter, ArrowDownWideNarrow, ArrowUpWideNarrow } from 'lucide-react';
 // recharts is a library for creating the charts (bar, line, pie) on the dashboard.
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -74,8 +74,8 @@ const themes = {
 // This is placeholder data used to populate the app initially.
 // In a real application, this data would come from a database or API.
 const initialMockHumidors = [
-    { id: 1, name: 'Ironsides', description: 'My primary aging and storage unit.', size: '150-count', location: 'Office', image: 'https://placehold.co/600x400/3a2d27/ffffff?text=Ironsides', humidity: 70, temp: 68, goveeDeviceId: null, goveeDeviceModel: null },
-    { id: 2, name: 'Travel Case', description: 'For taking cigars on the go.', size: '5-count', location: 'Portable', image: 'https://placehold.co/600x400/5c4a42/ffffff?text=Travel+Case', humidity: 69, temp: 71, goveeDeviceId: null, goveeDeviceModel: null },
+    { id: 1, name: 'Ironsides', description: 'My primary aging and storage unit.', size: '100', location: 'Lakehouse', image: 'https://placehold.co/600x400/3a2d27/ffffff?text=Ironsides', humidity: 70, temp: 68, goveeDeviceId: null, goveeDeviceModel: null },
+    { id: 2, name: 'Travel Case', description: 'For taking cigars on the go.', size: '5', location: 'Portable', image: 'https://placehold.co/600x400/5c4a42/ffffff?text=Travel+Case', humidity: 45, temp: 76, goveeDeviceId: null, goveeDeviceModel: null },
 ];
 
 const initialMockCigars = [
@@ -549,18 +549,42 @@ const initialMockCigars = [
   }
 ];
 
-// A comprehensive list of possible flavor notes a user can select.
+// SSM 06282005 - A predefined list of cigar orgin options output from Google Sheets via Gimini
+const cigarOrginOptions = ['Dominican Republic','Europe','Honduras','Italy','Nicaragua',
+    'Philippines','Undisclosed','United States'];
+
+// SSM 06282005 - A predefined list of cigar shape options output from Google Sheets via Gimini
+const cigarShapeOptions = ['Belicoso','Churchill','Cigarillos','Corona','Corona Extra',
+    'Corona Gigante','Corona Gorda','Corona Grande','Double Corona','Double Perfecto',
+    'Double Robusto','Double Toro','Figurado','Gigante','Gordo','Gordo Extra','Gorona',
+    'Lancero','Lancero/Panatela','Lonsdale','Panatela','Perfecto','Petite Corona',
+    'Presidente','Pyramid','Robusto','Robusto Extra','Robusto Gordo','Rothschild',
+    'Salomon','Short Robusto','Super Toro','Toro','Toro Extra','Torpedo'];
+
+// SSM 06282005 - A predefined list of cigar brand options output from Google Sheets via Gimini
+const cigarBrandOptions = ['5 Vegas','601 Cigars','Adventura','Aganorsa Leaf','Aj Fernandez','Aladino',
+    'Alec Bradley','Arganese','Arturo Fuente Cigars','Ashton Cigars','Asylum','Avo','Baccarat','Bahia',
+    'Black Label Trading Co.','Caldwell','Camacho Cigars','Cao','Ci Knock-Offs','Cohiba Cigars','Crowned Heads',
+    'Cuba Libre','Davidoff Cigars','Diesel','Don Rafael','Drew Estate Cigars','Dunbarton Tobacco & Trust',
+    'E.P. Carrillo','Espinosa','Foundation Cigar Company','Fratello','Graycliff','Gurkha Cigars','H. Upmann',
+    'Hc Series','Hoyo De Monterrey','Hvc','Illusione','Java By Drew Estate','Jm Tobacco','Joya De Nicaragua',
+    'Kristoff','La Aurora','La Flor Dominicana','La Gloria Cubana','La Palina','La Perla Habana','Latitude Zero',
+    'Macanudo Cigars','Mark Twain','Montecristo Cigars','My Father','Nica Libre','Oliva Cigars','Partagas','Pdr Cigars',
+    'Perdomo Cigars','Plasencia Cigars','Punch Cigars','Rocky Patel Cigars','Roma Craft','Romeo Y Julieta Cigars','Room101',
+    'Royal Agio Cigars','San Cristobal','Sancho Panza','Southern Draw','Tatuaje Cigars','Torano','Victor Sinclair','Warped'];
+
+// SSM 06282005 - A comprehensive list of possible flavor notes a user can select.
 const allFlavorNotes = [
-    'Earthy', 'Woody', 'Spicy', 'Nutty', 'Sweet', 'Fruity', 'Floral', 'Herbal',
+    'Earthy', 'Woody', 'Spice','Spicy', 'Nutty', 'Sweet', 'Fruity', 'Floral', 'Herbal',
     'Leather', 'Coffee', 'Cocoa', 'Chocolate', 'Creamy', 'Pepper', 'Cedar', 'Oak',
     'Cinnamon', 'Vanilla', 'Honey', 'Caramel', 'Citrus', 'Dried Fruit', 'Hay', 'Toasted',
     'Dark Cherry', 'Roasted Nuts', 'Toasted Bread'
 ].sort(); // .sort() keeps the list alphabetical.
 
-// A predefined list of cigar strength options.
+// SSM 06282005 - A predefined list of cigar strength options.
 const strengthOptions = ['Mild', 'Mild-Medium', 'Medium', 'Medium-Full', 'Full'];
 
-// A list of fun tips for Roxy's Corner on the dashboard.
+// SSM 06282005 - A list of fun tips for Roxy's Corner on the dashboard.
 const roxysTips = [
     "Did you know? A steady 70% humidity is perfect for aging most cigars. Don't let it fluctuate!",
     "Remember to rotate your cigars every few months to ensure they age evenly. It's like a little cigar ballet!",
@@ -856,7 +880,7 @@ const ImageEditModal = ({ cigar, setCigars, onClose }) => {
 
     return (
          <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100]" onClick={onClose}>
-            <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-sm flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-bold text-amber-400 flex items-center"><ImageIcon className="w-5 h-5 mr-2"/> Edit Image</h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button>
@@ -1747,19 +1771,101 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
     const [isExportModalOpen, setIsExportModalOpen] = useState(false); // State for export modal
     const [isManualReadingModalOpen, setIsManualReadingModalOpen] = useState(false); // NEW: State for manual reading modal
 
-    const cigarsInHumidor = cigars.filter(c => c.humidorId === humidor.id);
-    const totalQuantity = cigarsInHumidor.reduce((sum, c) => sum + c.quantity, 0);
-    // Calculate estimated value for cigars in this humidor
-    const humidorValue = cigarsInHumidor.reduce((sum, c) => sum + (c.quantity * c.price), 0);
+    // State for filtering and sorting (New)
+    const [showFilterSort, setShowFilterSort] = useState(false); // Controls visibility of filter/sort panel
+    const [filters, setFilters] = useState({
+        brand: '',
+        country: '',
+        strength: '',
+        flavorNotes: [],
+    });
+    const [sortBy, setSortBy] = useState('name'); // Default sort by name
+    const [sortOrder, setSortOrder] = useState('asc'); // Default sort order ascending
+
+    // Get unique options for filters from all cigars in the current humidor (Memoized for performance)
+    const uniqueBrands = useMemo(() => [...new Set(cigars.filter(c => c.humidorId === humidor.id).map(c => c.brand))].sort(), [cigars, humidor.id]);
+    const uniqueCountries = useMemo(() => [...new Set(cigars.filter(c => c.humidorId === humidor.id).map(c => c.country))].sort(), [cigars, humidor.id]);
+    const uniqueStrengths = useMemo(() => [...new Set(cigars.filter(c => c.humidorId === humidor.id).map(c => c.strength))].sort((a, b) => strengthOptions.indexOf(a) - strengthOptions.indexOf(b)), [cigars, humidor.id]);
+    const availableFlavorNotes = useMemo(() => [...new Set(cigars.filter(c => c.humidorId === humidor.id).flatMap(c => c.flavorNotes))].sort(), [cigars, humidor.id]);
+
+
+    // Filter and sort cigars (Memoized for performance)
+    const filteredAndSortedCigars = useMemo(() => {
+        let currentCigars = cigars.filter(c => c.humidorId === humidor.id);
+
+        // Apply search query first
+        if (searchQuery) {
+            currentCigars = currentCigars.filter(cigar =>
+                cigar.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                cigar.brand.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+        }
+
+        // Apply filters
+        if (filters.brand) {
+            currentCigars = currentCigars.filter(cigar => cigar.brand === filters.brand);
+        }
+        if (filters.country) {
+            currentCigars = currentCigars.filter(cigar => cigar.country === filters.country);
+        }
+        if (filters.strength) {
+            currentCigars = currentCigars.filter(cigar => cigar.strength === filters.strength);
+        }
+        if (filters.flavorNotes.length > 0) {
+            currentCigars = currentCigars.filter(cigar =>
+                filters.flavorNotes.every(note => cigar.flavorNotes.includes(note))
+            );
+        }
+
+        // Apply sorting
+        currentCigars.sort((a, b) => {
+            let valA, valB;
+            switch (sortBy) {
+                case 'name':
+                    valA = a.name.toLowerCase();
+                    valB = b.name.toLowerCase();
+                    break;
+                case 'brand':
+                    valA = a.brand.toLowerCase();
+                    valB = b.brand.toLowerCase();
+                    break;
+                case 'rating':
+                    valA = a.rating;
+                    valB = b.rating;
+                    break;
+                case 'quantity':
+                    valA = a.quantity;
+                    valB = b.quantity;
+                    break;
+                case 'price':
+                    valA = a.price;
+                    valB = b.price;
+                    break;
+                default:
+                    return 0;
+            }
+
+            if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+            if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        return currentCigars;
+    }, [cigars, humidor.id, searchQuery, filters, sortBy, sortOrder]);
+
+
+    // FIX: Changed calculations to use filteredAndSortedCigars
+    const totalQuantity = filteredAndSortedCigars.reduce((sum, c) => sum + c.quantity, 0);
+    const humidorValue = filteredAndSortedCigars.reduce((sum, c) => sum + (c.quantity * c.price), 0);
 
     const handleSearchChange = (e) => {
         const query = e.target.value;
         setSearchQuery(query);
 
         if (query.length > 1) {
-            const allSuggestions = cigarsInHumidor
+            const allSuggestions = cigars.filter(c => c.humidorId === humidor.id)
                 .map(c => c.brand)
-                .concat(cigarsInHumidor.map(c => c.name))
+                .concat(cigars.filter(c => c.humidorId === humidor.id).map(c => c.name))
                 .filter(name => name.toLowerCase().includes(query.toLowerCase()));
             
             const uniqueSuggestions = [...new Set(allSuggestions)];
@@ -1773,11 +1879,6 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
         setSearchQuery(suggestion);
         setSuggestions([]);
     };
-
-    const filteredCigars = cigarsInHumidor.filter(cigar =>
-        cigar.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        cigar.brand.toLowerCase().includes(searchQuery.toLowerCase())
-    );
 
     // Toggles the ability to select multiple cigars.
     const handleToggleSelectMode = () => {
@@ -1861,6 +1962,31 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
         setIsManualReadingModalOpen(false);
     };
 
+    // Handle filter changes
+    const handleFilterChange = (filterName, value) => {
+        setFilters(prev => ({ ...prev, [filterName]: value }));
+    };
+
+    // Handle multi-select flavor notes
+    const handleFlavorNoteToggle = (note) => {
+        setFilters(prev => ({
+            ...prev,
+            flavorNotes: prev.flavorNotes.includes(note)
+                ? prev.flavorNotes.filter(n => n !== note)
+                : [...prev.flavorNotes, note]
+        }));
+    };
+
+    // Handle sort changes
+    const handleSortChange = (sortCriteria) => {
+        if (sortBy === sortCriteria) {
+            setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'));
+        } else {
+            setSortBy(sortCriteria);
+            setSortOrder('asc');
+        }
+    };
+
 
     return (
         <div className="p-4 pb-24">
@@ -1878,7 +2004,7 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
                 onClose={() => setIsDeleteHumidorModalOpen(false)}
                 onConfirm={handleConfirmDeleteHumidor}
                 humidor={humidor}
-                cigarsInHumidor={cigarsInHumidor}
+                cigarsInHumidor={filteredAndSortedCigars} // FIX: Use filteredAndSortedCigars
                 otherHumidors={humidors.filter(h => h.id !== humidor.id)}
                 theme={theme}
             />
@@ -1893,7 +2019,7 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
             {/* Render the ExportModal for current humidor's cigars */}
             {isExportModalOpen && (
                 <ExportModal
-                    cigars={cigarsInHumidor} // Pass only cigars in the current humidor
+                    cigars={filteredAndSortedCigars} // FIX: Use filteredAndSortedCigars
                     onClose={() => setIsExportModalOpen(false)}
                 />
             )}
@@ -2017,6 +2143,10 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
                         <List className="w-5 h-5" />
                     </button>
                 </div>
+                {/* Filter/Sort Toggle Button (New) */}
+                <button onClick={() => setShowFilterSort(prev => !prev)} className="p-2 rounded-full bg-gray-700 text-white hover:bg-gray-600 transition-colors flex-shrink-0">
+                    <Filter className="w-5 h-5" />
+                </button>
                 {/* Moved Select/Cancel button here */}
                 <button onClick={handleToggleSelectMode} className="flex items-center gap-2 bg-gray-700 text-white font-bold text-sm px-4 py-2 rounded-full hover:bg-gray-600 transition-colors flex-shrink-0"> {/* Added flex-shrink-0 */}
                     {isSelectMode ? <X className="w-4 h-4"/> : <Check className="w-4 h-4" />}
@@ -2024,23 +2154,88 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
                 </button>
             </div>
 
+            {/* Filter and Sort Panel (New) */}
+            {showFilterSort && (
+                <div className={`${theme.card} p-4 rounded-xl mb-6 space-y-4`}>
+                    <h3 className="font-bold text-amber-300 text-lg">Filter & Sort</h3>
+                    {/* Filters */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className={`${theme.subtleText} text-sm mb-1 block`}>Brand</label>
+                            <select value={filters.brand} onChange={(e) => handleFilterChange('brand', e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white">
+                                <option value="">All Brands</option>
+                                {uniqueBrands.map(brand => <option key={brand} value={brand}>{brand}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className={`${theme.subtleText} text-sm mb-1 block`}>Country</label>
+                            <select value={filters.country} onChange={(e) => handleFilterChange('country', e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white">
+                                <option value="">All Countries</option>
+                                {uniqueCountries.map(country => <option key={country} value={country}>{country}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className={`${theme.subtleText} text-sm mb-1 block`}>Strength</label>
+                            <select value={filters.strength} onChange={(e) => handleFilterChange('strength', e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white">
+                                <option value="">All Strengths</option>
+                                {strengthOptions.map(strength => <option key={strength} value={strength}>{strength}</option>)}
+                            </select>
+                        </div>
+                        <div className="col-span-2">
+                            <label className={`${theme.subtleText} text-sm mb-1 block`}>Flavor Notes</label>
+                            <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
+                                {availableFlavorNotes.map(note => (
+                                    <button
+                                        key={note}
+                                        onClick={() => handleFlavorNoteToggle(note)}
+                                        className={`text-xs font-semibold px-2.5 py-1.5 rounded-full transition-all duration-200 ${filters.flavorNotes.includes(note) ? 'bg-amber-500 text-white' : 'bg-gray-700 text-gray-300 border border-gray-600'}`}
+                                    >
+                                        {note}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Sorting */}
+                    <div className="border-t border-gray-700 pt-4 mt-4">
+                        <h4 className="font-bold text-white text-base mb-2">Sort By</h4>
+                        <div className="flex justify-between items-center">
+                            <select value={sortBy} onChange={(e) => handleSortChange(e.target.value)} className="flex-grow bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white">
+                                <option value="name">Name</option>
+                                <option value="brand">Brand</option>
+                                <option value="rating">Rating</option>
+                                <option value="quantity">Quantity</option>
+                                <option value="price">Price</option>
+                            </select>
+                            <button onClick={() => setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'))} className="ml-3 p-2 rounded-full bg-gray-700 text-white hover:bg-gray-600 transition-colors">
+                                {sortOrder === 'asc' ? <ArrowUpWideNarrow className="w-5 h-5" /> : <ArrowDownWideNarrow className="w-5 h-5" />}
+                            </button>
+                        </div>
+                    </div>
+                     <button onClick={() => setFilters({ brand: '', country: '', strength: '', flavorNotes: [] })} className="w-full bg-gray-600 text-white font-bold py-2 rounded-lg hover:bg-gray-500 transition-colors mt-4">
+                        Clear Filters
+                    </button>
+                </div>
+            )}
+
             {/* Moved cigar counts here, below the consolidated search/view/select row */}
             <div className="flex justify-between items-center mb-6 px-2">
                 <div>
-                    <p className="text-sm text-gray-300"><span className="font-bold text-white">{filteredCigars.length}</span> Unique</p>
+                    <p className="text-sm text-gray-300"><span className="font-bold text-white">{filteredAndSortedCigars.length}</span> Unique</p>
                     <p className="text-xs text-gray-400"><span className="font-bold text-gray-200">{totalQuantity}</span> Total Cigars</p>
                 </div>
             </div>
 
             <div className={viewMode === 'grid' ? "grid grid-cols-2 gap-4" : "flex flex-col gap-4"}>
-                {filteredCigars.map(cigar => (
+                {filteredAndSortedCigars.map(cigar => (
                     viewMode === 'grid'
                         ? <GridCigarCard key={cigar.id} cigar={cigar} navigate={navigate} isSelectMode={isSelectMode} isSelected={selectedCigarIds.includes(cigar.id)} onSelect={handleSelectCigar} />
                         : <ListCigarCard key={cigar.id} cigar={cigar} navigate={navigate} isSelectMode={isSelectMode} isSelected={selectedCigarIds.includes(cigar.id)} onSelect={handleSelectCigar} />
                 ))}
-                 {filteredCigars.length === 0 && (
+                 {filteredAndSortedCigars.length === 0 && (
                     <div className="col-span-full text-center py-10">
-                        <p className="text-gray-400">No cigars found in this humidor.</p>
+                        <p className="text-gray-400">No cigars found matching your criteria.</p>
                          <button onClick={() => navigate('AddCigar', { humidorId: humidor.id })} className="mt-4 flex items-center mx-auto gap-2 bg-amber-500 text-white font-bold text-sm px-4 py-2 rounded-full hover:bg-amber-600 transition-colors">
                             <Plus className="w-4 h-4" />
                             Add First Cigar
@@ -2657,7 +2852,7 @@ const AddHumidor = ({ navigate, setHumidors, theme }) => {
             ...formData,
             humidity: 70, // Default humidity
             temp: 68, // Default temperature
-            // Use the uploaded image from formData, or generate a placeholder if no image was uploaded
+            // Use the uploaded image from formData, or generate a placeholder if none is provided
             image: formData.image || `https://placehold.co/600x400/3a2d27/ffffff?text=${formData.name.replace(/\s/g, '+') || 'New+Humidor'}`,
             goveeDeviceId: null,
             goveeDeviceModel: null,
@@ -2806,7 +3001,7 @@ const EditHumidor = ({ navigate, setHumidors, humidor, goveeApiKey, goveeDevices
             </div>
 
             <div className="space-y-4">
-                {/* Image Upload Section for Humidor */}
+                {/* Image Upload Section for Humidor (Added) */}
                 <div className="flex justify-center mb-4">
                     <input type="file" ref={fileInputRef} onChange={handleImageUpload} style={{ display: 'none' }} accept="image/*" />
                     <button onClick={() => fileInputRef.current.click()} className="w-48 h-32 bg-gray-800 border-2 border-dashed border-gray-600 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:bg-gray-700 hover:border-amber-500 transition-colors overflow-hidden">
@@ -3103,6 +3298,21 @@ const DataSyncScreen = ({ navigate, setCigars, cigars, humidors }) => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
+    // Function to export humidor environment data
+    const exportEnvironmentData = () => {
+        let headers = ['humidorId,name,humidity,temp'];
+        let envCsv = humidors.reduce((acc, humidor) => {
+            const { id, name, humidity, temp } = humidor;
+            acc.push([id, name, humidity, temp].join(','));
+            return acc;
+        }, []);
+        downloadFile({
+            data: [...headers, ...envCsv].join('\n'),
+            fileName: 'humidor_environment_export.csv',
+            fileType: 'text/csv',
+        });
+    };
+
     return (
         <div className="p-4 pb-24">
             {isImportModalOpen && <ImportCsvModal humidors={humidors} setCigars={setCigars} navigate={navigate} onClose={() => setIsImportModalOpen(false)} />}
@@ -3122,6 +3332,16 @@ const DataSyncScreen = ({ navigate, setCigars, cigars, humidors }) => {
                         Export Collection
                     </button>
                 </div>
+                 {/* New Section: Export Environment Data */}
+                <div className="bg-gray-800/50 p-4 rounded-xl">
+                    <h3 className="font-bold text-amber-300 text-lg mb-2">Export Environment Data</h3>
+                    <p className="text-sm text-gray-400 mb-4">Download temperature and humidity readings for all your humidors in CSV format.</p>
+                    <button onClick={exportEnvironmentData} className="w-full flex items-center justify-center gap-2 bg-purple-600/80 text-white font-bold py-3 rounded-lg hover:bg-purple-700 transition-colors">
+                        <Download className="w-5 h-5" />
+                        Export Environment CSV
+                    </button>
+                </div>
+                {/* End New Section */}
                  <div className="bg-gray-800/50 p-4 rounded-xl">
                     <h3 className="font-bold text-amber-300 text-lg mb-2">Import Collection</h3>
                     <p className="text-sm text-gray-400 mb-4">Import cigars from a CSV file. Make sure the file matches the format of the exported data to avoid errors.</p>
