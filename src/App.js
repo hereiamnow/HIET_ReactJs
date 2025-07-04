@@ -74,8 +74,8 @@ const themes = {
 // This is placeholder data used to populate the app initially.
 // In a real application, this data would come from a database or API.
 const initialMockHumidors = [
-    { id: 1, name: 'Ironsides', description: 'My primary aging and storage unit.', size: '100', location: 'Lakehouse', image: 'https://placehold.co/600x400/3a2d27/ffffff?text=Ironsides', humidity: 70, temp: 68, goveeDeviceId: null, goveeDeviceModel: null },
-    { id: 2, name: 'Travel Case', description: 'For taking cigars on the go.', size: '5', location: 'Portable', image: 'https://placehold.co/600x400/5c4a42/ffffff?text=Travel+Case', humidity: 45, temp: 76, goveeDeviceId: null, goveeDeviceModel: null },
+    { id: 1, name: 'Ironsides', description: 'My primary aging and storage unit.', size: '150-count', location: 'Office', image: 'https://placehold.co/600x400/3a2d27/ffffff?text=Ironsides', humidity: 70, temp: 68, goveeDeviceId: null, goveeDeviceModel: null },
+    { id: 2, name: 'Travel Case', description: 'For taking cigars on the go.', size: '5-count', location: 'Portable', image: 'https://placehold.co/600x400/5c4a42/ffffff?text=Travel+Case', humidity: 69, temp: 71, goveeDeviceId: null, goveeDeviceModel: null },
 ];
 
 const initialMockCigars = [
@@ -253,7 +253,7 @@ const initialMockCigars = [
     "binder": "Nicaraguan",
     "filler": "Nicaraguan",
     "strength": "Mild-Medium",
-    "flavorNotes": ["Cream", "Cedar", "Nuts", "Toast"],
+    "flavorNotes": ["Cream", "Nuts", "Toast", "Spice"],
     "rating": 91,
     "quantity": 5,
     "price": 8,
@@ -549,42 +549,18 @@ const initialMockCigars = [
   }
 ];
 
-// SSM 06282005 - A predefined list of cigar orgin options output from Google Sheets via Gimini
-const cigarOrginOptions = ['Dominican Republic','Europe','Honduras','Italy','Nicaragua',
-    'Philippines','Undisclosed','United States'];
-
-// SSM 06282005 - A predefined list of cigar shape options output from Google Sheets via Gimini
-const cigarShapeOptions = ['Belicoso','Churchill','Cigarillos','Corona','Corona Extra',
-    'Corona Gigante','Corona Gorda','Corona Grande','Double Corona','Double Perfecto',
-    'Double Robusto','Double Toro','Figurado','Gigante','Gordo','Gordo Extra','Gorona',
-    'Lancero','Lancero/Panatela','Lonsdale','Panatela','Perfecto','Petite Corona',
-    'Presidente','Pyramid','Robusto','Robusto Extra','Robusto Gordo','Rothschild',
-    'Salomon','Short Robusto','Super Toro','Toro','Toro Extra','Torpedo'];
-
-// SSM 06282005 - A predefined list of cigar brand options output from Google Sheets via Gimini
-const cigarBrandOptions = ['5 Vegas','601 Cigars','Adventura','Aganorsa Leaf','Aj Fernandez','Aladino',
-    'Alec Bradley','Arganese','Arturo Fuente Cigars','Ashton Cigars','Asylum','Avo','Baccarat','Bahia',
-    'Black Label Trading Co.','Caldwell','Camacho Cigars','Cao','Ci Knock-Offs','Cohiba Cigars','Crowned Heads',
-    'Cuba Libre','Davidoff Cigars','Diesel','Don Rafael','Drew Estate Cigars','Dunbarton Tobacco & Trust',
-    'E.P. Carrillo','Espinosa','Foundation Cigar Company','Fratello','Graycliff','Gurkha Cigars','H. Upmann',
-    'Hc Series','Hoyo De Monterrey','Hvc','Illusione','Java By Drew Estate','Jm Tobacco','Joya De Nicaragua',
-    'Kristoff','La Aurora','La Flor Dominicana','La Gloria Cubana','La Palina','La Perla Habana','Latitude Zero',
-    'Macanudo Cigars','Mark Twain','Montecristo Cigars','My Father','Nica Libre','Oliva Cigars','Partagas','Pdr Cigars',
-    'Perdomo Cigars','Plasencia Cigars','Punch Cigars','Rocky Patel Cigars','Roma Craft','Romeo Y Julieta Cigars','Room101',
-    'Royal Agio Cigars','San Cristobal','Sancho Panza','Southern Draw','Tatuaje Cigars','Torano','Victor Sinclair','Warped'];
-
-// SSM 06282005 - A comprehensive list of possible flavor notes a user can select.
+// A comprehensive list of possible flavor notes a user can select.
 const allFlavorNotes = [
-    'Earthy', 'Woody', 'Spice','Spicy', 'Nutty', 'Sweet', 'Fruity', 'Floral', 'Herbal',
+    'Earthy', 'Woody', 'Spicy', 'Nutty', 'Sweet', 'Fruity', 'Floral', 'Herbal',
     'Leather', 'Coffee', 'Cocoa', 'Chocolate', 'Creamy', 'Pepper', 'Cedar', 'Oak',
     'Cinnamon', 'Vanilla', 'Honey', 'Caramel', 'Citrus', 'Dried Fruit', 'Hay', 'Toasted',
     'Dark Cherry', 'Roasted Nuts', 'Toasted Bread'
 ].sort(); // .sort() keeps the list alphabetical.
 
-// SSM 06282005 - A predefined list of cigar strength options.
+// A predefined list of cigar strength options.
 const strengthOptions = ['Mild', 'Mild-Medium', 'Medium', 'Medium-Full', 'Full'];
 
-// SSM 06282005 - A list of fun tips for Roxy's Corner on the dashboard.
+// A list of fun tips for Roxy's Corner on the dashboard.
 const roxysTips = [
     "Did you know? A steady 70% humidity is perfect for aging most cigars. Don't let it fluctuate!",
     "Remember to rotate your cigars every few months to ensure they age evenly. It's like a little cigar ballet!",
@@ -2004,7 +1980,7 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
                 onClose={() => setIsDeleteHumidorModalOpen(false)}
                 onConfirm={handleConfirmDeleteHumidor}
                 humidor={humidor}
-                cigarsInHumidor={filteredAndSortedCigars} // FIX: Use filteredAndSortedCigars
+                cigarsInHumidor={filteredAndSortedCigars}
                 otherHumidors={humidors.filter(h => h.id !== humidor.id)}
                 theme={theme}
             />
@@ -2019,7 +1995,7 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
             {/* Render the ExportModal for current humidor's cigars */}
             {isExportModalOpen && (
                 <ExportModal
-                    cigars={filteredAndSortedCigars} // FIX: Use filteredAndSortedCigars
+                    cigars={filteredAndSortedCigars}
                     onClose={() => setIsExportModalOpen(false)}
                 />
             )}
@@ -2115,7 +2091,7 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
             </div>
 
 
-            {/* Consolidated Search, View Mode, and Select/Cancel buttons */}
+            {/* Consolidated Search, Filter/Sort, and Select/Cancel buttons */}
             <div className="flex items-center mb-4 gap-2"> {/* Reduced gap for compactness */}
                 <div className="relative flex-grow">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -2135,14 +2111,6 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
                         </div>
                     )}
                 </div>
-                <div className="flex bg-gray-800 border border-gray-700 rounded-full p-1 flex-shrink-0"> {/* Added flex-shrink-0 */}
-                    <button onClick={() => setViewMode('grid')} className={`p-2 rounded-full transition-colors duration-200 ${viewMode === 'grid' ? 'bg-amber-500 text-white' : 'text-gray-400'}`}>
-                        <LayoutGrid className="w-5 h-5" />
-                    </button>
-                    <button onClick={() => setViewMode('list')} className={`p-2 rounded-full transition-colors duration-200 ${viewMode === 'list' ? 'bg-amber-500 text-white' : 'text-gray-400'}`}>
-                        <List className="w-5 h-5" />
-                    </button>
-                </div>
                 {/* Filter/Sort Toggle Button (New) */}
                 <button onClick={() => setShowFilterSort(prev => !prev)} className="p-2 rounded-full bg-gray-700 text-white hover:bg-gray-600 transition-colors flex-shrink-0">
                     <Filter className="w-5 h-5" />
@@ -2153,6 +2121,26 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
                     {isSelectMode ? 'Cancel' : 'Select'}
                 </button>
             </div>
+
+            {/* Cigar counts and View Mode Toggle Button on the same row */}
+            {/* Changes Start Here: Moved view mode toggle to this row */}
+            <div className="flex justify-between items-center mb-6 px-2">
+                {/* Cigar counts */}
+                <div>
+                    <p className="text-sm text-gray-300"><span className="font-bold text-white">{filteredAndSortedCigars.length}</span> Unique</p>
+                    <p className="text-xs text-gray-400"><span className="font-bold text-gray-200">{totalQuantity}</span> Total Cigars</p>
+                </div>
+                {/* View Mode Toggle Button */}
+                <div className="flex bg-gray-800 border border-gray-700 rounded-full p-1">
+                    <button onClick={() => setViewMode('grid')} className={`p-2 rounded-full transition-colors duration-200 ${viewMode === 'grid' ? 'bg-amber-500 text-white' : 'text-gray-400'}`}>
+                        <LayoutGrid className="w-5 h-5" />
+                    </button>
+                    <button onClick={() => setViewMode('list')} className={`p-2 rounded-full transition-colors duration-200 ${viewMode === 'list' ? 'bg-amber-500 text-white' : 'text-gray-400'}`}>
+                        <List className="w-5 h-5" />
+                    </button>
+                </div>
+            </div>
+            {/* Changes End Here */}
 
             {/* Filter and Sort Panel (New) */}
             {showFilterSort && (
@@ -2219,13 +2207,13 @@ const MyHumidor = ({ humidor, navigate, cigars, setCigars, humidors, setHumidors
                 </div>
             )}
 
-            {/* Moved cigar counts here, below the consolidated search/view/select row */}
-            <div className="flex justify-between items-center mb-6 px-2">
+            {/* Original cigar counts row removed as it's now combined */}
+            {/* <div className="flex justify-between items-center mb-6 px-2">
                 <div>
                     <p className="text-sm text-gray-300"><span className="font-bold text-white">{filteredAndSortedCigars.length}</span> Unique</p>
                     <p className="text-xs text-gray-400"><span className="font-bold text-gray-200">{totalQuantity}</span> Total Cigars</p>
                 </div>
-            </div>
+            </div> */}
 
             <div className={viewMode === 'grid' ? "grid grid-cols-2 gap-4" : "flex flex-col gap-4"}>
                 {filteredAndSortedCigars.map(cigar => (
