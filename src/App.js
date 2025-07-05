@@ -192,6 +192,16 @@ const getRatingColor = (rating) => {
     return 'bg-gray-600/80 border-gray-500';
 };
 
+/**
+ * A helper function to parse the numerical capacity from a humidor's size string.
+ * e.g., "150-count" -> 150
+ */
+const parseHumidorSize = (sizeString) => {
+    if (!sizeString || typeof sizeString !== 'string') return 0;
+    const match = sizeString.match(/\d+/); // Find the first sequence of digits
+    return match ? parseInt(match[0], 10) : 0;
+};
+
 
 /**
  * Gauge component for displaying humidity and temperature.
@@ -886,7 +896,7 @@ const ChartCard = ({ title, children, action }) => (
 
 // BrowseByWrapperPanel component
 const BrowseByWrapperPanel = ({ cigars, navigate, theme }) => {
-    const [isCollapsed, setIsCollapsed] = useState(true); // Defaults to collapsed
+    const [isCollapsed, setIsCollapsed] = useState(true);
 
     // Calculate unique wrapper types and their counts
     const wrapperData = useMemo(() => {
@@ -1409,14 +1419,14 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
             </div>
 
             {activeWrapperFilter && (
-                <div className="flex items-center justify-between bg-amber-900/20 border border-amber-800 text-amber-200 px-4 py-2 rounded-lg mb-4">
+                <div className="flex justify-between items-center mb-4">
                     <span>Filtering by: <span className="font-bold">{activeWrapperFilter} Wrapper</span></span>
                     <button onClick={() => setActiveWrapperFilter('')} className="p-1 rounded-full hover:bg-amber-800 transition-colors"><X className="w-4 h-4" /></button>
                 </div>
             )}
 
             {activeStrengthFilter && (
-                <div className="flex items-center justify-between bg-amber-900/20 border border-amber-800 text-amber-200 px-4 py-2 rounded-lg mb-4">
+                <div className="flex justify-between items-center mb-4">
                     <span>Filtering by: <span className="font-bold">{activeStrengthFilter === 'Flavored' ? 'Flavored Cigars' : `${activeStrengthFilter} Strength`}</span></span>
                     <button onClick={() => setActiveStrengthFilter('')} className="p-1 rounded-full hover:bg-amber-800 transition-colors"><X className="w-4 h-4" /></button>
                 </div>
@@ -1424,7 +1434,7 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
 
             {/* NEW: Display active country filter - July 5, 2025 - 2:00:00 AM CDT */}
             {activeCountryFilter && (
-                <div className="flex items-center justify-between bg-amber-900/20 border border-amber-800 text-amber-200 px-4 py-2 rounded-lg mb-4">
+                <div className="flex justify-between items-center mb-4">
                     <span>Filtering by: <span className="font-bold">{activeCountryFilter === 'Other' ? 'Other Countries' : `${activeCountryFilter}`}</span></span>
                     <button onClick={() => setActiveCountryFilter('')} className="p-1 rounded-full hover:bg-amber-800 transition-colors"><X className="w-4 h-4" /></button>
                 </div>
@@ -1447,6 +1457,8 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
                             const cigarsInHumidor = cigars.filter(c => c.humidorId === humidor.id);
                             const cigarCount = cigarsInHumidor.reduce((sum, c) => sum + c.quantity, 0);
                             const humidorValue = cigarsInHumidor.reduce((sum, c) => sum + (c.quantity * (c.price || 0)), 0);
+                            const humidorCapacity = parseHumidorSize(humidor.size);
+                            const percentageFull = humidorCapacity > 0 ? Math.round((cigarCount / humidorCapacity) * 100) : 0;
 
                             return (
                                 <div key={humidor.id} className="bg-gray-800/50 rounded-xl overflow-hidden group cursor-pointer" onClick={() => navigate('MyHumidor', { humidorId: humidor.id })}>
@@ -1459,7 +1471,7 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
                                         </div>
                                         <div className="absolute top-2 right-2 bg-black/50 text-white text-xs font-bold px-2 py-1 rounded-full">{cigarCount} Cigars</div>
                                     </div>
-                                    <div className="p-4 bg-gray-800 grid grid-cols-3 gap-2 text-center">
+                                    <div className="p-4 bg-gray-800 grid grid-cols-4 gap-2 text-center">
                                         <div className="flex flex-col items-center justify-center">
                                             <svg className="w-5 h-5 text-green-400 mb-1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                                             <p className="font-bold text-white text-sm">${humidorValue.toFixed(2)}</p>
@@ -1474,6 +1486,11 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
                                             <Thermometer className="w-5 h-5 text-red-400 mb-1"/>
                                             <p className="font-bold text-white text-sm">{humidor.temp}°F</p>
                                             <p className="text-xs text-gray-400">Temp</p>
+                                        </div>
+                                        <div className="flex flex-col items-center justify-center">
+                                            <Box className="w-5 h-5 text-purple-400 mb-1"/>
+                                            <p className="font-bold text-white text-sm">{percentageFull}%</p>
+                                            <p className="text-xs text-gray-400">Full</p>
                                         </div>
                                     </div>
                                 </div>
