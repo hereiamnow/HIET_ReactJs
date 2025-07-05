@@ -1,45 +1,27 @@
 // File: App.js
 // Author: ADHD developer
 // Date: July 5, 2025
-// Time: 1:32:00 AM CDT
+// Time: 2:10:00 AM CDT
 
-// Description of Changes:
-// - Added a 'shortDescription' field to the Add New Cigar form, placed above the existing 'description' field.
-// - Integrated 'shortDescription' into the Auto-fill Details functionality, allowing the Gemini API to populate it.
-// - Updated the Gemini API prompt and response schema in the `handleAutofill` function to include 'shortDescription'.
-// - Replaced the 'Shape' text input field with a textbox featuring autocomplete suggestions from a predefined list of cigar shapes in AddCigar and EditCigar forms.
-// - Implemented a new reusable 'AutoCompleteInputField' component to handle the autocomplete logic, allowing free-text entry.
-// - Ensured the autocomplete functionality does not interfere with other fields or the 'Auto-fill Details' feature.
-// - Added a 'Flavor Notes' selection mechanism to both 'Add Cigar' and 'Edit Cigar' screens, utilizing the existing FlavorNotesModal.
-// - Added the 'shortDescription' field to the 'Edit Cigar' screen for form consistency.
-// - Added comprehensive file header with author, date, description, and next suggestions.
-// - Added inline comments with timestamps to all modified code sections.
-// - NEW: Added a 'BrowseByWrapperPanel' component to the Dashboard.
-// - NEW: This panel dynamically lists unique cigar wrapper types with their respective cigar counts.
-// - NEW: Each wrapper type label is clickable and navigates to the 'HumidorsScreen' with a 'preFilterWrapper' parameter.
-// - NEW: Modified 'HumidorsScreen' to accept and apply the 'preFilterWrapper' parameter, displaying filtered cigars and a clear filter option.
-// - UPDATE: Modified the 'BrowseByWrapperPanel' to display only the wrapper name, not "Wrapper Name Cigars".
-// - UPDATE: Implemented the new cigar schema for CSV import and export.
-// - UPDATE: Modified `ExportModal` to include `line`, `isBoxPress`, `length_inches`, `ring_gauge`, `userRating` in the CSV header and data mapping.
-// - UPDATE: Modified `ImportCsvModal` to correctly parse and map the new CSV columns to the cigar object properties, including type conversions for boolean and numbers.
-// - UPDATE: Ensured 'Country of Origin' from CSV maps to the existing 'country' field in the cigar object.
-// - FIX: Improved CSV import robustness in `ImportCsvModal` by explicitly trimming lines and checking for empty lines before parsing.
-// - NEW: Added `BrowseByStrengthPanel` component to the Dashboard.
-// - NEW: This panel lists cigar strength categories and 'Flavored Cigars' with their respective counts.
-// - NEW: Each strength/flavored label is clickable and navigates to 'HumidorsScreen' with a 'preFilterStrength' parameter.
-// - UPDATE: Modified 'HumidorsScreen' to accept and apply the 'preFilterStrength' parameter, displaying filtered cigars and a clear filter option.
-// - UPDATE: Made `BrowseByStrengthPanel` collapsible and defaulted to collapsed.
+// Current Changes:
+// - Extracted 'Live Environment' section into a new `LiveEnvironmentPanel` component.
+// - Extracted 'Inventory Analysis' section into a new `InventoryAnalysisPanel` component.
+// - Extracted 'Summarize My Collection' button into a new `SummarizeCollectionButton` component.
+// - Updated the `Dashboard` to conditionally render these new components based on visibility settings.
+// - Added new toggle switches in the `SettingsScreen` under "Dashboard Features" to control the visibility
+//   of the Live Environment, Inventory Analysis, and Summarize My Collection panels on the Dashboard.
+// - Refactored "Dashboard Components" section into its own `DashboardSettingsScreen`.
 
 // Next Suggestions:
 // - Implement full Firebase authentication flow (sign-up, login, password reset).
 // - Enhance error handling with user-friendly messages for all API calls and database operations.
 // - Add more robust input validation for all forms.
 // - Implement a loading indicator for all asynchronous operations (e.g., saving data, fetching Govee devices).
-// - Improve responsiveness for larger screens (tablets and desktops).
+// - Improve responsiveness for larger screens (tablts and desktops).
 // - Add unit tests for components and utility functions.
 // - Consider adding a feature to track cigar aging over time.
 // - Implement push notifications for humidor alerts.
-// - Add new fields (line, isBoxPress, length_inches, ring_gauge, userRating) to the AddCigar and EditCigar forms for manual input and display.
+// - Add new fields (line, isBoxPress, length_inches, ring_gauge, userRating) to the CigarDetail screen for display.
 
 // Import necessary libraries and components.
 // React is the main library for building the user interface.
@@ -135,7 +117,7 @@ const allFlavorNotes = [
 // A predefined list of cigar strength options.
 const strengthOptions = ['Mild', 'Mild-Medium', 'Medium', 'Medium-Full', 'Full'];
 
-// NEW: A predefined list of cigar shapes - July 5, 2025 - 12:00:00 AM CDT
+// A predefined list of cigar shapes - July 5, 2025 - 12:00:00 AM CDT
 const cigarShapes = [
     'Parejo', 'Corona', 'Robusto', 'Toro', 'Churchill', 'Double Corona', 'Lonsdale',
     'Panetela', 'Lancero', 'Grand Corona', 'Presidente', 'Figurado', 'Belicoso',
@@ -308,7 +290,6 @@ const GeminiModal = ({ title, content, isLoading, onClose }) => (
  * FlavorNotesModal is a pop-up for editing the flavor notes of a cigar.
  */
 const FlavorNotesModal = ({ cigar, db, appId, userId, onClose, setSelectedNotes: updateParentNotes }) => {
-    // July 5, 2025 - 12:06:00 AM CDT: Added null check for cigar.flavorNotes
     const [selectedNotes, setSelectedNotes] = useState(cigar?.flavorNotes || []);
 
     const handleToggleNote = (note) => {
@@ -323,7 +304,6 @@ const FlavorNotesModal = ({ cigar, db, appId, userId, onClose, setSelectedNotes:
         // This function is only called when the modal's internal save button is clicked.
         // For AddEditCigarModal, we update parent's state directly on toggle.
         // For CigarDetail, we would save to Firestore here.
-        // July 5, 2025 - 12:06:00 AM CDT: Added conditional save to Firestore
         if (cigar?.id) { // Only save to Firestore if it's an existing cigar from CigarDetail
             const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
             await updateDoc(cigarRef, { flavorNotes: selectedNotes });
@@ -355,7 +335,6 @@ const FlavorNotesModal = ({ cigar, db, appId, userId, onClose, setSelectedNotes:
                         })}
                     </div>
                 </div>
-                {/* July 5, 2025 - 12:06:00 AM CDT: Conditional rendering of save button */}
                 {cigar?.id && ( // Only show save button if editing an existing cigar (from CigarDetail)
                     <div className="flex justify-end gap-3 pt-4 border-t border-gray-700">
                         <button type="button" onClick={onClose} className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors">Cancel</button>
@@ -467,7 +446,6 @@ const DeleteHumidorModal = ({ isOpen, onClose, onConfirm, humidor, cigarsInHumid
         });
     };
     
-    // July 5, 2025 - 1:00:00 AM CDT: Updated exportToCsv to new schema
     const exportToCsv = () => {
         let headers = ['id,name,brand,line,shape,isBoxPress,length_inches,ring_gauge,Size,Country of Origin,wrapper,binder,filler,strength,flavorNotes,rating,userRating,price,quantity,image,shortDescription,description'];
         let usersCsv = cigarsInHumidor.reduce((acc, cigar) => {
@@ -803,7 +781,7 @@ const InputField = ({ name, label, placeholder, type = 'text', value, onChange, 
     </div>
 );
 
-// NEW: Reusable component for text areas - July 4, 2025 - 11:15 PM CDT
+// Reusable component for text areas
 const TextAreaField = ({ name, label, placeholder, value, onChange, theme }) => (
     <div>
         <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>{label}</label>
@@ -818,7 +796,7 @@ const TextAreaField = ({ name, label, placeholder, value, onChange, theme }) => 
     </div>
 );
 
-// NEW: AutoCompleteInputField component - July 5, 2025 - 12:00:00 AM CDT
+// AutoCompleteInputField component
 const AutoCompleteInputField = ({ name, label, placeholder, value, onChange, suggestions, theme }) => {
     const [filteredSuggestions, setFilteredSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -906,7 +884,7 @@ const ChartCard = ({ title, children, action }) => (
     </div>
 );
 
-// NEW: BrowseByWrapperPanel component - July 5, 2025 - 12:19:00 AM CDT
+// BrowseByWrapperPanel component
 const BrowseByWrapperPanel = ({ cigars, navigate, theme }) => {
     // Calculate unique wrapper types and their counts
     const wrapperData = useMemo(() => {
@@ -934,7 +912,6 @@ const BrowseByWrapperPanel = ({ cigars, navigate, theme }) => {
                             onClick={() => navigate('HumidorsScreen', { preFilterWrapper: wrapper })}
                             className="w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors flex justify-between items-center"
                         >
-                            {/* July 5, 2025 - 12:35:00 AM CDT: Changed label to just wrapper name */}
                             <span className="text-gray-300">{wrapper}</span>
                             <span className="text-gray-400">({quantity})</span>
                         </button>
@@ -947,7 +924,7 @@ const BrowseByWrapperPanel = ({ cigars, navigate, theme }) => {
     );
 };
 
-// NEW: BrowseByStrengthPanel component - July 5, 2025 - 1:32:00 AM CDT
+// BrowseByStrengthPanel component - July 5, 2025 - 1:32:00 AM CDT
 const BrowseByStrengthPanel = ({ cigars, navigate, theme }) => {
     const [isCollapsed, setIsCollapsed] = useState(true); // Defaults to collapsed
 
@@ -1001,30 +978,104 @@ const BrowseByStrengthPanel = ({ cigars, navigate, theme }) => {
     );
 };
 
+// NEW: BrowseByCountryPanel component - July 5, 2025 - 2:00:00 AM CDT
+const BrowseByCountryPanel = ({ cigars, navigate, theme }) => {
+    const [isCollapsed, setIsCollapsed] = useState(true); // Defaults to collapsed
 
-const Dashboard = ({ navigate, cigars, humidors, theme }) => {
-    const [roxyTip, setRoxyTip] = useState('');
-    const [isRoxyOpen, setIsRoxyOpen] = useState(true);
-    const [modalState, setModalState] = useState({ isOpen: false, content: '', isLoading: false });
-    const [chartViews, setChartViews] = useState({ brands: 'bar', countries: 'bar', strength: 'bar' });
-    
-    // Panels start collapsed, except for Roxy's Corner.
-    const [isEnvOpen, setIsEnvOpen] = useState(false);
-    const [isInventoryOpen, setIsInventoryOpen] = useState(false);
+    const countryCategories = useMemo(() => [
+        { label: 'Dominican Cigars', filterValue: 'Dominican Republic' },
+        { label: 'Nicaraguan Cigars', filterValue: 'Nicaragua' },
+        { label: 'Honduran Cigars', filterValue: 'Honduras' },
+        { label: 'American Cigars', filterValue: 'USA' },
+        { label: 'Cuban Cigars', filterValue: 'Cuba' },
+        { label: 'Other Countries', filterValue: 'Other' }, // Catch-all for unlisted countries
+    ], []);
 
-    useEffect(() => {
-        // Pick a random tip from Roxy's corner on component mount.
-        setRoxyTip(roxysTips[Math.floor(Math.random() * roxysTips.length)]);
-    }, []);
+    const countryData = useMemo(() => {
+        const counts = cigars.reduce((acc, cigar) => {
+            const country = cigar.country || 'Unknown';
+            const matchedCategory = countryCategories.find(cat => cat.filterValue.toLowerCase() === country.toLowerCase());
 
-    // Calculate display values for gauges based on the first humidor.
-    // Defaults to 0 if no humidors exist.
+            if (matchedCategory) {
+                acc[matchedCategory.label] = (acc[matchedCategory.label] || 0) + cigar.quantity;
+            } else {
+                // If country not explicitly listed, add to 'Other Countries'
+                acc['Other Countries'] = (acc['Other Countries'] || 0) + cigar.quantity;
+            }
+            return acc;
+        }, {});
+
+        // Map back to the original category labels, including those with zero count if desired,
+        // but here we filter to only show categories with actual cigars.
+        return countryCategories
+            .map(category => ({
+                label: category.label,
+                quantity: counts[category.label] || 0,
+                filterValue: category.filterValue
+            }))
+            .filter(item => item.quantity > 0)
+            .sort((a, b) => a.label.localeCompare(b.label)); // Sort alphabetically by label
+    }, [cigars, countryCategories]);
+
+    return (
+        <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
+            <button onClick={() => setIsCollapsed(!isCollapsed)} className="w-full p-4 flex justify-between items-center">
+                <h3 className="font-bold text-amber-300 text-lg flex items-center"><MapPin className="w-5 h-5 mr-2"/> Browse by Country of Origin</h3>
+                <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
+            </button>
+            {!isCollapsed && (
+                <div className="px-4 pb-4 space-y-2">
+                    {countryData.length > 0 ? (
+                        countryData.map(({ label, quantity, filterValue }) => (
+                            <button
+                                key={label}
+                                onClick={() => navigate('HumidorsScreen', { preFilterCountry: filterValue })}
+                                className="w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors flex justify-between items-center"
+                            >
+                                <span className="text-gray-300">{label}</span>
+                                <span className="text-gray-400">({quantity})</span>
+                            </button>
+                        ))
+                    ) : (
+                        <p className="text-gray-500 text-sm text-center py-4">No country of origin data available.</p>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
+// NEW: LiveEnvironmentPanel component
+const LiveEnvironmentPanel = ({ humidors, theme }) => {
+    const [isCollapsed, setIsCollapsed] = useState(true);
     const firstHumidor = humidors[0];
     const displayTemp = firstHumidor ? firstHumidor.temp : 0;
     const displayHumidity = firstHumidor ? firstHumidor.humidity : 0;
 
-    // Memoized calculation for chart data and statistics.
-    const { topBrandsData, topCountriesData, strengthDistributionData, totalValue, totalCigars } = useMemo(() => {
+    return (
+        <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
+            <button onClick={() => setIsCollapsed(!isCollapsed)} className="w-full p-4 flex justify-between items-center">
+                <h3 className="font-bold text-amber-300 text-lg flex items-center"><Thermometer className="w-5 h-5 mr-2"/> Live Environment</h3>
+                <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
+            </button>
+            {!isCollapsed && (
+                <div className="px-4 pb-4">
+                    <div className="flex justify-around items-center h-full py-4">
+                        <Gauge value={displayHumidity} maxValue={100} label="Humidity" unit="%" icon={Droplets} />
+                        <Gauge value={displayTemp} maxValue={100} label="Temperature" unit="°F" icon={Thermometer} />
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// NEW: InventoryAnalysisPanel component
+const InventoryAnalysisPanel = ({ cigars, theme }) => {
+    const [isCollapsed, setIsCollapsed] = useState(true);
+    const [chartViews, setChartViews] = useState({ brands: 'bar', countries: 'bar', strength: 'bar' });
+
+    const { topBrandsData, topCountriesData, strengthDistributionData } = useMemo(() => {
         const processChartData = (data, key) => {
             const groupedData = data.reduce((acc, cigar) => {
                 const groupKey = cigar[key] || 'N/A';
@@ -1040,66 +1091,162 @@ const Dashboard = ({ navigate, cigars, humidors, theme }) => {
         const topBrands = processChartData(cigars, 'brand').slice(0, 5);
         const topCountries = processChartData(cigars, 'country').slice(0, 5);
         const strengthDistribution = processChartData(cigars, 'strength');
-        const value = cigars.reduce((acc, cigar) => acc + (cigar.price * cigar.quantity), 0);
-        const count = cigars.reduce((sum, c) => sum + c.quantity, 0);
 
-        return { 
-            topBrandsData: topBrands, 
-            topCountriesData: topCountries, 
+        return {
+            topBrandsData: topBrands,
+            topCountriesData: topCountries,
             strengthDistributionData: strengthDistribution,
-            totalValue: value,
-            totalCigars: count
         };
     }, [cigars]);
-    
-    // Function to call Gemini API for a collection summary.
-    const handleSummarizeCollection = async () => {
-        setModalState({ isOpen: true, content: '', isLoading: true });
-        const inventorySummary = cigars.map(c => `${c.quantity}x ${c.brand} ${c.name} (${c.strength}, from ${c.country})`).join('\n');
-        const prompt = `You are an expert tobacconist. I am providing you with my current cigar inventory. Please provide a brief, narrative summary of my collection's character. What are the dominant trends in terms of strength, brand, and country of origin? What does my collection say about my tasting preferences? My inventory is:\n\n${inventorySummary}`;
-        
-        const result = await callGeminiAPI(prompt);
-        setModalState({ isOpen: true, content: result, isLoading: false });
-    };
 
-    // Toggles between bar and pie charts.
     const handleChartViewToggle = (chartName) => {
         setChartViews(prev => ({
             ...prev,
             [chartName]: prev[chartName] === 'bar' ? 'pie' : 'bar'
         }));
     };
-    
+
     const PIE_COLORS = ['#f59e0b', '#3b82f6', '#84cc16', '#ef4444', '#a855f7'];
+
+    return (
+        <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
+            <button onClick={() => setIsCollapsed(!isCollapsed)} className="w-full p-4 flex justify-between items-center">
+                <h3 className="font-bold text-amber-300 text-lg flex items-center"><BarChart2 className="w-5 h-5 mr-2"/> Inventory Analysis</h3>
+                <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
+            </button>
+            {!isCollapsed && (
+                <div className="p-4 space-y-6">
+                    <ChartCard
+                        title="Top 5 Brands"
+                        action={ <button onClick={() => handleChartViewToggle('brands')} className={`p-1 rounded-full ${theme.button}`}>{chartViews.brands === 'bar' ? <PieChartIcon className="w-5 h-5" /> : <BarChart2 className="w-5 h-5" />}</button>}>
+                        {chartViews.brands === 'bar' ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={topBrandsData} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                                    <XAxis type="number" hide />
+                                    <YAxis dataKey="name" type="category" width={80} tick={{ fill: '#d1d5db' }} tickLine={false} axisLine={false} />
+                                    <Tooltip cursor={{fill: 'rgba(255, 255, 255, 0.1)'}} contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }}/>
+                                    <Bar dataKey="quantity" fill="#f59e0b" barSize={20} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie data={topBrandsData} dataKey="quantity" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                                        {topBrandsData.map((entry, index) => <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />)}
+                                    </Pie>
+                                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }}/>
+                                </PieChart>
+                            </ResponsiveContainer>
+                        )}
+                    </ChartCard>
+
+                    <ChartCard
+                        title="Top 5 Countries"
+                        action={<button onClick={() => handleChartViewToggle('countries')} className={`p-1 rounded-full ${theme.button}`}>{chartViews.countries === 'bar' ? <PieChartIcon className="w-5 h-5" /> : <BarChart2 className="w-5 h-5" />}</button>}>
+                        {chartViews.countries === 'bar' ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={topCountriesData} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                                    <XAxis type="number" hide />
+                                    <YAxis dataKey="name" type="category" width={80} tick={{ fill: '#d1d5db' }} tickLine={false} axisLine={false} />
+                                    <Tooltip cursor={{fill: 'rgba(255, 255, 255, 0.1)'}} contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }}/>
+                                    <Bar dataKey="quantity" fill="#3b82f6" barSize={20} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie data={topCountriesData} dataKey="quantity" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                                        {topCountriesData.map((entry, index) => <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />)}
+                                    </Pie>
+                                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }}/>
+                                </PieChart>
+                            </ResponsiveContainer>
+                        )}
+                    </ChartCard>
+
+                    <ChartCard
+                        title="Strength Distribution"
+                        action={<button onClick={() => handleChartViewToggle('strength')} className={`p-1 rounded-full ${theme.button}`}>{chartViews.strength === 'bar' ? <PieChartIcon className="w-5 h-5" /> : <BarChart2 className="w-5 h-5" />}</button>}>
+                        {chartViews.strength === 'bar' ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={strengthDistributionData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                                    <XAxis dataKey="name" tick={{ fill: '#d1d5db' }} tickLine={false} axisLine={false} angle={-45} textAnchor="end" height={60} />
+                                    <YAxis tick={{ fill: '#d1d5db' }} tickLine={false} axisLine={false}/>
+                                    <Tooltip cursor={{fill: 'rgba(255, 255, 255, 0.1)'}} contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }}/>
+                                    <Bar dataKey="quantity" fill="#84cc16" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie data={strengthDistributionData} dataKey="quantity" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                                        {strengthDistributionData.map((entry, index) => <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />)}
+                                    </Pie>
+                                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }}/>
+                                </PieChart>
+                            </ResponsiveContainer>
+                        )}
+                    </ChartCard>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// NEW: SummarizeCollectionButton component
+const SummarizeCollectionButton = ({ cigars, handleSummarizeCollection }) => {
+    return (
+        <button onClick={handleSummarizeCollection} className="w-full flex items-center justify-center bg-purple-600/20 border border-purple-500 text-purple-300 font-bold py-3 rounded-lg hover:bg-purple-600/30 transition-colors mt-6">
+            <Sparkles className="w-5 h-5 mr-2" /> Summarize My Collection
+        </button>
+    );
+};
+
+
+const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showStrengthPanel, showCountryPanel, showLiveEnvironment, showInventoryAnalysis, showSummarizeButton }) => {
+    const [roxyTip, setRoxyTip] = useState('');
+    const [isRoxyOpen, setIsRoxyOpen] = useState(true);
+    const [modalState, setModalState] = useState({ isOpen: false, content: '', isLoading: false });
+
+    useEffect(() => {
+        // Pick a random tip from Roxy's corner on component mount.
+        setRoxyTip(roxysTips[Math.floor(Math.random() * roxysTips.length)]);
+    }, []);
+
+    // Memoized calculation for chart data and statistics.
+    const { totalValue, totalCigars } = useMemo(() => {
+        const value = cigars.reduce((acc, cigar) => acc + (cigar.price * cigar.quantity), 0);
+        const count = cigars.reduce((sum, c) => sum + c.quantity, 0);
+
+        return {
+            totalValue: value,
+            totalCigars: count
+        };
+    }, [cigars]);
+
+    // Function to call Gemini API for a collection summary.
+    const handleSummarizeCollection = async () => {
+        setModalState({ isOpen: true, content: '', isLoading: true });
+        const inventorySummary = cigars.map(c => `${c.quantity}x ${c.brand} ${c.name} (${c.strength}, from ${c.country})`).join('\n');
+        const prompt = `You are an expert tobacconist. I am providing you with my current cigar inventory. Please provide a brief, narrative summary of my collection's character. What are the dominant trends in terms of strength, brand, and country of origin? What does my collection say about my tasting preferences? My inventory is:\n\n${inventorySummary}`;
+
+        const result = await callGeminiAPI(prompt);
+        setModalState({ isOpen: true, content: result, isLoading: false });
+    };
 
     return (
         <div className="p-4 pb-24">
             {modalState.isOpen && <GeminiModal title="Collection Summary" content={modalState.content} isLoading={modalState.isLoading} onClose={() => setModalState({ isOpen: false, content: '', isLoading: false })} />}
             <h1 className={`text-3xl font-bold ${theme.text} mb-2`}>Dashboard</h1>
             <p className={`${theme.subtleText} mb-6`}>Your collection's live overview.</p>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <StatCard title="Total Cigars" value={totalCigars} icon={Box} theme={theme} />
                 <StatCard title="Est. Value" value={`$${totalValue.toFixed(2)}`} icon={(props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>} theme={theme} />
                 <StatCard title="Humidors" value={humidors.length} icon={Briefcase} theme={theme} />
             </div>
-            
-            <div className="space-y-6">
-                <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
-                    <button onClick={() => setIsEnvOpen(!isEnvOpen)} className="w-full p-4 flex justify-between items-center">
-                         <h3 className="font-bold text-amber-300 text-lg flex items-center"><Thermometer className="w-5 h-5 mr-2"/> Live Environment</h3>
-                         <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isEnvOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    {isEnvOpen && (
-                        <div className="px-4 pb-4">
-                            <div className="flex justify-around items-center h-full py-4">
-                                <Gauge value={displayHumidity} maxValue={100} label="Humidity" unit="%" icon={Droplets} />
-                                <Gauge value={displayTemp} maxValue={100} label="Temperature" unit="°F" icon={Thermometer} />
-                            </div>
-                        </div>
-                    )}
-                </div>
 
+            <div className="space-y-6">
                 <div className="bg-amber-900/20 border border-amber-800 rounded-xl overflow-hidden">
                     <button onClick={() => setIsRoxyOpen(!isRoxyOpen)} className="w-full p-4 flex justify-between items-center">
                          <h3 className="font-bold text-amber-300 text-lg flex items-center"><Wind className="w-5 h-5 mr-2"/> Roxy's Corner</h3>
@@ -1111,139 +1258,73 @@ const Dashboard = ({ navigate, cigars, humidors, theme }) => {
                         </div>
                     )}
                 </div>
-                
-                <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
-                     <button onClick={() => setIsInventoryOpen(!isInventoryOpen)} className="w-full p-4 flex justify-between items-center">
-                         <h3 className="font-bold text-amber-300 text-lg flex items-center"><BarChart2 className="w-5 h-5 mr-2"/> Inventory Analysis</h3>
-                         <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isInventoryOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    {isInventoryOpen && (
-                        <div className="p-4 space-y-6">
-                             <ChartCard 
-                                title="Top 5 Brands" 
-                                action={ <button onClick={() => handleChartViewToggle('brands')} className={`p-1 rounded-full ${theme.button}`}>{chartViews.brands === 'bar' ? <PieChartIcon className="w-5 h-5" /> : <BarChart2 className="w-5 h-5" />}</button>}>
-                                {chartViews.brands === 'bar' ? (
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={topBrandsData} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-                                            <XAxis type="number" hide />
-                                            <YAxis dataKey="name" type="category" width={80} tick={{ fill: '#d1d5db' }} tickLine={false} axisLine={false} />
-                                            <Tooltip cursor={{fill: 'rgba(255, 255, 255, 0.1)'}} contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }}/>
-                                            <Bar dataKey="quantity" fill="#f59e0b" barSize={20} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                ) : (
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie data={topBrandsData} dataKey="quantity" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
-                                                {topBrandsData.map((entry, index) => <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />)}
-                                            </Pie>
-                                            <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }}/>
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                )}
-                            </ChartCard>
-                            
-                             <ChartCard 
-                                title="Top 5 Countries"
-                                action={<button onClick={() => handleChartViewToggle('countries')} className={`p-1 rounded-full ${theme.button}`}>{chartViews.countries === 'bar' ? <PieChartIcon className="w-5 h-5" /> : <BarChart2 className="w-5 h-5" />}</button>}>
-                               {chartViews.countries === 'bar' ? (
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={topCountriesData} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-                                            <XAxis type="number" hide />
-                                            <YAxis dataKey="name" type="category" width={80} tick={{ fill: '#d1d5db' }} tickLine={false} axisLine={false} />
-                                            <Tooltip cursor={{fill: 'rgba(255, 255, 255, 0.1)'}} contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }}/>
-                                            <Bar dataKey="quantity" fill="#3b82f6" barSize={20} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                               ) : (
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie data={topCountriesData} dataKey="quantity" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
-                                                 {topCountriesData.map((entry, index) => <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />)}
-                                            </Pie>
-                                            <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }}/>
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                               )}
-                            </ChartCard>
 
-                             <ChartCard 
-                                title="Strength Distribution"
-                                action={<button onClick={() => handleChartViewToggle('strength')} className={`p-1 rounded-full ${theme.button}`}>{chartViews.strength === 'bar' ? <PieChartIcon className="w-5 h-5" /> : <BarChart2 className="w-5 h-5" />}</button>}>
-                                {chartViews.strength === 'bar' ? (
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={strengthDistributionData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                                             <XAxis dataKey="name" tick={{ fill: '#d1d5db' }} tickLine={false} axisLine={false} angle={-45} textAnchor="end" height={60} />
-                                            <YAxis tick={{ fill: '#d1d5db' }} tickLine={false} axisLine={false}/>
-                                            <Tooltip cursor={{fill: 'rgba(255, 255, 255, 0.1)'}} contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }}/>
-                                            <Bar dataKey="quantity" fill="#84cc16" />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                ) : (
-                                     <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie data={strengthDistributionData} dataKey="quantity" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
-                                                {strengthDistributionData.map((entry, index) => <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />)}
-                                            </Pie>
-                                            <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }}/>
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                )}
-                            </ChartCard>
-                        </div>
-                    )}
-                </div>
-                 <button onClick={handleSummarizeCollection} className="w-full flex items-center justify-center bg-purple-600/20 border border-purple-500 text-purple-300 font-bold py-3 rounded-lg hover:bg-purple-600/30 transition-colors mt-6">
-                    <Sparkles className="w-5 h-5 mr-2" /> Summarize My Collection
-                </button>
-                {/* July 5, 2025 - 12:19:00 AM CDT: Integrate BrowseByWrapperPanel */}
-                <BrowseByWrapperPanel cigars={cigars} navigate={navigate} theme={theme} />
-                {/* July 5, 2025 - 1:32:00 AM CDT: Integrate BrowseByStrengthPanel */}
-                <BrowseByStrengthPanel cigars={cigars} navigate={navigate} theme={theme} />
+                {showLiveEnvironment && <LiveEnvironmentPanel humidors={humidors} theme={theme} />}
+                {showInventoryAnalysis && <InventoryAnalysisPanel cigars={cigars} theme={theme} />}
+                {showSummarizeButton && <SummarizeCollectionButton cigars={cigars} handleSummarizeCollection={handleSummarizeCollection} />}
+
+                {showWrapperPanel && <BrowseByWrapperPanel cigars={cigars} navigate={navigate} theme={theme} />}
+                {showStrengthPanel && <BrowseByStrengthPanel cigars={cigars} navigate={navigate} theme={theme} />}
+                {showCountryPanel && <BrowseByCountryPanel cigars={cigars} navigate={navigate} theme={theme} />}
             </div>
         </div>
     );
 };
 
-const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, preFilterWrapper, preFilterStrength }) => { // July 5, 2025 - 12:19:00 AM CDT: Added preFilterWrapper prop, July 5, 2025 - 1:32:00 AM CDT: Added preFilterStrength prop
+const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, preFilterWrapper, preFilterStrength, preFilterCountry }) => { // July 5, 2025 - 2:00:00 AM CDT: Added preFilterCountry prop
     const [searchQuery, setSearchQuery] = useState('');
     const [suggestions, setSuggestions] = useState([]);
-    // July 5, 2025 - 12:19:00 AM CDT: State for active wrapper filter
     const [activeWrapperFilter, setActiveWrapperFilter] = useState(preFilterWrapper || '');
-    // July 5, 2025 - 1:32:00 AM CDT: State for active strength filter
     const [activeStrengthFilter, setActiveStrengthFilter] = useState(preFilterStrength || '');
+    // NEW: State for active country filter - July 5, 2025 - 2:00:00 AM CDT
+    const [activeCountryFilter, setActiveCountryFilter] = useState(preFilterCountry || '');
     
     const DollarSignIcon = (props) => (
         <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
     );
 
-    // July 5, 2025 - 12:19:00 AM CDT: Effect to update activeWrapperFilter when preFilterWrapper prop changes
+    // Effect to update activeWrapperFilter when preFilterWrapper prop changes
     useEffect(() => {
         if (preFilterWrapper) {
             setActiveWrapperFilter(preFilterWrapper);
             setSearchQuery(''); // Clear general search if a wrapper filter is applied
-            setActiveStrengthFilter(''); // July 5, 2025 - 1:32:00 AM CDT: Clear strength filter if wrapper filter is applied
+            setActiveStrengthFilter(''); // Clear strength filter if wrapper filter is applied
+            setActiveCountryFilter(''); // July 5, 2025 - 2:00:00 AM CDT: Clear country filter if wrapper filter is applied
         } else {
             setActiveWrapperFilter(''); // Clear filter if preFilterWrapper is removed
         }
     }, [preFilterWrapper]);
 
-    // July 5, 2025 - 1:32:00 AM CDT: Effect to update activeStrengthFilter when preFilterStrength prop changes
+    // Effect to update activeStrengthFilter when preFilterStrength prop changes
     useEffect(() => {
         if (preFilterStrength) {
             setActiveStrengthFilter(preFilterStrength);
             setSearchQuery(''); // Clear general search if a strength filter is applied
             setActiveWrapperFilter(''); // Clear wrapper filter if strength filter is applied
+            setActiveCountryFilter(''); // July 5, 2025 - 2:00:00 AM CDT: Clear country filter if strength filter is applied
         } else {
             setActiveStrengthFilter(''); // Clear filter if preFilterStrength is removed
         }
     }, [preFilterStrength]);
+
+    // NEW: Effect to update activeCountryFilter when preFilterCountry prop changes - July 5, 2025 - 2:00:00 AM CDT
+    useEffect(() => {
+        if (preFilterCountry) {
+            setActiveCountryFilter(preFilterCountry);
+            setSearchQuery(''); // Clear general search if a country filter is applied
+            setActiveWrapperFilter(''); // Clear wrapper filter if country filter is applied
+            setActiveStrengthFilter(''); // Clear strength filter if country filter is applied
+        } else {
+            setActiveCountryFilter(''); // Clear filter if preFilterCountry is removed
+        }
+    }, [preFilterCountry]);
     
     const handleSearchChange = (e) => {
         const query = e.target.value;
         setSearchQuery(query);
-        setActiveWrapperFilter(''); // July 5, 2025 - 12:19:00 AM CDT: Clear wrapper filter if user starts searching
-        setActiveStrengthFilter(''); // July 5, 2025 - 1:32:00 AM CDT: Clear strength filter if user starts searching
+        setActiveWrapperFilter(''); // Clear wrapper filter if user starts searching
+        setActiveStrengthFilter(''); // Clear strength filter if user starts searching
+        setActiveCountryFilter(''); // July 5, 2025 - 2:00:00 AM CDT: Clear country filter if user starts searching
         if (query.length > 1) {
             const allSuggestions = cigars.map(c => c.brand).concat(cigars.map(c => c.name)).filter(name => name.toLowerCase().includes(query.toLowerCase()));
             const uniqueSuggestions = [...new Set(allSuggestions)];
@@ -1258,8 +1339,7 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
         setSuggestions([]);
     };
 
-    // July 5, 2025 - 12:19:00 AM CDT: Memoized filtered cigars, now including wrapper filter
-    // July 5, 2025 - 1:32:00 AM CDT: Updated memoized filtered cigars to include strength filter
+    // Memoized filtered cigars, now including wrapper, strength, and country filters - July 5, 2025 - 2:00:00 AM CDT
     const filteredCigars = useMemo(() => {
         let currentCigars = cigars;
         if (searchQuery) {
@@ -1284,11 +1364,25 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
                 );
             }
         }
+        // NEW: Apply country filter - July 5, 2025 - 2:00:00 AM CDT
+        if (activeCountryFilter) {
+            if (activeCountryFilter === 'Other') {
+                // Filter for cigars whose country is not explicitly listed in countryCategories
+                const explicitCountries = ['dominican republic', 'nicaragua', 'honduras', 'usa', 'cuba'];
+                currentCigars = currentCigars.filter(cigar =>
+                    cigar.country && !explicitCountries.includes(cigar.country.toLowerCase())
+                );
+            } else {
+                currentCigars = currentCigars.filter(cigar =>
+                    cigar.country && cigar.country.toLowerCase() === activeCountryFilter.toLowerCase()
+                );
+            }
+        }
         return currentCigars;
-    }, [cigars, searchQuery, activeWrapperFilter, activeStrengthFilter]);
+    }, [cigars, searchQuery, activeWrapperFilter, activeStrengthFilter, activeCountryFilter]);
         
-    const totalUniqueCigars = filteredCigars.length; // July 5, 2025 - 12:19:00 AM CDT: Count based on filtered cigars
-    const totalQuantity = filteredCigars.reduce((sum, c) => sum + c.quantity, 0); // July 5, 2025 - 12:19:00 AM CDT: Count based on filtered cigars
+    const totalUniqueCigars = filteredCigars.length;
+    const totalQuantity = filteredCigars.reduce((sum, c) => sum + c.quantity, 0);
 
     return (
         <div className="p-4 pb-24">
@@ -1309,7 +1403,6 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
                 )}
             </div>
 
-            {/* July 5, 2025 - 12:19:00 AM CDT: Display active wrapper filter */}
             {activeWrapperFilter && (
                 <div className="flex items-center justify-between bg-amber-900/20 border border-amber-800 text-amber-200 px-4 py-2 rounded-lg mb-4">
                     <span>Filtering by: <span className="font-bold">{activeWrapperFilter} Wrapper</span></span>
@@ -1317,7 +1410,6 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
                 </div>
             )}
 
-            {/* July 5, 2025 - 1:32:00 AM CDT: Display active strength filter */}
             {activeStrengthFilter && (
                 <div className="flex items-center justify-between bg-amber-900/20 border border-amber-800 text-amber-200 px-4 py-2 rounded-lg mb-4">
                     <span>Filtering by: <span className="font-bold">{activeStrengthFilter === 'Flavored' ? 'Flavored Cigars' : `${activeStrengthFilter} Strength`}</span></span>
@@ -1325,7 +1417,15 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
                 </div>
             )}
 
-            {searchQuery === '' && !activeWrapperFilter && !activeStrengthFilter ? ( // July 5, 2025 - 12:19:00 AM CDT: Conditionally render humidor list or filtered cigars
+            {/* NEW: Display active country filter - July 5, 2025 - 2:00:00 AM CDT */}
+            {activeCountryFilter && (
+                <div className="flex items-center justify-between bg-amber-900/20 border border-amber-800 text-amber-200 px-4 py-2 rounded-lg mb-4">
+                    <span>Filtering by: <span className="font-bold">{activeCountryFilter === 'Other' ? 'Other Countries' : `${activeCountryFilter}`}</span></span>
+                    <button onClick={() => setActiveCountryFilter('')} className="p-1 rounded-full hover:bg-amber-800 transition-colors"><X className="w-4 h-4" /></button>
+                </div>
+            )}
+
+            {searchQuery === '' && !activeWrapperFilter && !activeStrengthFilter && !activeCountryFilter ? ( // July 5, 2025 - 2:00:00 AM CDT: Conditionally render humidor list or filtered cigars
                 <>
                     <div className="flex justify-between items-center mb-6 px-2">
                         <div>
@@ -1356,7 +1456,7 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
                                     </div>
                                     <div className="p-4 bg-gray-800 grid grid-cols-3 gap-2 text-center">
                                         <div className="flex flex-col items-center justify-center">
-                                            <DollarSignIcon className="w-5 h-5 text-green-400 mb-1"/>
+                                            <svg className="w-5 h-5 text-green-400 mb-1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                                             <p className="font-bold text-white text-sm">${humidorValue.toFixed(2)}</p>
                                             <p className="text-xs text-gray-400">Value</p>
                                         </div>
@@ -1797,13 +1897,10 @@ const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
 };
 
 const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
-    // Initializing formData with shortDescription, description, image, and rating fields - July 4, 2025 - 11:35 PM CDT
-    // July 5, 2025 - 12:06:00 AM CDT: Added flavorNotes to initial state
     const [formData, setFormData] = useState({ brand: '', name: '', shape: '', size: '', wrapper: '', binder: '', filler: '', country: '', strength: '', price: '', rating: '', quantity: 1, image: '', shortDescription: '', description: '', flavorNotes: [] });
     const [strengthSuggestions, setStrengthSuggestions] = useState([]);
     const [isAutofilling, setIsAutofilling] = useState(false);
     const [modalState, setModalState] = useState({ isOpen: false, content: '', isLoading: false });
-    // July 5, 2025 - 12:06:00 AM CDT: State for flavor notes modal
     const [isFlavorModalOpen, setIsFlavorModalOpen] = useState(false);
 
     const handleInputChange = (e) => {
@@ -1833,17 +1930,14 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
         navigate('MyHumidor', { humidorId: humidorId });
     };
     
-    // Updated handleAutofill to include shortDescription, description, image, and rating - July 4, 2025 - 11:35 PM CDT
     const handleAutofill = async () => {
         if (!formData.name) {
             setModalState({ isOpen: true, content: "Please enter a cigar name to auto-fill.", isLoading: false });
             return;
         }
         setIsAutofilling(true);
-        // Updated prompt to request shortDescription, description, image, and rating - July 4, 2025 - 11:35 PM CDT
         const prompt = `You are a cigar database. Based on the cigar name "${formData.name}", provide its details as a JSON object. The schema MUST be: { "brand": "string", "shape": "string", "size": "string", "country": "string", "wrapper": "string", "binder": "string", "filler": "string", "strength": "Mild" | "Mild-Medium" | "Medium" | "Medium-Full" | "Full", "flavorNotes": ["string", "string", "string", "string"], "shortDescription": "string", "description": "string", "image": "string", "rating": "number" }. If you cannot determine a value, use an empty string "" or an empty array [] or 0 for rating. Do not include any text or markdown formatting outside of the JSON object.`;
         
-        // Updated responseSchema to include shortDescription, description, image, and rating - July 4, 2025 - 11:35 PM CDT
         const responseSchema = {
             type: "OBJECT",
             properties: {
@@ -1856,12 +1950,12 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                 filler: { type: "STRING" },
                 strength: { type: "STRING", enum: ["Mild", "Mild-Medium", "Medium", "Medium-Full", "Full"] },
                 flavorNotes: { type: "ARRAY", items: { type: "STRING" } },
-                shortDescription: { type: "STRING" }, // Added shortDescription to schema - July 4, 2025 - 11:35 PM CDT
+                shortDescription: { type: "STRING" },
                 description: { type: "STRING" },
                 image: { type: "STRING" },
                 rating: { type: "NUMBER" }
             },
-            required: ["brand", "shape", "size", "country", "wrapper", "binder", "filler", "strength", "flavorNotes", "shortDescription", "description", "image", "rating"] // Added shortDescription to required - July 4, 2025 - 11:35 PM CDT
+            required: ["brand", "shape", "size", "country", "wrapper", "binder", "filler", "strength", "flavorNotes", "shortDescription", "description", "image", "rating"]
         };
 
         const result = await callGeminiAPI(prompt, responseSchema);
@@ -1870,11 +1964,11 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
             setFormData(prevData => ({
                 ...prevData,
                 ...result,
-                rating: Number(result.rating) || 0, // Ensure rating is a number - July 4, 2025 - 11:15 PM CDT
-                image: result.image || '', // Ensure image is a string - July 4, 2025 - 11:15 PM CDT
-                shortDescription: result.shortDescription || '', // Ensure shortDescription is a string - July 4, 2025 - 11:35 PM CDT
-                description: result.description || '', // Ensure description is a string - July 4, 2025 - 11:15 PM CDT
-                flavorNotes: Array.isArray(result.flavorNotes) ? result.flavorNotes : [] // Ensure flavorNotes is an array - July 5, 2025 - 12:06:00 AM CDT
+                rating: Number(result.rating) || 0,
+                image: result.image || '',
+                shortDescription: result.shortDescription || '',
+                description: result.description || '',
+                flavorNotes: Array.isArray(result.flavorNotes) ? result.flavorNotes : []
             }));
         } else {
             console.error("Gemini API response was not a valid object:", result);
@@ -1886,7 +1980,7 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
 
     const closeModal = () => setModalState({ isOpen: false, content: '', isLoading: false });
 
-    // July 5, 2025 - 12:06:00 AM CDT: Function to update flavor notes from modal
+    // Function to update flavor notes from modal
     const handleFlavorNotesUpdate = (newNotes) => {
         setFormData(prev => ({ ...prev, flavorNotes: newNotes }));
     };
@@ -1894,7 +1988,6 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
     return (
         <div className="p-4 pb-24">
             {modalState.isOpen && <GeminiModal title="Auto-fill Status" content={modalState.content} isLoading={modalState.isLoading} onClose={closeModal} />}
-            {/* July 5, 2025 - 12:06:00 AM CDT: FlavorNotesModal for AddCigar */}
             {isFlavorModalOpen && <FlavorNotesModal cigar={{ flavorNotes: formData.flavorNotes }} db={db} appId={appId} userId={userId} onClose={() => setIsFlavorModalOpen(false)} setSelectedNotes={handleFlavorNotesUpdate} />}
 
             <div className="flex items-center mb-6">
@@ -1912,15 +2005,12 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                     {isAutofilling ? 'Thinking...' : '✨ Auto-fill Details'}
                 </button>
 
-                {/* Added InputField for shortDescription - July 4, 2025 - 11:35 PM CDT */}
                 <InputField name="shortDescription" label="Short Description" placeholder="Brief overview of the cigar..." value={formData.shortDescription} onChange={handleInputChange} theme={theme} />
                 
-                {/* Added TextAreaField for description - July 4, 2025 - 11:15 PM CDT */}
                 <TextAreaField name="description" label="Description" placeholder="Notes on this cigar..." value={formData.description} onChange={handleInputChange} theme={theme} />
 
                 <InputField name="brand" label="Brand" placeholder="e.g., Padrón" value={formData.brand} onChange={handleInputChange} theme={theme} />
                 <div className="grid grid-cols-2 gap-4">
-                    {/* Replaced InputField with AutoCompleteInputField for Shape - July 5, 2025 - 12:00:00 AM CDT */}
                     <AutoCompleteInputField
                         name="shape"
                         label="Shape"
@@ -1951,11 +2041,9 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                     </div>
                     <InputField name="price" label="Price Paid" placeholder="e.g., 15.50" type="number" value={formData.price} onChange={handleInputChange} theme={theme} />
                 </div>
-                {/* Added InputField for rating - July 4, 2025 - 11:15 PM CDT */}
                 <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} onChange={handleInputChange} theme={theme} />
                 <InputField name="quantity" label="Quantity" placeholder="e.g., 5" type="number" value={formData.quantity} onChange={handleInputChange} theme={theme} />
                 
-                {/* July 5, 2025 - 12:06:00 AM CDT: Flavor Notes section for AddCigar */}
                 <div className="bg-gray-800/50 p-4 rounded-xl">
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="font-bold text-amber-300 text-lg flex items-center"><Tag className="w-5 h-5 mr-3 text-amber-400"/> Flavor Notes</h3>
@@ -1980,10 +2068,8 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
 };
 
 const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
-    // July 5, 2025 - 12:06:00 AM CDT: Initializing formData with shortDescription and ensuring flavorNotes is an array
     const [formData, setFormData] = useState({ ...cigar, shortDescription: cigar.shortDescription || '', description: cigar.description || '', flavorNotes: cigar.flavorNotes || [] });
     const [strengthSuggestions, setStrengthSuggestions] = useState([]);
-    // July 5, 2025 - 12:06:00 AM CDT: State for flavor notes modal
     const [isFlavorModalOpen, setIsFlavorModalOpen] = useState(false);
 
     const handleInputChange = (e) => {
@@ -2002,20 +2088,18 @@ const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
     const handleSave = async () => {
         const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
         const { id, ...dataToSave } = formData;
-        // July 5, 2025 - 12:06:00 AM CDT: Ensure flavorNotes is an array before saving
         dataToSave.flavorNotes = Array.isArray(dataToSave.flavorNotes) ? dataToSave.flavorNotes : [];
         await updateDoc(cigarRef, dataToSave);
         navigate('CigarDetail', { cigarId: cigar.id });
     };
 
-    // July 5, 2025 - 12:06:00 AM CDT: Function to update flavor notes from modal
+    // Function to update flavor notes from modal
     const handleFlavorNotesUpdate = (newNotes) => {
         setFormData(prev => ({ ...prev, flavorNotes: newNotes }));
     };
 
     return (
         <div className="p-4 pb-24">
-            {/* July 5, 2025 - 12:06:00 AM CDT: FlavorNotesModal for EditCigar */}
             {isFlavorModalOpen && <FlavorNotesModal cigar={{ flavorNotes: formData.flavorNotes }} db={db} appId={appId} userId={userId} onClose={() => setIsFlavorModalOpen(false)} setSelectedNotes={handleFlavorNotesUpdate} />}
 
             <div className="flex items-center mb-6">
@@ -2027,11 +2111,9 @@ const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
                 <InputField name="image" label="Image URL" placeholder="https://example.com/cigar.png" value={formData.image} onChange={handleInputChange} theme={theme} />
                 <InputField name="brand" label="Brand" placeholder="e.g., Padrón" value={formData.brand} onChange={handleInputChange} theme={theme} />
                 <InputField name="name" label="Name / Line" placeholder="e.g., 1964 Anniversary" value={formData.name} onChange={handleInputChange} theme={theme} />
-                {/* July 5, 2025 - 12:06:00 AM CDT: Added shortDescription to EditCigar */}
                 <InputField name="shortDescription" label="Short Description" placeholder="Brief overview of the cigar..." value={formData.shortDescription} onChange={handleInputChange} theme={theme} />
                 <TextAreaField name="description" label="Description" placeholder="Notes on this cigar..." value={formData.description} onChange={handleInputChange} theme={theme} />
                 <div className="grid grid-cols-2 gap-4">
-                    {/* Replaced InputField with AutoCompleteInputField for Shape - July 5, 2025 - 12:00:00 AM CDT */}
                     <AutoCompleteInputField
                         name="shape"
                         label="Shape"
@@ -2065,7 +2147,6 @@ const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
                 <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} onChange={handleInputChange} theme={theme} />
                 <InputField name="quantity" label="Quantity" placeholder="e.g., 5" type="number" value={formData.quantity} onChange={handleInputChange} theme={theme} />
 
-                {/* July 5, 2025 - 12:06:00 AM CDT: Flavor Notes section for EditCigar */}
                 <div className="bg-gray-800/50 p-4 rounded-xl">
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="font-bold text-amber-300 text-lg flex items-center"><Tag className="w-5 h-5 mr-3 text-amber-400"/> Flavor Notes</h3>
@@ -2331,8 +2412,61 @@ const EditHumidor = ({ navigate, db, appId, userId, humidor, goveeApiKey, goveeD
     );
 };
 
+// NEW: DashboardSettingsScreen component
+const DashboardSettingsScreen = ({ navigate, theme, dashboardPanelVisibility, setDashboardPanelVisibility }) => {
+    const ToggleSwitch = ({ label, isChecked, onToggle }) => (
+        <div className="flex justify-between items-center py-2">
+            <span className="text-gray-300">{label}</span>
+            <button onClick={onToggle} className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${isChecked ? 'bg-amber-500' : 'bg-gray-600'}`}>
+                <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${isChecked ? 'translate-x-6' : 'translate-x-1'}`}/>
+            </button>
+        </div>
+    );
 
-const SettingsScreen = ({navigate, theme, setTheme}) => {
+    return (
+        <div className="p-4 pb-24">
+            <div className="flex items-center mb-6">
+                <button onClick={() => navigate('Settings')} className="p-2 -ml-2 mr-2"><ChevronLeft className={`w-7 h-7 ${theme.text}`} /></button>
+                <h1 className={`text-3xl font-bold ${theme.text}`}>Dashboard Components</h1>
+            </div>
+            <div className="bg-gray-800/50 p-4 rounded-xl space-y-2">
+                <ToggleSwitch
+                    label="Browse by Wrapper"
+                    isChecked={dashboardPanelVisibility.showWrapperPanel}
+                    onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showWrapperPanel: !prev.showWrapperPanel }))}
+                />
+                <ToggleSwitch
+                    label="Browse by Strength"
+                    isChecked={dashboardPanelVisibility.showStrengthPanel}
+                    onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showStrengthPanel: !prev.showStrengthPanel }))}
+                />
+                <ToggleSwitch
+                    label="Browse by Country"
+                    isChecked={dashboardPanelVisibility.showCountryPanel}
+                    onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showCountryPanel: !prev.showCountryPanel }))}
+                />
+                <ToggleSwitch
+                    label="Live Environment"
+                    isChecked={dashboardPanelVisibility.showLiveEnvironment}
+                    onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showLiveEnvironment: !prev.showLiveEnvironment }))}
+                />
+                <ToggleSwitch
+                    label="Inventory Analysis"
+                    isChecked={dashboardPanelVisibility.showInventoryAnalysis}
+                    onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showInventoryAnalysis: !prev.showInventoryAnalysis }))}
+                />
+                <ToggleSwitch
+                    label="Summarize Collection Button"
+                    isChecked={dashboardPanelVisibility.showSummarizeButton}
+                    onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showSummarizeButton: !prev.showSummarizeButton }))}
+                />
+            </div>
+        </div>
+    );
+};
+
+
+const SettingsScreen = ({navigate, theme, setTheme, dashboardPanelVisibility, setDashboardPanelVisibility}) => {
     const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
     
     const SettingItem = ({icon: Icon, title, subtitle, onClick}) => (
@@ -2348,11 +2482,12 @@ const SettingsScreen = ({navigate, theme, setTheme}) => {
             <h1 className="text-3xl font-bold text-white mb-6">Settings</h1>
             <div className="space-y-4">
                 <SettingItem icon={User} title="Profile" subtitle="Manage your account details" onClick={() => navigate('Profile')} />
+                <SettingItem icon={LayoutGrid} title="Dashboard Components" subtitle="Customize what appears on your dashboard" onClick={() => navigate('DashboardSettings')} />
                 <SettingItem icon={Bell} title="Notifications" subtitle="Set up alerts for humidity and temp" onClick={() => navigate('Alerts')} />
                 <SettingItem icon={Zap} title="Integrations" subtitle="Connect to Govee and other services" onClick={() => navigate('Integrations')} />
                 <SettingItem icon={Database} title="Data & Sync" subtitle="Export or import your collection" onClick={() => navigate('DataSync')} />
                 <SettingItem icon={Palette} title="Theme" subtitle={`Current: ${theme.name}`} onClick={() => setIsThemeModalOpen(true)} />
-                <SettingItem icon={Info} title="About Humidor Hub" subtitle="Version 1.0.0" onClick={() => navigate('About')} />
+                <SettingItem icon={Info} title="About Humidor Hub" subtitle="Version 1.1.0" onClick={() => navigate('About')} />
             </div>
         </div>
     );
@@ -2493,9 +2628,7 @@ const ImportCsvModal = ({ humidors, db, appId, userId, onClose, navigate }) => {
             const batch = writeBatch(db);
             const cigarsCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'cigars');
             
-            // July 5, 2025 - 1:00:00 AM CDT: Updated CSV parsing to new schema
             lines.forEach(line => {
-                // July 5, 2025 - 1:11:00 AM CDT: Trim line and skip if empty
                 const trimmedLine = line.trim();
                 if (!trimmedLine) {
                     return; // Skip empty or whitespace-only lines
@@ -2512,20 +2645,20 @@ const ImportCsvModal = ({ humidors, db, appId, userId, onClose, navigate }) => {
                     humidorId: selectedHumidor,
                     name: columns[1],
                     brand: columns[2],
-                    line: columns[3] || '', // New field
+                    line: columns[3] || '',
                     shape: columns[4],
-                    isBoxPress: columns[5].toLowerCase() === 'true', // New field, convert to boolean
-                    length_inches: parseFloat(columns[6]) || 0, // New field, convert to number
-                    ring_gauge: parseInt(columns[7]) || 0, // New field, convert to number
+                    isBoxPress: columns[5].toLowerCase() === 'true',
+                    length_inches: parseFloat(columns[6]) || 0,
+                    ring_gauge: parseInt(columns[7]) || 0,
                     size: columns[8],
-                    country: columns[9], // Maps from 'Country of Origin'
+                    country: columns[9],
                     wrapper: columns[10],
                     binder: columns[11],
                     filler: columns[12],
                     strength: columns[13],
-                    flavorNotes: columns[14].replace(/"/g, '').split(';').map(s => s.trim()).filter(s => s), // Clean and filter empty strings
+                    flavorNotes: columns[14].replace(/"/g, '').split(';').map(s => s.trim()).filter(s => s),
                     rating: parseInt(columns[15]) || 0,
-                    userRating: parseFloat(columns[16]) || 0, // New field, convert to number
+                    userRating: parseFloat(columns[16]) || 0,
                     price: parseFloat(columns[17]) || 0,
                     quantity: parseInt(columns[18]) || 0,
                     image: columns[19] || '',
@@ -2565,11 +2698,9 @@ const ImportCsvModal = ({ humidors, db, appId, userId, onClose, navigate }) => {
 };
 
 const ExportModal = ({ cigars, onClose }) => {
-    // July 5, 2025 - 1:00:00 AM CDT: Updated CSV header to new schema
     const exportToCsv = () => {
         let headers = ['id,name,brand,line,shape,isBoxPress,length_inches,ring_gauge,Size,Country of Origin,wrapper,binder,filler,strength,flavorNotes,rating,userRating,price,quantity,image,shortDescription,description'];
         let usersCsv = cigars.reduce((acc, cigar) => {
-            // July 5, 2025 - 1:00:00 AM CDT: Updated cigar property extraction for new schema
             const {
                 id, name, brand, line = '', shape, isBoxPress = false, length_inches = 0, ring_gauge = 0,
                 size, country, wrapper, binder, filler, strength, flavorNotes, rating, userRating = 0,
@@ -2706,6 +2837,16 @@ export default function App() {
     const [goveeApiKey, setGoveeApiKey] = useState('');
     const [goveeDevices, setGoveeDevices] = useState([]);
     
+    // NEW: State for controlling dashboard panel visibility - July 5, 2025 - 2:00:00 AM CDT
+    const [dashboardPanelVisibility, setDashboardPanelVisibility] = useState({
+        showWrapperPanel: true,
+        showStrengthPanel: true,
+        showCountryPanel: true,
+        showLiveEnvironment: true, // NEW: Default to true
+        showInventoryAnalysis: true, // NEW: Default to true
+        showSummarizeButton: true, // NEW: Default to true
+    });
+
     // Firebase state
     const [db, setDb] = useState(null);
     const [auth, setAuth] = useState(null);
@@ -2840,11 +2981,16 @@ export default function App() {
 
         switch (screen) {
             case 'Dashboard':
-                return <Dashboard navigate={navigate} cigars={cigars} humidors={humidors} theme={theme} />;
+                return <Dashboard navigate={navigate} cigars={cigars} humidors={humidors} theme={theme}
+                    showWrapperPanel={dashboardPanelVisibility.showWrapperPanel}
+                    showStrengthPanel={dashboardPanelVisibility.showStrengthPanel}
+                    showCountryPanel={dashboardPanelVisibility.showCountryPanel}
+                    showLiveEnvironment={dashboardPanelVisibility.showLiveEnvironment} // NEW
+                    showInventoryAnalysis={dashboardPanelVisibility.showInventoryAnalysis} // NEW
+                    showSummarizeButton={dashboardPanelVisibility.showSummarizeButton} // NEW
+                />;
             case 'HumidorsScreen':
-                // July 5, 2025 - 12:19:00 AM CDT: Pass preFilterWrapper to HumidorsScreen
-                // July 5, 2025 - 1:32:00 AM CDT: Pass preFilterStrength to HumidorsScreen
-                return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} {...dbProps} theme={theme} preFilterWrapper={params.preFilterWrapper} preFilterStrength={params.preFilterStrength} />;
+                return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} {...dbProps} theme={theme} preFilterWrapper={params.preFilterWrapper} preFilterStrength={params.preFilterStrength} preFilterCountry={params.preFilterCountry} />;
             case 'MyHumidor':
                 const humidor = humidors.find(h => h.id === params.humidorId);
                 if (!humidor) return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} {...dbProps} theme={theme} />; 
@@ -2856,7 +3002,9 @@ export default function App() {
             case 'Alerts':
                 return <AlertsScreen navigate={navigate} humidors={humidors} theme={theme} />;
             case 'Settings':
-                return <SettingsScreen navigate={navigate} setTheme={setTheme} theme={theme} />;
+                return <SettingsScreen navigate={navigate} setTheme={setTheme} theme={theme} dashboardPanelVisibility={dashboardPanelVisibility} setDashboardPanelVisibility={setDashboardPanelVisibility} />;
+            case 'DashboardSettings': // NEW: Route for DashboardSettingsScreen
+                return <DashboardSettingsScreen navigate={navigate} theme={theme} dashboardPanelVisibility={dashboardPanelVisibility} setDashboardPanelVisibility={setDashboardPanelVisibility} />;
             case 'Integrations':
                 return <IntegrationsScreen navigate={navigate} goveeApiKey={goveeApiKey} setGoveeApiKey={setGoveeApiKey} goveeDevices={goveeDevices} setGoveeDevices={setGoveeDevices} theme={theme} />;
             case 'DataSync':
@@ -2882,8 +3030,12 @@ export default function App() {
         }
     };
 
+    // SVG pattern for background
+    const svgPattern = `%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23a0522d' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E`;
+    const encodedSvgPattern = encodeURIComponent(svgPattern);
+
     return (
-        <div className={`font-sans antialiased ${theme.bg} ${theme.text} min-h-screen`} style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23a0522d\' fill-opacity=\'0.05\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }}>
+        <div className={`font-sans antialiased ${theme.bg} ${theme.text} min-h-screen`} style={{ backgroundImage: `url("data:image/svg+xml,${encodedSvgPattern}")` }}>
             <div className={`max-w-md mx-auto ${theme.bg}/95 min-h-screen shadow-2xl shadow-black relative`}>
                 <div className="fixed top-0 left-0 right-0 max-w-md mx-auto h-8 z-50" style={{background: 'linear-gradient(to bottom, rgba(0,0,0,0.3), transparent)'}}></div>
                 {renderScreen()}
