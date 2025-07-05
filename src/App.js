@@ -1,12 +1,15 @@
 // File: App.js
 // Author: ADHD developer
-// Date: July 4, 2025
-// Time: 11:35 PM CDT
+// Date: July 5, 2025
+// Time: 12:00:00 AM CDT
 
 // Description of Changes:
 // - Added a 'shortDescription' field to the Add New Cigar form, placed above the existing 'description' field.
 // - Integrated 'shortDescription' into the Auto-fill Details functionality, allowing the Gemini API to populate it.
 // - Updated the Gemini API prompt and response schema in the `handleAutofill` function to include 'shortDescription'.
+// - Replaced the 'Shape' text input field with a textbox featuring autocomplete suggestions from a predefined list of cigar shapes in AddCigar and EditCigar forms.
+// - Implemented a new reusable 'AutoCompleteInputField' component to handle the autocomplete logic, allowing free-text entry.
+// - Ensured the autocomplete functionality does not interfere with other fields or the 'Auto-fill Details' feature.
 // - Added comprehensive file header with author, date, description, and next suggestions.
 // - Added inline comments with timestamps to all modified code sections.
 
@@ -113,6 +116,13 @@ const allFlavorNotes = [
 
 // A predefined list of cigar strength options.
 const strengthOptions = ['Mild', 'Mild-Medium', 'Medium', 'Medium-Full', 'Full'];
+
+// NEW: A predefined list of cigar shapes - July 5, 2025 - 12:00:00 AM CDT
+const cigarShapes = [
+    'Parejo', 'Corona', 'Robusto', 'Toro', 'Churchill', 'Double Corona', 'Lonsdale',
+    'Panetela', 'Lancero', 'Grand Corona', 'Presidente', 'Figurado', 'Belicoso',
+    'Torpedo', 'Piramide', 'Perfecto', 'Diadema', 'Culebra', 'Double Robusto'
+].sort();
 
 // A list of fun tips for Roxy's Corner on the dashboard.
 const roxysTips = [
@@ -783,6 +793,80 @@ const TextAreaField = ({ name, label, placeholder, value, onChange, theme }) => 
         />
     </div>
 );
+
+// NEW: AutoCompleteInputField component - July 5, 2025 - 12:00:00 AM CDT
+const AutoCompleteInputField = ({ name, label, placeholder, value, onChange, suggestions, theme }) => {
+    const [filteredSuggestions, setFilteredSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+
+    const handleInputChange = (e) => {
+        const inputValue = e.target.value;
+        onChange(e); // Pass the event up to the parent form's handler
+
+        if (inputValue.length > 0) {
+            const filtered = suggestions.filter(
+                (suggestion) => suggestion.toLowerCase().includes(inputValue.toLowerCase())
+            );
+            setFilteredSuggestions(filtered);
+            setShowSuggestions(true);
+        } else {
+            setFilteredSuggestions([]);
+            setShowSuggestions(false);
+        }
+    };
+
+    const handleSuggestionClick = (suggestion) => {
+        // Create a synthetic event to pass to the parent's onChange handler
+        onChange({ target: { name, value: suggestion } });
+        setShowSuggestions(false);
+        setFilteredSuggestions([]);
+    };
+
+    const handleBlur = () => {
+        // Delay hiding suggestions to allow click events on suggestions to fire
+        setTimeout(() => setShowSuggestions(false), 100);
+    };
+
+    return (
+        <div className="relative">
+            <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>{label}</label>
+            <input
+                type="text"
+                name={name}
+                placeholder={placeholder}
+                value={value || ''}
+                onChange={handleInputChange}
+                onFocus={() => { // Show suggestions if input has value on focus
+                    if (value && value.length > 0) {
+                        const filtered = suggestions.filter(
+                            (suggestion) => suggestion.toLowerCase().includes(value.toLowerCase())
+                        );
+                        setFilteredSuggestions(filtered);
+                        setShowSuggestions(true);
+                    }
+                }}
+                onBlur={handleBlur}
+                className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} placeholder-gray-500 focus:outline-none focus:ring-2 ${theme.ring}`}
+            />
+            {showSuggestions && filteredSuggestions.length > 0 && (
+                <div className={`absolute z-10 w-full ${theme.card} border ${theme.borderColor} rounded-lg mt-1 max-h-48 overflow-y-auto shadow-lg`}>
+                    {filteredSuggestions.map((suggestion, index) => (
+                        <div
+                            key={index}
+                            onMouseDown={(e) => { // Use onMouseDown to prevent blur from hiding suggestions before click
+                                e.preventDefault(); // Prevent input from losing focus immediately
+                                handleSuggestionClick(suggestion);
+                            }}
+                            className={`px-3 py-2 cursor-pointer ${theme.text} hover:${theme.button} `}
+                        >
+                            {suggestion}
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
 
 
 // --- SCREEN COMPONENTS ---
@@ -1630,7 +1714,16 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
 
                 <InputField name="brand" label="Brand" placeholder="e.g., Padrón" value={formData.brand} onChange={handleInputChange} theme={theme} />
                 <div className="grid grid-cols-2 gap-4">
-                    <InputField name="shape" label="Shape" placeholder="e.g., Toro" value={formData.shape} onChange={handleInputChange} theme={theme} />
+                    {/* Replaced InputField with AutoCompleteInputField for Shape - July 5, 2025 - 12:00:00 AM CDT */}
+                    <AutoCompleteInputField
+                        name="shape"
+                        label="Shape"
+                        placeholder="e.g., Toro"
+                        value={formData.shape}
+                        onChange={handleInputChange}
+                        suggestions={cigarShapes}
+                        theme={theme}
+                    />
                     <InputField name="size" label="Size" placeholder="e.g., 5.5x50" value={formData.size} onChange={handleInputChange} theme={theme} />
                 </div>
                  <div className="grid grid-cols-2 gap-4">
@@ -1702,7 +1795,16 @@ const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
                 <InputField name="name" label="Name / Line" placeholder="e.g., 1964 Anniversary" value={formData.name} onChange={handleInputChange} theme={theme} />
                 <TextAreaField name="description" label="Description" placeholder="Notes on this cigar..." value={formData.description} onChange={handleInputChange} theme={theme} />
                 <div className="grid grid-cols-2 gap-4">
-                    <InputField name="shape" label="Shape" placeholder="e.g., Toro" value={formData.shape} onChange={handleInputChange} theme={theme} />
+                    {/* Replaced InputField with AutoCompleteInputField for Shape - July 5, 2025 - 12:00:00 AM CDT */}
+                    <AutoCompleteInputField
+                        name="shape"
+                        label="Shape"
+                        placeholder="e.g., Toro"
+                        value={formData.shape}
+                        onChange={handleInputChange}
+                        suggestions={cigarShapes}
+                        theme={theme}
+                    />
                     <InputField name="size" label="Size" placeholder="e.g., 5.5x50" value={formData.size} onChange={handleInputChange} theme={theme} />
                 </div>
                  <div className="grid grid-cols-2 gap-4">
