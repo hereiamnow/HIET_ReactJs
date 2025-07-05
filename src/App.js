@@ -1,10 +1,12 @@
 // File: App.js
 // Author: ADHD developer
 // Date: July 4, 2025
-// Time: 11:15 PM CDT
+// Time: 11:35 PM CDT
 
 // Description of Changes:
-// - Enhanced "Auto-fill Details" functionality on the Add New Cigar page to include 'description', 'image', and 'rating' from the Gemini API.
+// - Added a 'shortDescription' field to the Add New Cigar form, placed above the existing 'description' field.
+// - Integrated 'shortDescription' into the Auto-fill Details functionality, allowing the Gemini API to populate it.
+// - Updated the Gemini API prompt and response schema in the `handleAutofill` function to include 'shortDescription'.
 // - Added comprehensive file header with author, date, description, and next suggestions.
 // - Added inline comments with timestamps to all modified code sections.
 
@@ -290,7 +292,7 @@ const FlavorNotesModal = ({ cigar, db, appId, userId, onClose, setSelectedNotes:
 
     const handleSave = async () => {
         // This function is only called when the modal's internal save button is clicked.
-        // For AddEditCigarModal, we update parent state directly on toggle.
+        // For AddEditCigarModal, we update parent's state directly on toggle.
         // For CigarDetail, we would save to Firestore here.
         if (cigar.id) { // Only save to Firestore if it's an existing cigar
             const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
@@ -1517,8 +1519,8 @@ const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
 };
 
 const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
-    // Initializing formData with description, image, and rating fields - July 4, 2025 - 11:15 PM CDT
-    const [formData, setFormData] = useState({ brand: '', name: '', shape: '', size: '', wrapper: '', binder: '', filler: '', country: '', strength: '', price: '', rating: '', quantity: 1, image: '', description: '' });
+    // Initializing formData with shortDescription, description, image, and rating fields - July 4, 2025 - 11:35 PM CDT
+    const [formData, setFormData] = useState({ brand: '', name: '', shape: '', size: '', wrapper: '', binder: '', filler: '', country: '', strength: '', price: '', rating: '', quantity: 1, image: '', shortDescription: '', description: '' });
     const [strengthSuggestions, setStrengthSuggestions] = useState([]);
     const [isAutofilling, setIsAutofilling] = useState(false);
     const [modalState, setModalState] = useState({ isOpen: false, content: '', isLoading: false });
@@ -1550,17 +1552,17 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
         navigate('MyHumidor', { humidorId: humidorId });
     };
     
-    // Updated handleAutofill to include description, image, and rating - July 4, 2025 - 11:15 PM CDT
+    // Updated handleAutofill to include shortDescription, description, image, and rating - July 4, 2025 - 11:35 PM CDT
     const handleAutofill = async () => {
         if (!formData.name) {
             setModalState({ isOpen: true, content: "Please enter a cigar name to auto-fill.", isLoading: false });
             return;
         }
         setIsAutofilling(true);
-        // Updated prompt to request description, image, and rating - July 4, 2025 - 11:15 PM CDT
-        const prompt = `You are a cigar database. Based on the cigar name "${formData.name}", provide its details as a JSON object. The schema MUST be: { "brand": "string", "shape": "string", "size": "string", "country": "string", "wrapper": "string", "binder": "string", "filler": "string", "strength": "Mild" | "Mild-Medium" | "Medium" | "Medium-Full" | "Full", "flavorNotes": ["string", "string", "string", "string"], "description": "string", "image": "string", "rating": "number" }. If you cannot determine a value, use an empty string "" or an empty array [] or 0 for rating. Do not include any text or markdown formatting outside of the JSON object.`;
+        // Updated prompt to request shortDescription, description, image, and rating - July 4, 2025 - 11:35 PM CDT
+        const prompt = `You are a cigar database. Based on the cigar name "${formData.name}", provide its details as a JSON object. The schema MUST be: { "brand": "string", "shape": "string", "size": "string", "country": "string", "wrapper": "string", "binder": "string", "filler": "string", "strength": "Mild" | "Mild-Medium" | "Medium" | "Medium-Full" | "Full", "flavorNotes": ["string", "string", "string", "string"], "shortDescription": "string", "description": "string", "image": "string", "rating": "number" }. If you cannot determine a value, use an empty string "" or an empty array [] or 0 for rating. Do not include any text or markdown formatting outside of the JSON object.`;
         
-        // Updated responseSchema to include description, image, and rating - July 4, 2025 - 11:15 PM CDT
+        // Updated responseSchema to include shortDescription, description, image, and rating - July 4, 2025 - 11:35 PM CDT
         const responseSchema = {
             type: "OBJECT",
             properties: {
@@ -1573,11 +1575,12 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                 filler: { type: "STRING" },
                 strength: { type: "STRING", enum: ["Mild", "Mild-Medium", "Medium", "Medium-Full", "Full"] },
                 flavorNotes: { type: "ARRAY", items: { type: "STRING" } },
+                shortDescription: { type: "STRING" }, // Added shortDescription to schema - July 4, 2025 - 11:35 PM CDT
                 description: { type: "STRING" },
                 image: { type: "STRING" },
                 rating: { type: "NUMBER" }
             },
-            required: ["brand", "shape", "size", "country", "wrapper", "binder", "filler", "strength", "flavorNotes", "description", "image", "rating"]
+            required: ["brand", "shape", "size", "country", "wrapper", "binder", "filler", "strength", "flavorNotes", "shortDescription", "description", "image", "rating"] // Added shortDescription to required - July 4, 2025 - 11:35 PM CDT
         };
 
         const result = await callGeminiAPI(prompt, responseSchema);
@@ -1588,6 +1591,7 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                 ...result,
                 rating: Number(result.rating) || 0, // Ensure rating is a number - July 4, 2025 - 11:15 PM CDT
                 image: result.image || '', // Ensure image is a string - July 4, 2025 - 11:15 PM CDT
+                shortDescription: result.shortDescription || '', // Ensure shortDescription is a string - July 4, 2025 - 11:35 PM CDT
                 description: result.description || '' // Ensure description is a string - July 4, 2025 - 11:15 PM CDT
             }));
         } else {
@@ -1618,6 +1622,9 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                     {isAutofilling ? 'Thinking...' : '✨ Auto-fill Details'}
                 </button>
 
+                {/* Added InputField for shortDescription - July 4, 2025 - 11:35 PM CDT */}
+                <InputField name="shortDescription" label="Short Description" placeholder="Brief overview of the cigar..." value={formData.shortDescription} onChange={handleInputChange} theme={theme} />
+                
                 {/* Added TextAreaField for description - July 4, 2025 - 11:15 PM CDT */}
                 <TextAreaField name="description" label="Description" placeholder="Notes on this cigar..." value={formData.description} onChange={handleInputChange} theme={theme} />
 
