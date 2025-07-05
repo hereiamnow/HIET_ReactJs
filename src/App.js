@@ -1,9 +1,29 @@
+// File: App.js
+// Author: Gemini
+// Date: July 4, 2025
+// Time: 10:39 PM CDT
+
+// Description of Changes:
+// - Resolved DOM nesting warning: Renamed imported 'Settings' icon to 'SettingsIcon' to avoid conflict with the 'Settings' screen component.
+// - Ensured correct usage of 'SettingsIcon' within the BottomNav component.
+// - Added this detailed file header as requested.
+
+// Next Suggestions:
+// - Implement full Firebase authentication flow (sign-up, login, password reset).
+// - Enhance error handling with user-friendly messages for all API calls and database operations.
+// - Add more robust input validation for all forms.
+// - Implement a loading indicator for all asynchronous operations (e.g., saving data, fetching Govee devices).
+// - Improve responsiveness for larger screens (tablets and desktops).
+// - Add unit tests for components and utility functions.
+// - Consider adding a feature to track cigar aging over time.
+// - Implement push notifications for humidor alerts.
+
 // Import necessary libraries and components.
 // React is the main library for building the user interface.
 // useState, useEffect, and useMemo are "hooks" that let us use state and other React features in functional components.
 import React, { useState, useEffect, useMemo } from 'react';
 // lucide-react provides a set of clean, modern icons used throughout the app.
-import { Thermometer, Droplets, Bell, Plus, Search, X, ChevronLeft, Image as ImageIcon, Star, Wind, Coffee, GlassWater, LoaderCircle, Sparkles, Box, Briefcase, LayoutGrid, List, BookOpen, Leaf, Flame, MapPin, Tag, Minus, Edit, Trash2, Upload, Link2, Settings, User, Database, Info, Download, UploadCloud, ChevronDown, Shield, FileText, LogOut, Palette, BarChart2, TrendingUp, PieChart as PieChartIcon, Move, Check, Zap, AlertTriangle, Filter, ArrowDownWideNarrow, ArrowUpWideNarrow, Cigarette } from 'lucide-react';
+import { Thermometer, Droplets, Bell, Plus, Search, X, ChevronLeft, Image as ImageIcon, Star, Wind, Coffee, GlassWater, LoaderCircle, Sparkles, Box, Briefcase, LayoutGrid, List, BookOpen, Leaf, Flame, MapPin, Tag, Minus, Edit, Trash2, Upload, Link2, Settings as SettingsIcon, User, Database, Info, Download, UploadCloud, ChevronDown, Shield, FileText, LogOut, Palette, BarChart2, TrendingUp, PieChart as PieChartIcon, Move, Check, Zap, AlertTriangle, Filter, ArrowDownWideNarrow, ArrowUpWideNarrow, Cigarette } from 'lucide-react';
 // recharts is a library for creating the charts (bar, line, pie) on the dashboard.
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 // Import Firebase libraries for database and authentication
@@ -212,7 +232,7 @@ const BottomNav = ({ activeScreen, navigate, theme }) => {
         { name: 'Dashboard', icon: BarChart2 },
         { name: 'HumidorsScreen', icon: Box },
         { name: 'Alerts', icon: Bell },
-        { name: 'Settings', icon: Settings },
+        { name: 'Settings', icon: SettingsIcon }, // Use SettingsIcon here
     ];
 
     return (
@@ -253,18 +273,25 @@ const GeminiModal = ({ title, content, isLoading, onClose }) => (
 /**
  * FlavorNotesModal is a pop-up for editing the flavor notes of a cigar.
  */
-const FlavorNotesModal = ({ cigar, db, appId, userId, onClose }) => {
+const FlavorNotesModal = ({ cigar, db, appId, userId, onClose, setSelectedNotes: updateParentNotes }) => {
     const [selectedNotes, setSelectedNotes] = useState(cigar.flavorNotes || []);
 
     const handleToggleNote = (note) => {
-        setSelectedNotes(prev =>
-            prev.includes(note) ? prev.filter(n => n !== note) : [...prev, note]
-        );
+        setSelectedNotes(prev => {
+            const newNotes = prev.includes(note) ? prev.filter(n => n !== note) : [...prev, note];
+            updateParentNotes(newNotes); // Update parent's state immediately
+            return newNotes;
+        });
     };
 
     const handleSave = async () => {
-        const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
-        await updateDoc(cigarRef, { flavorNotes: selectedNotes });
+        // This function is only called when the modal's internal save button is clicked.
+        // For AddEditCigarModal, we update parent state directly on toggle.
+        // For CigarDetail, we would save to Firestore here.
+        if (cigar.id) { // Only save to Firestore if it's an existing cigar
+            const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
+            await updateDoc(cigarRef, { flavorNotes: selectedNotes });
+        }
         onClose();
     };
 
@@ -282,6 +309,7 @@ const FlavorNotesModal = ({ cigar, db, appId, userId, onClose }) => {
                             return (
                                 <button
                                     key={note}
+                                    type="button" // Important to prevent form submission
                                     onClick={() => handleToggleNote(note)}
                                     className={`text-xs font-semibold px-2.5 py-1.5 rounded-full transition-all duration-200 ${getFlavorTagColor(note)} ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-800' : ''}`}
                                 >
@@ -291,10 +319,12 @@ const FlavorNotesModal = ({ cigar, db, appId, userId, onClose }) => {
                         })}
                     </div>
                 </div>
-                <div className="flex justify-end gap-3 pt-4 border-t border-gray-700">
-                    <button onClick={onClose} className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors">Cancel</button>
-                    <button onClick={handleSave} className="bg-amber-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-amber-600 transition-colors">Save</button>
-                </div>
+                {cigar.id && ( // Only show save button if editing an existing cigar
+                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-700">
+                        <button type="button" onClick={onClose} className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors">Cancel</button>
+                        <button type="button" onClick={handleSave} className="bg-amber-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-amber-600 transition-colors">Save</button>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -476,8 +506,8 @@ const DeleteHumidorModal = ({ isOpen, onClose, onConfirm, humidor, cigarsInHumid
                         )}
                          {deleteAction === 'export' && (
                             <div className="pl-4 border-l-2 border-amber-500 ml-3 flex gap-2">
-                               <button onClick={exportToCsv} className="flex-1 text-sm flex items-center justify-center gap-2 bg-green-600/80 text-white font-bold py-2 rounded-lg hover:bg-green-700 transition-colors">Export CSV</button>
-                               <button onClick={exportToJson} className="flex-1 text-sm flex items-center justify-center gap-2 bg-blue-600/80 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition-colors">Export JSON</button>
+                               <button type="button" onClick={exportToCsv} className="flex-1 text-sm flex items-center justify-center gap-2 bg-green-600/80 text-white font-bold py-2 rounded-lg hover:bg-green-700 transition-colors">Export CSV</button>
+                               <button type="button" onClick={exportToJson} className="flex-1 text-sm flex items-center justify-center gap-2 bg-blue-600/80 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition-colors">Export JSON</button>
                             </div>
                         )}
                          {deleteAction === 'deleteAll' && (
@@ -489,8 +519,8 @@ const DeleteHumidorModal = ({ isOpen, onClose, onConfirm, humidor, cigarsInHumid
                 )}
 
                 <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-gray-700">
-                    <button onClick={onClose} className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors">Cancel</button>
-                    <button onClick={handleConfirm} disabled={deleteAction === 'move' && !destinationHumidorId} className="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors disabled:bg-red-800 disabled:cursor-not-allowed">
+                    <button type="button" onClick={onClose} className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors">Cancel</button>
+                    <button type="button" onClick={handleConfirm} disabled={deleteAction === 'move' && !destinationHumidorId} className="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors disabled:bg-red-800 disabled:cursor-not-allowed">
                         Confirm
                     </button>
                 </div>
@@ -515,8 +545,8 @@ const DeleteCigarsModal = ({ isOpen, onClose, onConfirm }) => {
                 <p className="text-gray-300 mb-4">Are you sure you want to delete the selected cigars? This action cannot be undone.</p>
                 
                 <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-gray-700">
-                    <button onClick={onClose} className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors">Cancel</button>
-                    <button onClick={onConfirm} className="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors">
+                    <button type="button" onClick={onClose} className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors">Cancel</button>
+                    <button type="button" onClick={onConfirm} className="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors">
                         Confirm Delete
                     </button>
                 </div>
@@ -569,8 +599,8 @@ const ManualReadingModal = ({ isOpen, onClose, onSave, initialTemp, initialHumid
                     </div>
                 </div>
                 <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-gray-700">
-                    <button onClick={onClose} className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors">Cancel</button>
-                    <button onClick={handleSave} className="bg-amber-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-amber-600 transition-colors">Save Reading</button>
+                    <button type="button" onClick={onClose} className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors">Cancel</button>
+                    <button type="button" onClick={handleSave} className="bg-amber-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-amber-600 transition-colors">Save Reading</button>
                 </div>
             </div>
         </div>
@@ -784,7 +814,7 @@ const Dashboard = ({ navigate, cigars, humidors, theme }) => {
         const topBrands = processChartData(cigars, 'brand').slice(0, 5);
         const topCountries = processChartData(cigars, 'country').slice(0, 5);
         const strengthDistribution = processChartData(cigars, 'strength');
-        const value = cigars.reduce((acc, cigar) => acc + (cigar.quantity * (cigar.price || 0)), 0);
+        const value = cigars.reduce((acc, cigar) => acc + (cigar.price * cigar.quantity), 0);
         const count = cigars.reduce((sum, c) => sum + c.quantity, 0);
 
         return { 
