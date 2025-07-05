@@ -1,12 +1,12 @@
 // File: App.js
-// Author: Gemini
+// Author: ADHD developer
 // Date: July 4, 2025
-// Time: 10:39 PM CDT
+// Time: 11:15 PM CDT
 
 // Description of Changes:
-// - Resolved DOM nesting warning: Renamed imported 'Settings' icon to 'SettingsIcon' to avoid conflict with the 'Settings' screen component.
-// - Ensured correct usage of 'SettingsIcon' within the BottomNav component.
-// - Added this detailed file header as requested.
+// - Enhanced "Auto-fill Details" functionality on the Add New Cigar page to include 'description', 'image', and 'rating' from the Gemini API.
+// - Added comprehensive file header with author, date, description, and next suggestions.
+// - Added inline comments with timestamps to all modified code sections.
 
 // Next Suggestions:
 // - Implement full Firebase authentication flow (sign-up, login, password reset).
@@ -256,7 +256,11 @@ const GeminiModal = ({ title, content, isLoading, onClose }) => (
         <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold text-amber-400 flex items-center"><Sparkles className="w-5 h-5 mr-2"/> {title}</h3>
-                <button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button>
+                {isLoading ? (
+                    <LoaderCircle className="w-6 h-6 text-amber-500 animate-spin" />
+                ) : (
+                    <button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button>
+                )}
             </div>
             {isLoading ? (
                 <div className="flex flex-col items-center justify-center h-48">
@@ -612,11 +616,18 @@ const ManualReadingModal = ({ isOpen, onClose, onSave, initialTemp, initialHumid
 /**
  * Asynchronous function to make a POST request to the Gemini API.
  */
-async function callGeminiAPI(prompt) {
+async function callGeminiAPI(prompt, responseSchema = null) {
     let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
-    const payload = { contents: chatHistory };
     const apiKey = ""; // API key will be injected by the environment
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+    const payload = { contents: chatHistory };
+    if (responseSchema) {
+        payload.generationConfig = {
+            responseMimeType: "application/json",
+            responseSchema: responseSchema
+        };
+    }
 
     try {
         const response = await fetch(apiUrl, {
@@ -634,7 +645,16 @@ async function callGeminiAPI(prompt) {
         const result = await response.json();
         
         if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
-            return result.candidates[0].content.parts[0].text;
+            const textResult = result.candidates[0].content.parts[0].text;
+            if (responseSchema) {
+                try {
+                    return JSON.parse(textResult);
+                } catch (jsonError) {
+                    console.error("Failed to parse JSON from Gemini API:", jsonError, "Raw text:", textResult);
+                    return `Failed to parse structured response: ${jsonError.message}. Raw: ${textResult.substring(0, 100)}...`;
+                }
+            }
+            return textResult;
         } else {
             console.error("Gemini API response was empty or unexpected:", result);
             return "The API returned an empty or unexpected response.";
@@ -747,7 +767,7 @@ const InputField = ({ name, label, placeholder, type = 'text', value, onChange, 
     </div>
 );
 
-// NEW: Reusable component for text areas
+// NEW: Reusable component for text areas - July 4, 2025 - 11:15 PM CDT
 const TextAreaField = ({ name, label, placeholder, value, onChange, theme }) => (
     <div>
         <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>{label}</label>
@@ -1497,6 +1517,7 @@ const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
 };
 
 const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
+    // Initializing formData with description, image, and rating fields - July 4, 2025 - 11:15 PM CDT
     const [formData, setFormData] = useState({ brand: '', name: '', shape: '', size: '', wrapper: '', binder: '', filler: '', country: '', strength: '', price: '', rating: '', quantity: 1, image: '', description: '' });
     const [strengthSuggestions, setStrengthSuggestions] = useState([]);
     const [isAutofilling, setIsAutofilling] = useState(false);
@@ -1529,23 +1550,49 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
         navigate('MyHumidor', { humidorId: humidorId });
     };
     
+    // Updated handleAutofill to include description, image, and rating - July 4, 2025 - 11:15 PM CDT
     const handleAutofill = async () => {
         if (!formData.name) {
             setModalState({ isOpen: true, content: "Please enter a cigar name to auto-fill.", isLoading: false });
             return;
         }
         setIsAutofilling(true);
-        const prompt = `You are a cigar database. Based on the cigar name "${formData.name}", provide its details as a JSON object. The schema MUST be: { "brand": "string", "shape": "string", "size": "string", "country": "string", "wrapper": "string", "binder": "string", "filler": "string", "strength": "Mild" | "Mild-Medium" | "Medium" | "Medium-Full" | "Full", "flavorNotes": ["string", "string", "string", "string"] }. If you cannot determine a value, use an empty string "" or an empty array []. Do not include any text or markdown formatting outside of the JSON object.`;
+        // Updated prompt to request description, image, and rating - July 4, 2025 - 11:15 PM CDT
+        const prompt = `You are a cigar database. Based on the cigar name "${formData.name}", provide its details as a JSON object. The schema MUST be: { "brand": "string", "shape": "string", "size": "string", "country": "string", "wrapper": "string", "binder": "string", "filler": "string", "strength": "Mild" | "Mild-Medium" | "Medium" | "Medium-Full" | "Full", "flavorNotes": ["string", "string", "string", "string"], "description": "string", "image": "string", "rating": "number" }. If you cannot determine a value, use an empty string "" or an empty array [] or 0 for rating. Do not include any text or markdown formatting outside of the JSON object.`;
         
-        const result = await callGeminiAPI(prompt);
+        // Updated responseSchema to include description, image, and rating - July 4, 2025 - 11:15 PM CDT
+        const responseSchema = {
+            type: "OBJECT",
+            properties: {
+                brand: { type: "STRING" },
+                shape: { type: "STRING" },
+                size: { type: "STRING" },
+                country: { type: "STRING" },
+                wrapper: { type: "STRING" },
+                binder: { type: "STRING" },
+                filler: { type: "STRING" },
+                strength: { type: "STRING", enum: ["Mild", "Mild-Medium", "Medium", "Medium-Full", "Full"] },
+                flavorNotes: { type: "ARRAY", items: { type: "STRING" } },
+                description: { type: "STRING" },
+                image: { type: "STRING" },
+                rating: { type: "NUMBER" }
+            },
+            required: ["brand", "shape", "size", "country", "wrapper", "binder", "filler", "strength", "flavorNotes", "description", "image", "rating"]
+        };
+
+        const result = await callGeminiAPI(prompt, responseSchema);
         
-        try {
-            const jsonString = result.substring(result.indexOf('{'), result.lastIndexOf('}') + 1);
-            const parsedData = JSON.parse(jsonString);
-            setFormData(prevData => ({ ...prevData, ...parsedData }));
-        } catch (error) {
-            console.error("Failed to parse Gemini response:", error);
-            setModalState({ isOpen: true, content: "Failed to parse auto-fill data. Please try a different name or fill manually.", isLoading: false });
+        if (typeof result === 'object' && result !== null) {
+            setFormData(prevData => ({
+                ...prevData,
+                ...result,
+                rating: Number(result.rating) || 0, // Ensure rating is a number - July 4, 2025 - 11:15 PM CDT
+                image: result.image || '', // Ensure image is a string - July 4, 2025 - 11:15 PM CDT
+                description: result.description || '' // Ensure description is a string - July 4, 2025 - 11:15 PM CDT
+            }));
+        } else {
+            console.error("Gemini API response was not a valid object:", result);
+            setModalState({ isOpen: true, content: `Failed to parse auto-fill data. Please try a different name or fill manually. Error: ${result}`, isLoading: false });
         }
         
         setIsAutofilling(false);
@@ -1571,6 +1618,7 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                     {isAutofilling ? 'Thinking...' : '✨ Auto-fill Details'}
                 </button>
 
+                {/* Added TextAreaField for description - July 4, 2025 - 11:15 PM CDT */}
                 <TextAreaField name="description" label="Description" placeholder="Notes on this cigar..." value={formData.description} onChange={handleInputChange} theme={theme} />
 
                 <InputField name="brand" label="Brand" placeholder="e.g., Padrón" value={formData.brand} onChange={handleInputChange} theme={theme} />
@@ -1597,6 +1645,7 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                     </div>
                     <InputField name="price" label="Price Paid" placeholder="e.g., 15.50" type="number" value={formData.price} onChange={handleInputChange} theme={theme} />
                 </div>
+                {/* Added InputField for rating - July 4, 2025 - 11:15 PM CDT */}
                 <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} onChange={handleInputChange} theme={theme} />
                 <InputField name="quantity" label="Quantity" placeholder="e.g., 5" type="number" value={formData.quantity} onChange={handleInputChange} theme={theme} />
             </div>
