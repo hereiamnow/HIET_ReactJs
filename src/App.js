@@ -1,7 +1,7 @@
 // File: App.js
 // Author: ADHD developer
 // Date: July 5, 2025
-// Time: 12:00:00 AM CDT
+// Time: 1:32:00 AM CDT
 
 // Description of Changes:
 // - Added a 'shortDescription' field to the Add New Cigar form, placed above the existing 'description' field.
@@ -10,8 +10,25 @@
 // - Replaced the 'Shape' text input field with a textbox featuring autocomplete suggestions from a predefined list of cigar shapes in AddCigar and EditCigar forms.
 // - Implemented a new reusable 'AutoCompleteInputField' component to handle the autocomplete logic, allowing free-text entry.
 // - Ensured the autocomplete functionality does not interfere with other fields or the 'Auto-fill Details' feature.
+// - Added a 'Flavor Notes' selection mechanism to both 'Add Cigar' and 'Edit Cigar' screens, utilizing the existing FlavorNotesModal.
+// - Added the 'shortDescription' field to the 'Edit Cigar' screen for form consistency.
 // - Added comprehensive file header with author, date, description, and next suggestions.
 // - Added inline comments with timestamps to all modified code sections.
+// - NEW: Added a 'BrowseByWrapperPanel' component to the Dashboard.
+// - NEW: This panel dynamically lists unique cigar wrapper types with their respective cigar counts.
+// - NEW: Each wrapper type label is clickable and navigates to the 'HumidorsScreen' with a 'preFilterWrapper' parameter.
+// - NEW: Modified 'HumidorsScreen' to accept and apply the 'preFilterWrapper' parameter, displaying filtered cigars and a clear filter option.
+// - UPDATE: Modified the 'BrowseByWrapperPanel' to display only the wrapper name, not "Wrapper Name Cigars".
+// - UPDATE: Implemented the new cigar schema for CSV import and export.
+// - UPDATE: Modified `ExportModal` to include `line`, `isBoxPress`, `length_inches`, `ring_gauge`, `userRating` in the CSV header and data mapping.
+// - UPDATE: Modified `ImportCsvModal` to correctly parse and map the new CSV columns to the cigar object properties, including type conversions for boolean and numbers.
+// - UPDATE: Ensured 'Country of Origin' from CSV maps to the existing 'country' field in the cigar object.
+// - FIX: Improved CSV import robustness in `ImportCsvModal` by explicitly trimming lines and checking for empty lines before parsing.
+// - NEW: Added `BrowseByStrengthPanel` component to the Dashboard.
+// - NEW: This panel lists cigar strength categories and 'Flavored Cigars' with their respective counts.
+// - NEW: Each strength/flavored label is clickable and navigates to 'HumidorsScreen' with a 'preFilterStrength' parameter.
+// - UPDATE: Modified 'HumidorsScreen' to accept and apply the 'preFilterStrength' parameter, displaying filtered cigars and a clear filter option.
+// - UPDATE: Made `BrowseByStrengthPanel` collapsible and defaulted to collapsed.
 
 // Next Suggestions:
 // - Implement full Firebase authentication flow (sign-up, login, password reset).
@@ -22,6 +39,7 @@
 // - Add unit tests for components and utility functions.
 // - Consider adding a feature to track cigar aging over time.
 // - Implement push notifications for humidor alerts.
+// - Add new fields (line, isBoxPress, length_inches, ring_gauge, userRating) to the AddCigar and EditCigar forms for manual input and display.
 
 // Import necessary libraries and components.
 // React is the main library for building the user interface.
@@ -290,7 +308,8 @@ const GeminiModal = ({ title, content, isLoading, onClose }) => (
  * FlavorNotesModal is a pop-up for editing the flavor notes of a cigar.
  */
 const FlavorNotesModal = ({ cigar, db, appId, userId, onClose, setSelectedNotes: updateParentNotes }) => {
-    const [selectedNotes, setSelectedNotes] = useState(cigar.flavorNotes || []);
+    // July 5, 2025 - 12:06:00 AM CDT: Added null check for cigar.flavorNotes
+    const [selectedNotes, setSelectedNotes] = useState(cigar?.flavorNotes || []);
 
     const handleToggleNote = (note) => {
         setSelectedNotes(prev => {
@@ -304,7 +323,8 @@ const FlavorNotesModal = ({ cigar, db, appId, userId, onClose, setSelectedNotes:
         // This function is only called when the modal's internal save button is clicked.
         // For AddEditCigarModal, we update parent's state directly on toggle.
         // For CigarDetail, we would save to Firestore here.
-        if (cigar.id) { // Only save to Firestore if it's an existing cigar
+        // July 5, 2025 - 12:06:00 AM CDT: Added conditional save to Firestore
+        if (cigar?.id) { // Only save to Firestore if it's an existing cigar from CigarDetail
             const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
             await updateDoc(cigarRef, { flavorNotes: selectedNotes });
         }
@@ -335,7 +355,8 @@ const FlavorNotesModal = ({ cigar, db, appId, userId, onClose, setSelectedNotes:
                         })}
                     </div>
                 </div>
-                {cigar.id && ( // Only show save button if editing an existing cigar
+                {/* July 5, 2025 - 12:06:00 AM CDT: Conditional rendering of save button */}
+                {cigar?.id && ( // Only show save button if editing an existing cigar (from CigarDetail)
                     <div className="flex justify-end gap-3 pt-4 border-t border-gray-700">
                         <button type="button" onClick={onClose} className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors">Cancel</button>
                         <button type="button" onClick={handleSave} className="bg-amber-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-amber-600 transition-colors">Save</button>
@@ -446,11 +467,14 @@ const DeleteHumidorModal = ({ isOpen, onClose, onConfirm, humidor, cigarsInHumid
         });
     };
     
+    // July 5, 2025 - 1:00:00 AM CDT: Updated exportToCsv to new schema
     const exportToCsv = () => {
-        let headers = ['id,name,brand,shape,size,country,wrapper,binder,filler,strength,flavorNotes,rating,quantity,price'];
+        let headers = ['id,name,brand,line,shape,isBoxPress,length_inches,ring_gauge,Size,Country of Origin,wrapper,binder,filler,strength,flavorNotes,rating,userRating,price,quantity,image,shortDescription,description'];
         let usersCsv = cigarsInHumidor.reduce((acc, cigar) => {
-            const { id, name, brand, shape, size, country, wrapper, binder, filler, strength, flavorNotes, rating, quantity, price } = cigar;
-            acc.push([id, name, brand, shape, size, country, wrapper, binder, filler, strength, `"${flavorNotes.join(';')}"`, rating, quantity, price].join(','));
+            const { id, name, brand, line = '', shape, isBoxPress = false, length_inches = 0, ring_gauge = 0, size, country, wrapper, binder, filler, strength, flavorNotes, rating, userRating = 0, quantity, price, image = '', shortDescription = '', description = '' } = cigar;
+            acc.push([
+                id, name, brand, line, shape, isBoxPress ? 'TRUE' : 'FALSE', length_inches, ring_gauge, size, country, wrapper, binder, filler, strength, `"${(flavorNotes || []).join(';')}"`, rating, userRating, price, quantity, image, shortDescription, description
+            ].join(','));
             return acc;
         }, []);
         downloadFile({
@@ -882,6 +906,102 @@ const ChartCard = ({ title, children, action }) => (
     </div>
 );
 
+// NEW: BrowseByWrapperPanel component - July 5, 2025 - 12:19:00 AM CDT
+const BrowseByWrapperPanel = ({ cigars, navigate, theme }) => {
+    // Calculate unique wrapper types and their counts
+    const wrapperData = useMemo(() => {
+        const counts = cigars.reduce((acc, cigar) => {
+            const wrapper = cigar.wrapper || 'Unknown'; // Handle cigars without a wrapper defined
+            acc[wrapper] = (acc[wrapper] || 0) + cigar.quantity;
+            return acc;
+        }, {});
+        // Convert to an array of objects for easier mapping and sorting
+        return Object.entries(counts)
+            .map(([wrapper, quantity]) => ({ wrapper, quantity }))
+            .sort((a, b) => a.wrapper.localeCompare(b.wrapper)); // Sort alphabetically by wrapper name
+    }, [cigars]);
+
+    return (
+        <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
+            <div className="p-4">
+                <h3 className="font-bold text-amber-300 text-lg flex items-center"><Leaf className="w-5 h-5 mr-2"/> Browse by Wrapper</h3>
+            </div>
+            <div className="px-4 pb-4 space-y-2">
+                {wrapperData.length > 0 ? (
+                    wrapperData.map(({ wrapper, quantity }) => (
+                        <button
+                            key={wrapper}
+                            onClick={() => navigate('HumidorsScreen', { preFilterWrapper: wrapper })}
+                            className="w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors flex justify-between items-center"
+                        >
+                            {/* July 5, 2025 - 12:35:00 AM CDT: Changed label to just wrapper name */}
+                            <span className="text-gray-300">{wrapper}</span>
+                            <span className="text-gray-400">({quantity})</span>
+                        </button>
+                    ))
+                ) : (
+                    <p className="text-gray-500 text-sm text-center py-4">No wrapper data available.</p>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// NEW: BrowseByStrengthPanel component - July 5, 2025 - 1:32:00 AM CDT
+const BrowseByStrengthPanel = ({ cigars, navigate, theme }) => {
+    const [isCollapsed, setIsCollapsed] = useState(true); // Defaults to collapsed
+
+    const strengthCategories = useMemo(() => [
+        { label: 'Mellow Cigars', filterValue: 'Mild' },
+        { label: 'Mellow to Medium Cigars', filterValue: 'Mild-Medium' },
+        { label: 'Medium Cigars', filterValue: 'Medium' },
+        { label: 'Medium to Full Cigars', filterValue: 'Medium-Full' },
+        { label: 'Full Bodied Cigars', filterValue: 'Full' },
+        { label: 'Flavored Cigars', filterValue: 'Flavored' } // Special filter for cigars with flavor notes
+    ], []);
+
+    const strengthData = useMemo(() => {
+        const counts = strengthCategories.map(category => {
+            let quantity = 0;
+            if (category.filterValue === 'Flavored') {
+                quantity = cigars.reduce((sum, cigar) => sum + (cigar.flavorNotes && cigar.flavorNotes.length > 0 ? cigar.quantity : 0), 0);
+            } else {
+                quantity = cigars.reduce((sum, cigar) => sum + (cigar.strength === category.filterValue ? cigar.quantity : 0), 0);
+            }
+            return { label: category.label, quantity, filterValue: category.filterValue };
+        });
+        return counts.filter(item => item.quantity > 0); // Only show categories with cigars
+    }, [cigars, strengthCategories]);
+
+    return (
+        <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
+            <button onClick={() => setIsCollapsed(!isCollapsed)} className="w-full p-4 flex justify-between items-center">
+                <h3 className="font-bold text-amber-300 text-lg flex items-center"><Cigarette className="w-5 h-5 mr-2"/> Browse by Profile</h3>
+                <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
+            </button>
+            {!isCollapsed && (
+                <div className="px-4 pb-4 space-y-2">
+                    {strengthData.length > 0 ? (
+                        strengthData.map(({ label, quantity, filterValue }) => (
+                            <button
+                                key={label}
+                                onClick={() => navigate('HumidorsScreen', { preFilterStrength: filterValue })}
+                                className="w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors flex justify-between items-center"
+                            >
+                                <span className="text-gray-300">{label}</span>
+                                <span className="text-gray-400">({quantity})</span>
+                            </button>
+                        ))
+                    ) : (
+                        <p className="text-gray-500 text-sm text-center py-4">No strength or flavored cigar data available.</p>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
+
 const Dashboard = ({ navigate, cigars, humidors, theme }) => {
     const [roxyTip, setRoxyTip] = useState('');
     const [isRoxyOpen, setIsRoxyOpen] = useState(true);
@@ -1076,23 +1196,54 @@ const Dashboard = ({ navigate, cigars, humidors, theme }) => {
                  <button onClick={handleSummarizeCollection} className="w-full flex items-center justify-center bg-purple-600/20 border border-purple-500 text-purple-300 font-bold py-3 rounded-lg hover:bg-purple-600/30 transition-colors mt-6">
                     <Sparkles className="w-5 h-5 mr-2" /> Summarize My Collection
                 </button>
+                {/* July 5, 2025 - 12:19:00 AM CDT: Integrate BrowseByWrapperPanel */}
+                <BrowseByWrapperPanel cigars={cigars} navigate={navigate} theme={theme} />
+                {/* July 5, 2025 - 1:32:00 AM CDT: Integrate BrowseByStrengthPanel */}
+                <BrowseByStrengthPanel cigars={cigars} navigate={navigate} theme={theme} />
             </div>
         </div>
     );
 };
 
-const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme }) => {
+const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, preFilterWrapper, preFilterStrength }) => { // July 5, 2025 - 12:19:00 AM CDT: Added preFilterWrapper prop, July 5, 2025 - 1:32:00 AM CDT: Added preFilterStrength prop
     const [searchQuery, setSearchQuery] = useState('');
     const [suggestions, setSuggestions] = useState([]);
+    // July 5, 2025 - 12:19:00 AM CDT: State for active wrapper filter
+    const [activeWrapperFilter, setActiveWrapperFilter] = useState(preFilterWrapper || '');
+    // July 5, 2025 - 1:32:00 AM CDT: State for active strength filter
+    const [activeStrengthFilter, setActiveStrengthFilter] = useState(preFilterStrength || '');
     
     const DollarSignIcon = (props) => (
         <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
     );
+
+    // July 5, 2025 - 12:19:00 AM CDT: Effect to update activeWrapperFilter when preFilterWrapper prop changes
+    useEffect(() => {
+        if (preFilterWrapper) {
+            setActiveWrapperFilter(preFilterWrapper);
+            setSearchQuery(''); // Clear general search if a wrapper filter is applied
+            setActiveStrengthFilter(''); // July 5, 2025 - 1:32:00 AM CDT: Clear strength filter if wrapper filter is applied
+        } else {
+            setActiveWrapperFilter(''); // Clear filter if preFilterWrapper is removed
+        }
+    }, [preFilterWrapper]);
+
+    // July 5, 2025 - 1:32:00 AM CDT: Effect to update activeStrengthFilter when preFilterStrength prop changes
+    useEffect(() => {
+        if (preFilterStrength) {
+            setActiveStrengthFilter(preFilterStrength);
+            setSearchQuery(''); // Clear general search if a strength filter is applied
+            setActiveWrapperFilter(''); // Clear wrapper filter if strength filter is applied
+        } else {
+            setActiveStrengthFilter(''); // Clear filter if preFilterStrength is removed
+        }
+    }, [preFilterStrength]);
     
     const handleSearchChange = (e) => {
         const query = e.target.value;
         setSearchQuery(query);
-
+        setActiveWrapperFilter(''); // July 5, 2025 - 12:19:00 AM CDT: Clear wrapper filter if user starts searching
+        setActiveStrengthFilter(''); // July 5, 2025 - 1:32:00 AM CDT: Clear strength filter if user starts searching
         if (query.length > 1) {
             const allSuggestions = cigars.map(c => c.brand).concat(cigars.map(c => c.name)).filter(name => name.toLowerCase().includes(query.toLowerCase()));
             const uniqueSuggestions = [...new Set(allSuggestions)];
@@ -1107,10 +1258,37 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme }
         setSuggestions([]);
     };
 
-    const filteredCigars = searchQuery ? cigars.filter(cigar => cigar.name.toLowerCase().includes(searchQuery.toLowerCase()) || cigar.brand.toLowerCase().includes(searchQuery.toLowerCase())) : [];
+    // July 5, 2025 - 12:19:00 AM CDT: Memoized filtered cigars, now including wrapper filter
+    // July 5, 2025 - 1:32:00 AM CDT: Updated memoized filtered cigars to include strength filter
+    const filteredCigars = useMemo(() => {
+        let currentCigars = cigars;
+        if (searchQuery) {
+            currentCigars = currentCigars.filter(cigar =>
+                cigar.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                cigar.brand.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+        }
+        // Apply wrapper filter
+        if (activeWrapperFilter) {
+            currentCigars = currentCigars.filter(cigar =>
+                cigar.wrapper && cigar.wrapper.toLowerCase() === activeWrapperFilter.toLowerCase()
+            );
+        }
+        // Apply strength filter
+        if (activeStrengthFilter) {
+            if (activeStrengthFilter === 'Flavored') {
+                currentCigars = currentCigars.filter(cigar => cigar.flavorNotes && cigar.flavorNotes.length > 0);
+            } else {
+                currentCigars = currentCigars.filter(cigar =>
+                    cigar.strength && cigar.strength.toLowerCase() === activeStrengthFilter.toLowerCase()
+                );
+            }
+        }
+        return currentCigars;
+    }, [cigars, searchQuery, activeWrapperFilter, activeStrengthFilter]);
         
-    const totalUniqueCigars = cigars.length;
-    const totalQuantity = cigars.reduce((sum, c) => sum + c.quantity, 0);
+    const totalUniqueCigars = filteredCigars.length; // July 5, 2025 - 12:19:00 AM CDT: Count based on filtered cigars
+    const totalQuantity = filteredCigars.reduce((sum, c) => sum + c.quantity, 0); // July 5, 2025 - 12:19:00 AM CDT: Count based on filtered cigars
 
     return (
         <div className="p-4 pb-24">
@@ -1131,7 +1309,23 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme }
                 )}
             </div>
 
-            {searchQuery === '' ? (
+            {/* July 5, 2025 - 12:19:00 AM CDT: Display active wrapper filter */}
+            {activeWrapperFilter && (
+                <div className="flex items-center justify-between bg-amber-900/20 border border-amber-800 text-amber-200 px-4 py-2 rounded-lg mb-4">
+                    <span>Filtering by: <span className="font-bold">{activeWrapperFilter} Wrapper</span></span>
+                    <button onClick={() => setActiveWrapperFilter('')} className="p-1 rounded-full hover:bg-amber-800 transition-colors"><X className="w-4 h-4" /></button>
+                </div>
+            )}
+
+            {/* July 5, 2025 - 1:32:00 AM CDT: Display active strength filter */}
+            {activeStrengthFilter && (
+                <div className="flex items-center justify-between bg-amber-900/20 border border-amber-800 text-amber-200 px-4 py-2 rounded-lg mb-4">
+                    <span>Filtering by: <span className="font-bold">{activeStrengthFilter === 'Flavored' ? 'Flavored Cigars' : `${activeStrengthFilter} Strength`}</span></span>
+                    <button onClick={() => setActiveStrengthFilter('')} className="p-1 rounded-full hover:bg-amber-800 transition-colors"><X className="w-4 h-4" /></button>
+                </div>
+            )}
+
+            {searchQuery === '' && !activeWrapperFilter && !activeStrengthFilter ? ( // July 5, 2025 - 12:19:00 AM CDT: Conditionally render humidor list or filtered cigars
                 <>
                     <div className="flex justify-between items-center mb-6 px-2">
                         <div>
@@ -1324,7 +1518,7 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
     const handleConfirmDeleteCigars = async () => {
         const batch = writeBatch(db);
         selectedCigarIds.forEach(cigarId => {
-            const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigarId);
+            const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
             batch.delete(cigarRef);
         });
         await batch.commit();
@@ -1604,10 +1798,13 @@ const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
 
 const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
     // Initializing formData with shortDescription, description, image, and rating fields - July 4, 2025 - 11:35 PM CDT
-    const [formData, setFormData] = useState({ brand: '', name: '', shape: '', size: '', wrapper: '', binder: '', filler: '', country: '', strength: '', price: '', rating: '', quantity: 1, image: '', shortDescription: '', description: '' });
+    // July 5, 2025 - 12:06:00 AM CDT: Added flavorNotes to initial state
+    const [formData, setFormData] = useState({ brand: '', name: '', shape: '', size: '', wrapper: '', binder: '', filler: '', country: '', strength: '', price: '', rating: '', quantity: 1, image: '', shortDescription: '', description: '', flavorNotes: [] });
     const [strengthSuggestions, setStrengthSuggestions] = useState([]);
     const [isAutofilling, setIsAutofilling] = useState(false);
     const [modalState, setModalState] = useState({ isOpen: false, content: '', isLoading: false });
+    // July 5, 2025 - 12:06:00 AM CDT: State for flavor notes modal
+    const [isFlavorModalOpen, setIsFlavorModalOpen] = useState(false);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -1676,7 +1873,8 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                 rating: Number(result.rating) || 0, // Ensure rating is a number - July 4, 2025 - 11:15 PM CDT
                 image: result.image || '', // Ensure image is a string - July 4, 2025 - 11:15 PM CDT
                 shortDescription: result.shortDescription || '', // Ensure shortDescription is a string - July 4, 2025 - 11:35 PM CDT
-                description: result.description || '' // Ensure description is a string - July 4, 2025 - 11:15 PM CDT
+                description: result.description || '', // Ensure description is a string - July 4, 2025 - 11:15 PM CDT
+                flavorNotes: Array.isArray(result.flavorNotes) ? result.flavorNotes : [] // Ensure flavorNotes is an array - July 5, 2025 - 12:06:00 AM CDT
             }));
         } else {
             console.error("Gemini API response was not a valid object:", result);
@@ -1688,9 +1886,17 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
 
     const closeModal = () => setModalState({ isOpen: false, content: '', isLoading: false });
 
+    // July 5, 2025 - 12:06:00 AM CDT: Function to update flavor notes from modal
+    const handleFlavorNotesUpdate = (newNotes) => {
+        setFormData(prev => ({ ...prev, flavorNotes: newNotes }));
+    };
+
     return (
         <div className="p-4 pb-24">
             {modalState.isOpen && <GeminiModal title="Auto-fill Status" content={modalState.content} isLoading={modalState.isLoading} onClose={closeModal} />}
+            {/* July 5, 2025 - 12:06:00 AM CDT: FlavorNotesModal for AddCigar */}
+            {isFlavorModalOpen && <FlavorNotesModal cigar={{ flavorNotes: formData.flavorNotes }} db={db} appId={appId} userId={userId} onClose={() => setIsFlavorModalOpen(false)} setSelectedNotes={handleFlavorNotesUpdate} />}
+
             <div className="flex items-center mb-6">
                 <button onClick={() => navigate('MyHumidor', { humidorId })} className="p-2 -ml-2 mr-2"><ChevronLeft className={`w-7 h-7 ${theme.text}`} /></button>
                 <h1 className={`text-3xl font-bold ${theme.text}`}>Add New Cigar</h1>
@@ -1748,6 +1954,21 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                 {/* Added InputField for rating - July 4, 2025 - 11:15 PM CDT */}
                 <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} onChange={handleInputChange} theme={theme} />
                 <InputField name="quantity" label="Quantity" placeholder="e.g., 5" type="number" value={formData.quantity} onChange={handleInputChange} theme={theme} />
+                
+                {/* July 5, 2025 - 12:06:00 AM CDT: Flavor Notes section for AddCigar */}
+                <div className="bg-gray-800/50 p-4 rounded-xl">
+                    <div className="flex justify-between items-center mb-3">
+                        <h3 className="font-bold text-amber-300 text-lg flex items-center"><Tag className="w-5 h-5 mr-3 text-amber-400"/> Flavor Notes</h3>
+                        <button type="button" onClick={() => setIsFlavorModalOpen(true)} className="text-gray-400 hover:text-amber-400 p-1"><Edit className="w-4 h-4"/></button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {formData.flavorNotes.length > 0 ? (
+                            formData.flavorNotes.map(note => (<span key={note} className={`text-xs font-semibold px-3 py-1 rounded-full ${getFlavorTagColor(note)}`}>{note}</span>))
+                        ) : (
+                            <p className="text-sm text-gray-500">No notes selected. Click the edit icon to add some!</p>
+                        )}
+                    </div>
+                </div>
             </div>
 
             <div className="pt-4 flex space-x-4">
@@ -1759,8 +1980,11 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
 };
 
 const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
-    const [formData, setFormData] = useState({ ...cigar, description: cigar.description || '' });
+    // July 5, 2025 - 12:06:00 AM CDT: Initializing formData with shortDescription and ensuring flavorNotes is an array
+    const [formData, setFormData] = useState({ ...cigar, shortDescription: cigar.shortDescription || '', description: cigar.description || '', flavorNotes: cigar.flavorNotes || [] });
     const [strengthSuggestions, setStrengthSuggestions] = useState([]);
+    // July 5, 2025 - 12:06:00 AM CDT: State for flavor notes modal
+    const [isFlavorModalOpen, setIsFlavorModalOpen] = useState(false);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -1778,12 +2002,22 @@ const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
     const handleSave = async () => {
         const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
         const { id, ...dataToSave } = formData;
+        // July 5, 2025 - 12:06:00 AM CDT: Ensure flavorNotes is an array before saving
+        dataToSave.flavorNotes = Array.isArray(dataToSave.flavorNotes) ? dataToSave.flavorNotes : [];
         await updateDoc(cigarRef, dataToSave);
         navigate('CigarDetail', { cigarId: cigar.id });
     };
 
+    // July 5, 2025 - 12:06:00 AM CDT: Function to update flavor notes from modal
+    const handleFlavorNotesUpdate = (newNotes) => {
+        setFormData(prev => ({ ...prev, flavorNotes: newNotes }));
+    };
+
     return (
         <div className="p-4 pb-24">
+            {/* July 5, 2025 - 12:06:00 AM CDT: FlavorNotesModal for EditCigar */}
+            {isFlavorModalOpen && <FlavorNotesModal cigar={{ flavorNotes: formData.flavorNotes }} db={db} appId={appId} userId={userId} onClose={() => setIsFlavorModalOpen(false)} setSelectedNotes={handleFlavorNotesUpdate} />}
+
             <div className="flex items-center mb-6">
                 <button onClick={() => navigate('CigarDetail', { cigarId: cigar.id })} className="p-2 -ml-2 mr-2"><ChevronLeft className="w-7 h-7 text-white" /></button>
                 <h1 className="text-3xl font-bold text-white">Edit Cigar</h1>
@@ -1793,6 +2027,8 @@ const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
                 <InputField name="image" label="Image URL" placeholder="https://example.com/cigar.png" value={formData.image} onChange={handleInputChange} theme={theme} />
                 <InputField name="brand" label="Brand" placeholder="e.g., Padrón" value={formData.brand} onChange={handleInputChange} theme={theme} />
                 <InputField name="name" label="Name / Line" placeholder="e.g., 1964 Anniversary" value={formData.name} onChange={handleInputChange} theme={theme} />
+                {/* July 5, 2025 - 12:06:00 AM CDT: Added shortDescription to EditCigar */}
+                <InputField name="shortDescription" label="Short Description" placeholder="Brief overview of the cigar..." value={formData.shortDescription} onChange={handleInputChange} theme={theme} />
                 <TextAreaField name="description" label="Description" placeholder="Notes on this cigar..." value={formData.description} onChange={handleInputChange} theme={theme} />
                 <div className="grid grid-cols-2 gap-4">
                     {/* Replaced InputField with AutoCompleteInputField for Shape - July 5, 2025 - 12:00:00 AM CDT */}
@@ -1827,6 +2063,22 @@ const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
                     <InputField name="price" label="Price Paid" placeholder="e.g., 15.50" type="number" value={formData.price} onChange={handleInputChange} theme={theme} />
                 </div>
                 <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} onChange={handleInputChange} theme={theme} />
+                <InputField name="quantity" label="Quantity" placeholder="e.g., 5" type="number" value={formData.quantity} onChange={handleInputChange} theme={theme} />
+
+                {/* July 5, 2025 - 12:06:00 AM CDT: Flavor Notes section for EditCigar */}
+                <div className="bg-gray-800/50 p-4 rounded-xl">
+                    <div className="flex justify-between items-center mb-3">
+                        <h3 className="font-bold text-amber-300 text-lg flex items-center"><Tag className="w-5 h-5 mr-3 text-amber-400"/> Flavor Notes</h3>
+                        <button type="button" onClick={() => setIsFlavorModalOpen(true)} className="text-gray-400 hover:text-amber-400 p-1"><Edit className="w-4 h-4"/></button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {formData.flavorNotes.length > 0 ? (
+                            formData.flavorNotes.map(note => (<span key={note} className={`text-xs font-semibold px-3 py-1 rounded-full ${getFlavorTagColor(note)}`}>{note}</span>))
+                        ) : (
+                            <p className="text-sm text-gray-500">No notes selected. Click the edit icon to add some!</p>
+                        )}
+                    </div>
+                </div>
 
                 <div className="pt-4 flex space-x-4">
                     <button onClick={handleSave} className="w-full bg-amber-500 text-white font-bold py-3 rounded-lg hover:bg-amber-600 transition-colors">Save Changes</button>
@@ -2240,16 +2492,45 @@ const ImportCsvModal = ({ humidors, db, appId, userId, onClose, navigate }) => {
             const lines = text.split('\n').slice(1);
             const batch = writeBatch(db);
             const cigarsCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'cigars');
+            
+            // July 5, 2025 - 1:00:00 AM CDT: Updated CSV parsing to new schema
             lines.forEach(line => {
-                const columns = line.split(',');
-                if (columns.length < 14) return;
+                // July 5, 2025 - 1:11:00 AM CDT: Trim line and skip if empty
+                const trimmedLine = line.trim();
+                if (!trimmedLine) {
+                    return; // Skip empty or whitespace-only lines
+                }
+
+                const columns = trimmedLine.split(',');
+                // Ensure we have enough columns for the new schema
+                if (columns.length < 22) { // 22 columns in the new header
+                    console.warn(`Skipping malformed CSV row (not enough columns): ${trimmedLine}`);
+                    return; 
+                }
+
                 const newCigar = {
                     humidorId: selectedHumidor,
-                    name: columns[1], brand: columns[2], shape: columns[3], size: columns[4],
-                    country: columns[5], wrapper: columns[6], binder: columns[7], filler: columns[8],
-                    strength: columns[9], flavorNotes: columns[10].replace(/"/g, '').split(';').map(s => s.trim()),
-                    rating: parseInt(columns[11]) || 0, quantity: parseInt(columns[12]) || 0,
-                    price: parseFloat(columns[13]) || 0, image: ''
+                    name: columns[1],
+                    brand: columns[2],
+                    line: columns[3] || '', // New field
+                    shape: columns[4],
+                    isBoxPress: columns[5].toLowerCase() === 'true', // New field, convert to boolean
+                    length_inches: parseFloat(columns[6]) || 0, // New field, convert to number
+                    ring_gauge: parseInt(columns[7]) || 0, // New field, convert to number
+                    size: columns[8],
+                    country: columns[9], // Maps from 'Country of Origin'
+                    wrapper: columns[10],
+                    binder: columns[11],
+                    filler: columns[12],
+                    strength: columns[13],
+                    flavorNotes: columns[14].replace(/"/g, '').split(';').map(s => s.trim()).filter(s => s), // Clean and filter empty strings
+                    rating: parseInt(columns[15]) || 0,
+                    userRating: parseFloat(columns[16]) || 0, // New field, convert to number
+                    price: parseFloat(columns[17]) || 0,
+                    quantity: parseInt(columns[18]) || 0,
+                    image: columns[19] || '',
+                    shortDescription: columns[20] || '',
+                    description: columns[21] || '',
                 };
                 const cigarRef = doc(cigarsCollectionRef);
                 batch.set(cigarRef, newCigar);
@@ -2284,11 +2565,21 @@ const ImportCsvModal = ({ humidors, db, appId, userId, onClose, navigate }) => {
 };
 
 const ExportModal = ({ cigars, onClose }) => {
+    // July 5, 2025 - 1:00:00 AM CDT: Updated CSV header to new schema
     const exportToCsv = () => {
-        let headers = ['id,name,brand,shape,size,country,wrapper,binder,filler,strength,flavorNotes,rating,quantity,price'];
+        let headers = ['id,name,brand,line,shape,isBoxPress,length_inches,ring_gauge,Size,Country of Origin,wrapper,binder,filler,strength,flavorNotes,rating,userRating,price,quantity,image,shortDescription,description'];
         let usersCsv = cigars.reduce((acc, cigar) => {
-            const { id, name, brand, shape, size, country, wrapper, binder, filler, strength, flavorNotes, rating, quantity, price } = cigar;
-            acc.push([id, name, brand, shape, size, country, wrapper, binder, filler, strength, `"${flavorNotes.join(';')}"`, rating, quantity, price].join(','));
+            // July 5, 2025 - 1:00:00 AM CDT: Updated cigar property extraction for new schema
+            const {
+                id, name, brand, line = '', shape, isBoxPress = false, length_inches = 0, ring_gauge = 0,
+                size, country, wrapper, binder, filler, strength, flavorNotes, rating, userRating = 0,
+                quantity, price, image = '', shortDescription = '', description = ''
+            } = cigar;
+            acc.push([
+                id, name, brand, line, shape, isBoxPress ? 'TRUE' : 'FALSE', length_inches, ring_gauge,
+                size, country, wrapper, binder, filler, strength, `"${(flavorNotes || []).join(';')}"`,
+                rating, userRating, price, quantity, image, shortDescription, description
+            ].join(','));
             return acc;
         }, []);
         downloadFile({ data: [...headers, ...usersCsv].join('\n'), fileName: 'humidor_hub_export.csv', fileType: 'text/csv' });
@@ -2551,7 +2842,9 @@ export default function App() {
             case 'Dashboard':
                 return <Dashboard navigate={navigate} cigars={cigars} humidors={humidors} theme={theme} />;
             case 'HumidorsScreen':
-                return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} {...dbProps} theme={theme} />;
+                // July 5, 2025 - 12:19:00 AM CDT: Pass preFilterWrapper to HumidorsScreen
+                // July 5, 2025 - 1:32:00 AM CDT: Pass preFilterStrength to HumidorsScreen
+                return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} {...dbProps} theme={theme} preFilterWrapper={params.preFilterWrapper} preFilterStrength={params.preFilterStrength} />;
             case 'MyHumidor':
                 const humidor = humidors.find(h => h.id === params.humidorId);
                 if (!humidor) return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} {...dbProps} theme={theme} />; 
