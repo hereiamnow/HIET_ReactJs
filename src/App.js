@@ -1,14 +1,15 @@
 // File: App.js
 // Author: ADHD developer
 // Date: July 5, 2025
-// Time: 4:21 PM CDT
+// Time: 6:29 PM CDT
 
 // Description of Changes:
-// - Integrated the "Summarize My Collection" feature directly into "Roxy's Corner".
-// - The button is now styled as a secondary action within the panel and reads "Ask Roxy for a Summary".
-// - Removed the standalone "Summarize Collection" button and its corresponding toggle switch from the Dashboard Settings, simplifying the UI.
+// - Added a collapsible "Roxy's Corner" panel to the `CigarDetail` screen.
+// - Moved the AI-powered actions (Suggest Pairings, Generate Note, Find Similar) into the new "Roxy's Corner" panel for better organization.
+// - Refactored `DeleteCigarsModal` to accept a `count` prop, enabling it to display a dynamic message for single or multiple deletions.
+// - Fixed a UI bug in the `AlertsScreen` where the maximum humidity input field was incorrectly labeled with "°F" instead of "%".
+// - Integrated the "Summarize My Collection" feature directly into "Roxy's Corner" on the Dashboard.
 // - Updated the Humidor Card on the "My Humidors" screen with an enhanced, more visual layout.
-// - The new card design features prominent temperature/humidity stats and a visual progress bar for capacity.
 
 // Next Suggestions:
 // - Implement drag-and-drop reordering for the dashboard panels on desktop.
@@ -118,7 +119,7 @@ const cigarShapes = [
     'Torpedo', 'Piramide', 'Perfecto', 'Diadema', 'Culebra', 'Double Robusto'
 ].sort();
 
-// A list of fun tips for Roxy's Corner on the dashboard.
+// A list of fun tips for Roxy's corner on the dashboard.
 const roxysTips = [
     "Did you know? A steady 70% humidity is perfect for aging most cigars. Don't let it fluctuate!",
     "Remember to rotate your cigars every few months to ensure they age evenly. It's like a little cigar ballet!",
@@ -553,18 +554,19 @@ const DeleteHumidorModal = ({ isOpen, onClose, onConfirm, humidor, cigarsInHumid
 
 /**
  * A modal for confirming the deletion of multiple selected cigars.
+ * FIX: This component now accepts a 'count' prop to display a dynamic message.
  */
-const DeleteCigarsModal = ({ isOpen, onClose, onConfirm }) => {
+const DeleteCigarsModal = ({ isOpen, onClose, onConfirm, count }) => {
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100]" onClick={onClose}>
             <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-sm flex flex-col" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-xl font-bold text-red-400 flex items-center"><AlertTriangle className="w-5 h-5 mr-2"/> Delete Cigars</h3>
+                    <h3 className="text-xl font-bold text-red-400 flex items-center"><AlertTriangle className="w-5 h-5 mr-2"/> Delete {count > 1 ? 'Cigars' : 'Cigar'}</h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button>
                 </div>
-                <p className="text-gray-300 mb-4">Are you sure you want to delete the selected cigars? This action cannot be undone.</p>
+                <p className="text-gray-300 mb-4">Are you sure you want to delete the selected {count > 1 ? `${count} cigars` : 'cigar'}? This action cannot be undone.</p>
                 
                 <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-gray-700">
                     <button type="button" onClick={onClose} className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors">Cancel</button>
@@ -1632,7 +1634,7 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
     const handleConfirmDeleteCigars = async () => {
         const batch = writeBatch(db);
         selectedCigarIds.forEach(cigarId => {
-            const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
+            const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigarId);
             batch.delete(cigarRef);
         });
         await batch.commit();
@@ -1768,6 +1770,7 @@ const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
     const [isFlavorModalOpen, setIsFlavorModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+    const [isRoxyOpen, setIsRoxyOpen] = useState(true); // State for Roxy's Corner panel
 
     const handleQuantityChange = async (newQuantity) => {
         if (newQuantity < 0) return;
@@ -1830,7 +1833,7 @@ const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
         <div className="pb-24">
             {modalState.isOpen && <GeminiModal title={modalState.type === 'pairings' ? "Pairing Suggestions" : modalState.type === 'notes' ? "Tasting Note Idea" : "Similar Smokes"} content={modalState.content} isLoading={modalState.isLoading} onClose={closeModal} />}
             {isFlavorModalOpen && <FlavorNotesModal cigar={cigar} db={db} appId={appId} userId={userId} onClose={() => setIsFlavorModalOpen(false)} />}
-            {isDeleteModalOpen && <DeleteCigarsModal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} onConfirm={handleDeleteCigar} count={1} />}
+            <DeleteCigarsModal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} onConfirm={handleDeleteCigar} count={1} />
             {isExportModalOpen && <ExportModal cigars={[cigar]} onClose={() => setIsExportModalOpen(false)} />}
 
             <div className="relative">
@@ -1846,8 +1849,6 @@ const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
             </div>
             
             <div className="p-4 space-y-6">
-
-                
                 <div className="flex justify-end items-center bg-gray-800/50 p-3 rounded-xl gap-4">
                     <button onClick={() => setIsExportModalOpen(true)} className="flex flex-col items-center gap-1 text-gray-300 hover:text-green-400 transition-colors">
                         <Download className="w-5 h-5" />
@@ -1901,11 +1902,21 @@ const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
                         {cigar.flavorNotes.map(note => (<span key={note} className={`text-xs font-semibold px-3 py-1 rounded-full ${getFlavorTagColor(note)}`}>{note}</span>))}
                     </div>
                 </div>
-
-                <div className="space-y-4 pt-2">
-                    <button onClick={handleSuggestPairings} className="w-full flex items-center justify-center bg-amber-500/20 border border-amber-500 text-amber-300 font-bold py-3 rounded-lg hover:bg-amber-500/30 transition-colors"><Sparkles className="w-5 h-5 mr-2" /> Suggest Pairings</button>
-                    <button onClick={handleGenerateNote} className="w-full flex items-center justify-center bg-sky-500/20 border border-sky-500 text-sky-300 font-bold py-3 rounded-lg hover:bg-sky-500/30 transition-colors"><Sparkles className="w-5 h-5 mr-2" /> Generate Note Idea</button>
-                    <button onClick={handleFindSimilar} className="w-full flex items-center justify-center bg-green-500/20 border border-green-500 text-green-300 font-bold py-3 rounded-lg hover:bg-green-500/30 transition-colors"><Sparkles className="w-5 h-5 mr-2" /> Find Similar Smokes</button>
+                
+                {/* NEW: Roxy's Corner Collapsible Panel */}
+                <div className="bg-amber-900/20 border border-amber-800 rounded-xl overflow-hidden">
+                    <button onClick={() => setIsRoxyOpen(!isRoxyOpen)} className="w-full p-4 flex justify-between items-center">
+                         <h3 className="font-bold text-amber-300 text-lg flex items-center"><Wind className="w-5 h-5 mr-2"/> Roxy's Corner</h3>
+                         <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isRoxyOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {isRoxyOpen && (
+                        <div className="px-4 pb-4 space-y-4">
+                            <p className="text-amber-200 text-sm pt-2">Let Roxy help you get the most out of your smoke. What would you like to know?</p>
+                            <button onClick={handleSuggestPairings} className="w-full flex items-center justify-center bg-amber-500/20 border border-amber-500 text-amber-300 font-bold py-3 rounded-lg hover:bg-amber-500/30 transition-colors"><Sparkles className="w-5 h-5 mr-2" /> Suggest Pairings</button>
+                            <button onClick={handleGenerateNote} className="w-full flex items-center justify-center bg-sky-500/20 border border-sky-500 text-sky-300 font-bold py-3 rounded-lg hover:bg-sky-500/30 transition-colors"><Sparkles className="w-5 h-5 mr-2" /> Generate Note Idea</button>
+                            <button onClick={handleFindSimilar} className="w-full flex items-center justify-center bg-green-500/20 border border-green-500 text-green-300 font-bold py-3 rounded-lg hover:bg-green-500/30 transition-colors"><Sparkles className="w-5 h-5 mr-2" /> Find Similar Smokes</button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -2218,7 +2229,8 @@ const AlertsScreen = ({ navigate, humidors }) => {
                             {setting.humidityAlert && (
                                 <div className="grid grid-cols-2 gap-4 pl-4 border-l-2 border-gray-700 ml-2">
                                     <div className="flex items-center space-x-2"><label className="text-sm text-gray-400">Min:</label><input type="number" value={setting.minHumidity} onChange={(e) => handleValueChange(setting.humidorId, 'minHumidity', e.target.value)} className="w-16 bg-gray-700 text-white text-center rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500" /><span className="text-gray-400">%</span></div>
-                                     <div className="flex items-center space-x-2"><label className="text-sm text-gray-400">Max:</label><input type="number" value={setting.maxHumidity} onChange={(e) => handleValueChange(setting.humidorId, 'maxHumidity', e.target.value)} className="w-16 bg-gray-700 text-white text-center rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500" /><span className="text-gray-400">°F</span></div>
+                                     {/* FIX: Changed unit from °F to % for max humidity */}
+                                     <div className="flex items-center space-x-2"><label className="text-sm text-gray-400">Max:</label><input type="number" value={setting.maxHumidity} onChange={(e) => handleValueChange(setting.humidorId, 'maxHumidity', e.target.value)} className="w-16 bg-gray-700 text-white text-center rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500" /><span className="text-gray-400">%</span></div>
                                 </div>
                             )}
                             <div className="border-t border-gray-700"></div>
