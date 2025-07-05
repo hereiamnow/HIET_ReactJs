@@ -1,27 +1,21 @@
 // File: App.js
 // Author: ADHD developer
 // Date: July 5, 2025
-// Time: 2:10:00 AM CDT
+// Time: 4:21 PM CDT
 
-// Current Changes:
-// - Extracted 'Live Environment' section into a new `LiveEnvironmentPanel` component.
-// - Extracted 'Inventory Analysis' section into a new `InventoryAnalysisPanel` component.
-// - Extracted 'Summarize My Collection' button into a new `SummarizeCollectionButton` component.
-// - Updated the `Dashboard` to conditionally render these new components based on visibility settings.
-// - Added new toggle switches in the `SettingsScreen` under "Dashboard Features" to control the visibility
-//   of the Live Environment, Inventory Analysis, and Summarize My Collection panels on the Dashboard.
-// - Refactored "Dashboard Components" section into its own `DashboardSettingsScreen`.
+// Description of Changes:
+// - Integrated the "Summarize My Collection" feature directly into "Roxy's Corner".
+// - The button is now styled as a secondary action within the panel and reads "Ask Roxy for a Summary".
+// - Removed the standalone "Summarize Collection" button and its corresponding toggle switch from the Dashboard Settings, simplifying the UI.
+// - Updated the Humidor Card on the "My Humidors" screen with an enhanced, more visual layout.
+// - The new card design features prominent temperature/humidity stats and a visual progress bar for capacity.
 
 // Next Suggestions:
+// - Implement drag-and-drop reordering for the dashboard panels on desktop.
+// - Persist the user's custom panel order to local storage.
 // - Implement full Firebase authentication flow (sign-up, login, password reset).
 // - Enhance error handling with user-friendly messages for all API calls and database operations.
 // - Add more robust input validation for all forms.
-// - Implement a loading indicator for all asynchronous operations (e.g., saving data, fetching Govee devices).
-// - Improve responsiveness for larger screens (tablts and desktops).
-// - Add unit tests for components and utility functions.
-// - Consider adding a feature to track cigar aging over time.
-// - Implement push notifications for humidor alerts.
-// - Add new fields (line, isBoxPress, length_inches, ring_gauge, userRating) to the CigarDetail screen for display.
 
 // Import necessary libraries and components.
 // React is the main library for building the user interface.
@@ -1208,17 +1202,7 @@ const InventoryAnalysisPanel = ({ cigars, theme }) => {
     );
 };
 
-// NEW: SummarizeCollectionButton component
-const SummarizeCollectionButton = ({ cigars, handleSummarizeCollection }) => {
-    return (
-        <button onClick={handleSummarizeCollection} className="w-full flex items-center justify-center bg-purple-600/20 border border-purple-500 text-purple-300 font-bold py-3 rounded-lg hover:bg-purple-600/30 transition-colors mt-6">
-            <Sparkles className="w-5 h-5 mr-2" /> Summarize My Collection
-        </button>
-    );
-};
-
-
-const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showStrengthPanel, showCountryPanel, showLiveEnvironment, showInventoryAnalysis, showSummarizeButton }) => {
+const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showStrengthPanel, showCountryPanel, showLiveEnvironment, showInventoryAnalysis }) => {
     const [roxyTip, setRoxyTip] = useState('');
     const [isRoxyOpen, setIsRoxyOpen] = useState(true);
     const [modalState, setModalState] = useState({ isOpen: false, content: '', isLoading: false });
@@ -1270,14 +1254,15 @@ const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showSt
                     {isRoxyOpen && (
                         <div className="px-4 pb-4">
                             <p className="text-amber-200 text-sm">{roxyTip}</p>
+                            <button onClick={handleSummarizeCollection} className="mt-4 w-full flex items-center justify-center bg-purple-600/20 border border-purple-500 text-purple-300 font-bold py-2 rounded-lg hover:bg-purple-600/30 transition-colors">
+                                <Sparkles className="w-5 h-5 mr-2" /> Ask Roxy for a Summary
+                            </button>
                         </div>
                     )}
                 </div>
 
                 {showLiveEnvironment && <LiveEnvironmentPanel humidors={humidors} theme={theme} />}
                 {showInventoryAnalysis && <InventoryAnalysisPanel cigars={cigars} theme={theme} />}
-                {showSummarizeButton && <SummarizeCollectionButton cigars={cigars} handleSummarizeCollection={handleSummarizeCollection} />}
-
                 {showWrapperPanel && <BrowseByWrapperPanel cigars={cigars} navigate={navigate} theme={theme} />}
                 {showStrengthPanel && <BrowseByStrengthPanel cigars={cigars} navigate={navigate} theme={theme} />}
                 {showCountryPanel && <BrowseByCountryPanel cigars={cigars} navigate={navigate} theme={theme} />}
@@ -1861,6 +1846,8 @@ const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
             </div>
             
             <div className="p-4 space-y-6">
+
+                
                 <div className="flex justify-end items-center bg-gray-800/50 p-3 rounded-xl gap-4">
                     <button onClick={() => setIsExportModalOpen(true)} className="flex flex-col items-center gap-1 text-gray-300 hover:text-green-400 transition-colors">
                         <Download className="w-5 h-5" />
@@ -2441,7 +2428,6 @@ const EditHumidor = ({ navigate, db, appId, userId, humidor, goveeApiKey, goveeD
     );
 };
 
-// NEW: DashboardSettingsScreen component
 const DashboardSettingsScreen = ({ navigate, theme, dashboardPanelVisibility, setDashboardPanelVisibility }) => {
     const ToggleSwitch = ({ label, isChecked, onToggle }) => (
         <div className="flex justify-between items-center py-2">
@@ -2483,11 +2469,6 @@ const DashboardSettingsScreen = ({ navigate, theme, dashboardPanelVisibility, se
                     label="Inventory Analysis"
                     isChecked={dashboardPanelVisibility.showInventoryAnalysis}
                     onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showInventoryAnalysis: !prev.showInventoryAnalysis }))}
-                />
-                <ToggleSwitch
-                    label="Summarize Collection Button"
-                    isChecked={dashboardPanelVisibility.showSummarizeButton}
-                    onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showSummarizeButton: !prev.showSummarizeButton }))}
                 />
             </div>
         </div>
@@ -3003,14 +2984,13 @@ export default function App() {
     const [goveeApiKey, setGoveeApiKey] = useState('');
     const [goveeDevices, setGoveeDevices] = useState([]);
     
-    // NEW: State for controlling dashboard panel visibility - July 5, 2025 - 2:00:00 AM CDT
+    // State for controlling dashboard panel visibility
     const [dashboardPanelVisibility, setDashboardPanelVisibility] = useState({
         showWrapperPanel: true,
         showStrengthPanel: true,
         showCountryPanel: true,
-        showLiveEnvironment: true, // NEW: Default to true
-        showInventoryAnalysis: true, // NEW: Default to true
-        showSummarizeButton: true, // NEW: Default to true
+        showLiveEnvironment: true,
+        showInventoryAnalysis: true,
     });
 
     // Firebase state
