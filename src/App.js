@@ -886,6 +886,8 @@ const ChartCard = ({ title, children, action }) => (
 
 // BrowseByWrapperPanel component
 const BrowseByWrapperPanel = ({ cigars, navigate, theme }) => {
+    const [isCollapsed, setIsCollapsed] = useState(true); // Defaults to collapsed
+
     // Calculate unique wrapper types and their counts
     const wrapperData = useMemo(() => {
         const counts = cigars.reduce((acc, cigar) => {
@@ -901,25 +903,28 @@ const BrowseByWrapperPanel = ({ cigars, navigate, theme }) => {
 
     return (
         <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
-            <div className="p-4">
+            <button onClick={() => setIsCollapsed(!isCollapsed)} className="w-full p-4 flex justify-between items-center">
                 <h3 className="font-bold text-amber-300 text-lg flex items-center"><Leaf className="w-5 h-5 mr-2"/> Browse by Wrapper</h3>
-            </div>
-            <div className="px-4 pb-4 space-y-2">
-                {wrapperData.length > 0 ? (
-                    wrapperData.map(({ wrapper, quantity }) => (
-                        <button
-                            key={wrapper}
-                            onClick={() => navigate('HumidorsScreen', { preFilterWrapper: wrapper })}
-                            className="w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors flex justify-between items-center"
-                        >
-                            <span className="text-gray-300">{wrapper}</span>
-                            <span className="text-gray-400">({quantity})</span>
-                        </button>
-                    ))
-                ) : (
-                    <p className="text-gray-500 text-sm text-center py-4">No wrapper data available.</p>
-                )}
-            </div>
+                <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
+            </button>
+            {!isCollapsed && (
+                <div className="px-4 pb-4 space-y-2">
+                    {wrapperData.length > 0 ? (
+                        wrapperData.map(({ wrapper, quantity }) => (
+                            <button
+                                key={wrapper}
+                                onClick={() => navigate('HumidorsScreen', { preFilterWrapper: wrapper })}
+                                className="w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors flex justify-between items-center"
+                            >
+                                <span className="text-gray-300">{wrapper}</span>
+                                <span className="text-gray-400">({quantity})</span>
+                            </button>
+                        ))
+                    ) : (
+                        <p className="text-gray-500 text-sm text-center py-4">No wrapper data available.</p>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
@@ -2593,6 +2598,11 @@ const DataSyncScreen = ({ navigate, db, appId, userId, cigars, humidors }) => {
                 <h1 className="text-3xl font-bold text-white">Import & Export</h1>
             </div>
             <div className="space-y-6">
+                 <div className="bg-gray-800/50 p-4 rounded-xl">
+                    <h3 className="font-bold text-amber-300 text-lg mb-2">Import Collection</h3>
+                    <p className="text-sm text-gray-400 mb-4">Import cigars from a CSV file. Ensure the file matches the exported format.</p>
+                    <button onClick={() => setIsImportModalOpen(true)} className="w-full flex items-center justify-center gap-2 bg-blue-600/80 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors"><UploadCloud className="w-5 h-5" />Import from CSV</button>
+                </div>
                 <div className="bg-gray-800/50 p-4 rounded-xl">
                     <h3 className="font-bold text-amber-300 text-lg mb-2">Export Collection</h3>
                     <p className="text-sm text-gray-400 mb-4">Download your entire cigar inventory as a CSV or JSON file for backups.</p>
@@ -2603,95 +2613,227 @@ const DataSyncScreen = ({ navigate, db, appId, userId, cigars, humidors }) => {
                     <p className="text-sm text-gray-400 mb-4">Download temperature and humidity readings for all your humidors in CSV format.</p>
                     <button onClick={exportEnvironmentData} className="w-full flex items-center justify-center gap-2 bg-purple-600/80 text-white font-bold py-3 rounded-lg hover:bg-purple-700 transition-colors"><Download className="w-5 h-5" />Export Environment CSV</button>
                 </div>
-                 <div className="bg-gray-800/50 p-4 rounded-xl">
-                    <h3 className="font-bold text-amber-300 text-lg mb-2">Import Collection</h3>
-                    <p className="text-sm text-gray-400 mb-4">Import cigars from a CSV file. Ensure the file matches the exported format.</p>
-                    <button onClick={() => setIsImportModalOpen(true)} className="w-full flex items-center justify-center gap-2 bg-blue-600/80 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors"><UploadCloud className="w-5 h-5" />Import from CSV</button>
-                </div>
             </div>
         </div>
     );
 };
 
+const APP_FIELDS = [
+    { key: 'name', label: 'Cigar Name', required: true },
+    { key: 'brand', label: 'Brand', required: true },
+    { key: 'quantity', label: 'Quantity', required: true, type: 'number' },
+    { key: 'price', label: 'Price', required: false, type: 'number' },
+    { key: 'rating', label: 'Rating (Official)', required: false, type: 'number' },
+    { key: 'userRating', label: 'My Rating', required: false, type: 'number' },
+    { key: 'strength', label: 'Strength', required: false },
+    { key: 'shape', label: 'Shape', required: false },
+    { key: 'size', label: 'Size (e.g., 5.5x50)', required: false },
+    { key: 'country', label: 'Country', required: false },
+    { key: 'wrapper', label: 'Wrapper', required: false },
+    { key: 'binder', label: 'Binder', required: false },
+    { key: 'filler', label: 'Filler', required: false },
+    { key: 'image', label: 'Image URL', required: false },
+    { key: 'description', label: 'Long Description', required: false },
+    { key: 'shortDescription', label: 'Short Description', required: false },
+    { key: 'line', label: 'Product Line', required: false },
+    { key: 'isBoxPress', label: 'Is Box Pressed', required: false, type: 'boolean' },
+    { key: 'length_inches', label: 'Length (in)', required: false, type: 'number' },
+    { key: 'ring_gauge', label: 'Ring Gauge', required: false, type: 'number' },
+    { key: 'flavorNotes', label: 'Flavor Notes (semicolon-separated)', required: false, type: 'array' },
+];
+
 const ImportCsvModal = ({ humidors, db, appId, userId, onClose, navigate }) => {
+    const [step, setStep] = useState('selectFile');
     const [selectedHumidor, setSelectedHumidor] = useState(humidors[0]?.id || '');
+    const [csvHeaders, setCsvHeaders] = useState([]);
+    const [csvRows, setCsvRows] = useState([]);
+    const [fileName, setFileName] = useState('');
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [fieldMapping, setFieldMapping] = useState({});
+    const [importedCount, setImportedCount] = useState(0);
+
     const fileInputRef = React.useRef(null);
 
     const handleFileChange = (event) => {
         const file = event.target.files[0];
         if (!file) return;
+        setFileName(file.name);
+        setIsProcessing(true);
 
         const reader = new FileReader();
-        reader.onload = async (e) => {
+        reader.onload = (e) => {
             const text = e.target.result;
-            const lines = text.split('\n').slice(1);
-            const batch = writeBatch(db);
-            const cigarsCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'cigars');
+            const lines = text.split(/[\r\n]+/).filter(line => line.trim() !== '');
+            if (lines.length < 2) {
+                alert("CSV file must have a header and at least one data row.");
+                setIsProcessing(false);
+                return;
+            }
+            const headers = lines[0].trim().split(',').map(h => h.replace(/"/g, ''));
+            const rows = lines.slice(1).map(line => line.trim().split(','));
             
-            lines.forEach(line => {
-                const trimmedLine = line.trim();
-                if (!trimmedLine) {
-                    return; // Skip empty or whitespace-only lines
+            setCsvHeaders(headers);
+            setCsvRows(rows.filter(row => row.length === headers.length));
+            
+            const initialMapping = {};
+            APP_FIELDS.forEach(appField => {
+                const matchedHeader = headers.find(header => header.toLowerCase().replace(/[\s_]/g, '') === appField.label.toLowerCase().replace(/[\s_]/g, ''));
+                if (matchedHeader) {
+                    initialMapping[appField.key] = matchedHeader;
+                } else {
+                    initialMapping[appField.key] = 'none';
                 }
-
-                const columns = trimmedLine.split(',');
-                // Ensure we have enough columns for the new schema
-                if (columns.length < 22) { // 22 columns in the new header
-                    console.warn(`Skipping malformed CSV row (not enough columns): ${trimmedLine}`);
-                    return; 
-                }
-
-                const newCigar = {
-                    humidorId: selectedHumidor,
-                    name: columns[1],
-                    brand: columns[2],
-                    line: columns[3] || '',
-                    shape: columns[4],
-                    isBoxPress: columns[5].toLowerCase() === 'true',
-                    length_inches: parseFloat(columns[6]) || 0,
-                    ring_gauge: parseInt(columns[7]) || 0,
-                    size: columns[8],
-                    country: columns[9],
-                    wrapper: columns[10],
-                    binder: columns[11],
-                    filler: columns[12],
-                    strength: columns[13],
-                    flavorNotes: columns[14].replace(/"/g, '').split(';').map(s => s.trim()).filter(s => s),
-                    rating: parseInt(columns[15]) || 0,
-                    userRating: parseFloat(columns[16]) || 0,
-                    price: parseFloat(columns[17]) || 0,
-                    quantity: parseInt(columns[18]) || 0,
-                    image: columns[19] || '',
-                    shortDescription: columns[20] || '',
-                    description: columns[21] || '',
-                };
-                const cigarRef = doc(cigarsCollectionRef);
-                batch.set(cigarRef, newCigar);
             });
-            await batch.commit();
-            onClose();
-            navigate('MyHumidor', { humidorId: selectedHumidor });
+            setFieldMapping(initialMapping);
+
+            setStep('mapFields');
+            setIsProcessing(false);
         };
         reader.readAsText(file);
     };
 
-    return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100]" onClick={onClose}>
-            <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-sm flex flex-col" onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-amber-400 flex items-center"><UploadCloud className="w-5 h-5 mr-2"/> Import from CSV</h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button>
-                </div>
-                <div className="space-y-4">
-                    <div>
-                        <label className="text-sm font-medium text-gray-300 mb-1 block">Select Humidor</label>
-                        <select value={selectedHumidor} onChange={(e) => setSelectedHumidor(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white">
-                            {humidors.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-                        </select>
+    const handleMappingChange = (appFieldKey, csvHeader) => {
+        setFieldMapping(prev => ({ ...prev, [appFieldKey]: csvHeader }));
+    };
+
+    const handleImport = async () => {
+        setStep('importing');
+        const batch = writeBatch(db);
+        const cigarsCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'cigars');
+        let count = 0;
+
+        csvRows.forEach(row => {
+            const newCigar = {
+                humidorId: selectedHumidor,
+                flavorNotes: [],
+                quantity: 1,
+            };
+
+            APP_FIELDS.forEach(appField => {
+                const mappedHeader = fieldMapping[appField.key];
+                if (mappedHeader && mappedHeader !== 'none') {
+                    const headerIndex = csvHeaders.indexOf(mappedHeader);
+                    if (headerIndex === -1) return;
+                    
+                    let value = row[headerIndex]?.trim();
+                    
+                    if (appField.type === 'number') {
+                        value = parseFloat(value) || 0;
+                    } else if (appField.type === 'boolean') {
+                        value = value?.toLowerCase() === 'true' || value === '1';
+                    } else if (appField.type === 'array') {
+                        value = value ? value.split(';').map(s => s.trim()).filter(Boolean) : [];
+                    }
+                    
+                    newCigar[appField.key] = value;
+                }
+            });
+
+            if (newCigar.name && newCigar.brand) {
+                const cigarRef = doc(cigarsCollectionRef);
+                batch.set(cigarRef, newCigar);
+                count++;
+            }
+        });
+
+        await batch.commit();
+        setImportedCount(count);
+        setStep('complete');
+    };
+    
+    const handleReset = () => {
+        setStep('selectFile');
+        setCsvHeaders([]);
+        setCsvRows([]);
+        setFileName('');
+        setFieldMapping({});
+        if(fileInputRef.current) fileInputRef.current.value = "";
+    };
+
+    const isMappingValid = useMemo(() => {
+        const requiredFields = APP_FIELDS.filter(f => f.required);
+        return requiredFields.every(f => fieldMapping[f.key] && fieldMapping[f.key] !== 'none');
+    }, [fieldMapping]);
+
+    const renderContent = () => {
+        switch (step) {
+            case 'selectFile':
+                return (
+                    <>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold text-amber-400 flex items-center"><UploadCloud className="w-5 h-5 mr-2"/> Import from CSV</h3>
+                            <button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button>
+                        </div>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-sm font-medium text-gray-300 mb-1 block">1. Select Destination Humidor</label>
+                                <select value={selectedHumidor} onChange={(e) => setSelectedHumidor(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white">
+                                    {humidors.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-gray-300 mb-1 block">2. Choose CSV File</label>
+                                <input type="file" ref={fileInputRef} onChange={handleFileChange} style={{ display: 'none' }} accept=".csv" />
+                                <button onClick={() => fileInputRef.current.click()} className="w-full flex items-center justify-center gap-2 bg-blue-600/80 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                                    {isProcessing ? <LoaderCircle className="w-5 h-5 animate-spin"/> : <Upload className="w-5 h-5"/>}
+                                    {fileName || 'Choose CSV File'}
+                                </button>
+                            </div>
+                        </div>
+                    </>
+                );
+            case 'mapFields':
+                return (
+                     <>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold text-amber-400">Map CSV Fields</h3>
+                            <button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button>
+                        </div>
+                        <p className="text-sm text-gray-400 mb-4">Match your CSV columns to the app's fields. Required fields are marked with *.</p>
+                        <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
+                            {APP_FIELDS.map(appField => (
+                                <div key={appField.key} className="grid grid-cols-2 gap-4 items-center">
+                                    <label className="text-sm font-medium text-gray-200 text-right">{appField.label}{appField.required && '*'}</label>
+                                    <select value={fieldMapping[appField.key] || 'none'} onChange={(e) => handleMappingChange(appField.key, e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white">
+                                        <option value="none">-- Do not import --</option>
+                                        {csvHeaders.map(header => <option key={header} value={header}>{header}</option>)}
+                                    </select>
+                                </div>
+                            ))}
+                        </div>
+                         <div className="flex justify-between gap-3 pt-4 mt-4 border-t border-gray-700">
+                            <button onClick={handleReset} className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors">Back</button>
+                            <button onClick={handleImport} disabled={!isMappingValid} className="bg-amber-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-amber-600 transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed">
+                                Import
+                            </button>
+                        </div>
+                    </>
+                );
+            case 'importing':
+                return (
+                    <div className="flex flex-col items-center justify-center h-48">
+                        <LoaderCircle className="w-12 h-12 text-amber-500 animate-spin" />
+                        <p className="mt-4 text-gray-300">Importing your cigars...</p>
                     </div>
-                    <input type="file" ref={fileInputRef} onChange={handleFileChange} style={{ display: 'none' }} accept=".csv" />
-                    <button onClick={() => fileInputRef.current.click()} className="w-full flex items-center justify-center gap-2 bg-blue-600/80 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors"><Upload className="w-5 h-5"/> Choose CSV File</button>
-                </div>
+                );
+            case 'complete':
+                 return (
+                    <>
+                        <div className="flex justify-center items-center mb-4">
+                            <h3 className="text-xl font-bold text-green-400 flex items-center"><Check className="w-6 h-6 mr-2"/> Import Complete</h3>
+                        </div>
+                        <p className="text-center text-gray-300 mb-6">Successfully imported {importedCount} cigars into <span className="font-bold text-white">{humidors.find(h => h.id === selectedHumidor)?.name}</span>.</p>
+                        <button onClick={onClose} className="w-full bg-amber-500 text-white font-bold py-3 rounded-lg hover:bg-amber-600 transition-colors">Done</button>
+                    </>
+                );
+            default: return null;
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100]" onClick={step !== 'importing' ? onClose : undefined}>
+            <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-lg flex flex-col" onClick={e => e.stopPropagation()}>
+                {renderContent()}
             </div>
         </div>
     );
@@ -2709,7 +2851,7 @@ const ExportModal = ({ cigars, onClose }) => {
             acc.push([
                 id, name, brand, line, shape, isBoxPress ? 'TRUE' : 'FALSE', length_inches, ring_gauge,
                 size, country, wrapper, binder, filler, strength, `"${(flavorNotes || []).join(';')}"`,
-                rating, userRating, price, quantity, image, shortDescription, description
+                rating, userRating, price, quantity, image, `"${shortDescription}"`, `"${description}"`
             ].join(','));
             return acc;
         }, []);
@@ -2907,141 +3049,124 @@ export default function App() {
                         try {
                             await signInWithCustomToken(firebaseAuth, initialAuthToken);
                         } catch (error) {
-                            // If the custom token fails for any reason, fall back to anonymous sign-in
-                            // to ensure the app doesn't crash.
-                            console.error("Error signing in with custom token, falling back to anonymous:", error);
+                            console.error("Failed to sign in with custom token:", error);
+                            // Fallback to anonymous sign-in if the custom token fails
                             await signInAnonymously(firebaseAuth);
                         }
                     }
                 }
             });
         } catch (error) {
-            console.error("Firebase initialization error:", error);
-            setIsLoading(false); // Stop loading if there's a critical error.
-        }
-    }, []);
-
-    // Effect to fetch data from Firestore once user is authenticated
-    useEffect(() => {
-        // Don't run this effect if we don't have a database connection or a user ID.
-        if (!db || !userId) return;
-
-        // Set loading to true while we fetch data.
-        setIsLoading(true);
-        
-        // Define the paths to the user's data collections in Firestore.
-        const humidorsPath = `artifacts/${appId}/users/${userId}/humidors`;
-        const cigarsPath = `artifacts/${appId}/users/${userId}/cigars`;
-        
-        const humidorsColRef = collection(db, humidorsPath);
-        const cigarsColRef = collection(db, cigarsPath);
-
-        // onSnapshot creates a real-time listener for the humidors collection.
-        // It will automatically update the UI whenever the data changes in the database.
-        const unsubscribeHumidors = onSnapshot(humidorsColRef, (snapshot) => {
-            const humidorsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setHumidors(humidorsData);
-        }, (error) => console.error("Error fetching humidors:", error));
-
-        // Create a real-time listener for the cigars collection.
-        const unsubscribeCigars = onSnapshot(cigarsColRef, (snapshot) => {
-            const cigarsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setCigars(cigarsData);
-            setIsLoading(false); // Set loading to false once we have the cigar data.
-        }, (error) => {
-            console.error("Error fetching cigars:", error);
+            console.error("Firebase initialization failed:", error);
             setIsLoading(false);
-        });
+        }
+    }, []); // The empty dependency array `[]` ensures this effect runs only once when the component mounts.
 
-        // This is a cleanup function. When the component unmounts (e.g., user closes the app),
-        // it unsubscribes from the listeners to prevent memory leaks.
-        return () => {
-            unsubscribeHumidors();
-            unsubscribeCigars();
-        };
-    }, [db, userId]); // This effect re-runs if the db or userId changes.
+    // Effect for fetching data from Firestore
+    // This effect runs whenever the `db` or `userId` state changes.
+    useEffect(() => {
+        // We only proceed if both the database connection and the user ID are available.
+        if (db && userId) {
+            setIsLoading(true); // Set loading to true while we fetch data.
 
+            // Set up a real-time listener for the 'humidors' collection.
+            // `onSnapshot` will automatically update the `humidors` state whenever data changes in Firestore.
+            const humidorsCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'humidors');
+            const unsubscribeHumidors = onSnapshot(humidorsCollectionRef, (snapshot) => {
+                const humidorsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setHumidors(humidorsData);
+            }, (error) => {
+                console.error("Error fetching humidors:", error);
+            });
+
+            // Set up a real-time listener for the 'cigars' collection.
+            const cigarsCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'cigars');
+            const unsubscribeCigars = onSnapshot(cigarsCollectionRef, (snapshot) => {
+                const cigarsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setCigars(cigarsData);
+                setIsLoading(false); // Set loading to false after the initial cigar data is loaded.
+            }, (error) => {
+                console.error("Error fetching cigars:", error);
+                setIsLoading(false);
+            });
+
+            // This is a cleanup function. When the component unmounts (or `db`/`userId` changes),
+            // it will detach the listeners to prevent memory leaks.
+            return () => {
+                unsubscribeHumidors();
+                unsubscribeCigars();
+            };
+        }
+    }, [db, userId]); // Dependencies for this effect.
+
+    // Function to handle navigation between screens.
+    // It takes the screen name and any parameters to pass to that screen.
     const navigate = (screen, params = {}) => {
-        window.scrollTo(0, 0);
         setNavigation({ screen, params });
     };
 
+    // This function determines which screen component to render based on the current navigation state.
     const renderScreen = () => {
+        const { screen, params } = navigation;
+
+        // A loading screen is shown while Firebase is initializing and fetching data.
         if (isLoading) {
             return (
-                <div className="flex flex-col items-center justify-center h-screen">
-                    <LoaderCircle className="w-16 h-16 text-amber-500 animate-spin" />
-                    <p className="mt-4 text-lg">Loading Your Collection...</p>
+                <div className={`w-full h-screen flex flex-col items-center justify-center ${theme.bg}`}>
+                    <LoaderCircle className={`w-12 h-12 ${theme.primary} animate-spin`} />
+                    <p className={`mt-4 ${theme.text}`}>Loading Your Collection...</p>
                 </div>
             );
         }
 
-        const { screen, params } = navigation;
-        const dbProps = { db, appId, userId };
-
+        // A `switch` statement is used to select the correct component.
         switch (screen) {
             case 'Dashboard':
-                return <Dashboard navigate={navigate} cigars={cigars} humidors={humidors} theme={theme}
-                    showWrapperPanel={dashboardPanelVisibility.showWrapperPanel}
-                    showStrengthPanel={dashboardPanelVisibility.showStrengthPanel}
-                    showCountryPanel={dashboardPanelVisibility.showCountryPanel}
-                    showLiveEnvironment={dashboardPanelVisibility.showLiveEnvironment} // NEW
-                    showInventoryAnalysis={dashboardPanelVisibility.showInventoryAnalysis} // NEW
-                    showSummarizeButton={dashboardPanelVisibility.showSummarizeButton} // NEW
-                />;
+                return <Dashboard navigate={navigate} cigars={cigars} humidors={humidors} theme={theme} {...dashboardPanelVisibility} />;
             case 'HumidorsScreen':
-                return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} {...dbProps} theme={theme} preFilterWrapper={params.preFilterWrapper} preFilterStrength={params.preFilterStrength} preFilterCountry={params.preFilterCountry} />;
+                return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} db={db} appId={appId} userId={userId} theme={theme} {...params} />;
             case 'MyHumidor':
                 const humidor = humidors.find(h => h.id === params.humidorId);
-                if (!humidor) return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} {...dbProps} theme={theme} />; 
-                return <MyHumidor humidor={humidor} navigate={navigate} cigars={cigars} humidors={humidors} {...dbProps} theme={theme} />;
+                return humidor ? <MyHumidor humidor={humidor} navigate={navigate} cigars={cigars} humidors={humidors} db={db} appId={appId} userId={userId} theme={theme} /> : <div>Humidor not found</div>;
             case 'CigarDetail':
                 const cigar = cigars.find(c => c.id === params.cigarId);
-                if (!cigar) return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} {...dbProps} theme={theme} />;
-                return <CigarDetail cigar={cigar} navigate={navigate} {...dbProps} theme={theme} />;
+                return cigar ? <CigarDetail cigar={cigar} navigate={navigate} db={db} appId={appId} userId={userId} /> : <div>Cigar not found</div>;
+            case 'AddCigar':
+                return <AddCigar navigate={navigate} db={db} appId={appId} userId={userId} humidorId={params.humidorId} theme={theme} />;
+            case 'EditCigar':
+                const cigarToEdit = cigars.find(c => c.id === params.cigarId);
+                return cigarToEdit ? <EditCigar navigate={navigate} db={db} appId={appId} userId={userId} cigar={cigarToEdit} theme={theme} /> : <div>Cigar not found</div>;
             case 'Alerts':
-                return <AlertsScreen navigate={navigate} humidors={humidors} theme={theme} />;
+                return <AlertsScreen navigate={navigate} humidors={humidors} />;
             case 'Settings':
-                return <SettingsScreen navigate={navigate} setTheme={setTheme} theme={theme} dashboardPanelVisibility={dashboardPanelVisibility} setDashboardPanelVisibility={setDashboardPanelVisibility} />;
-            case 'DashboardSettings': // NEW: Route for DashboardSettingsScreen
+                return <SettingsScreen navigate={navigate} theme={theme} setTheme={setTheme} dashboardPanelVisibility={dashboardPanelVisibility} setDashboardPanelVisibility={setDashboardPanelVisibility} />;
+            case 'AddHumidor':
+                return <AddHumidor navigate={navigate} db={db} appId={appId} userId={userId} theme={theme} />;
+            case 'EditHumidor':
+                const humidorToEdit = humidors.find(h => h.id === params.humidorId);
+                return humidorToEdit ? <EditHumidor navigate={navigate} db={db} appId={appId} userId={userId} humidor={humidorToEdit} goveeApiKey={goveeApiKey} goveeDevices={goveeDevices} theme={theme} /> : <div>Humidor not found</div>;
+            case 'DashboardSettings':
                 return <DashboardSettingsScreen navigate={navigate} theme={theme} dashboardPanelVisibility={dashboardPanelVisibility} setDashboardPanelVisibility={setDashboardPanelVisibility} />;
             case 'Integrations':
                 return <IntegrationsScreen navigate={navigate} goveeApiKey={goveeApiKey} setGoveeApiKey={setGoveeApiKey} goveeDevices={goveeDevices} setGoveeDevices={setGoveeDevices} theme={theme} />;
             case 'DataSync':
-                return <DataSyncScreen navigate={navigate} cigars={cigars} humidors={humidors} {...dbProps} theme={theme} />;
+                return <DataSyncScreen navigate={navigate} db={db} appId={appId} userId={userId} cigars={cigars} humidors={humidors} />;
             case 'About':
-                return <AboutScreen navigate={navigate} theme={theme} />;
+                return <AboutScreen navigate={navigate} />;
             case 'Profile':
                 return <ProfileScreen navigate={navigate} cigars={cigars} theme={theme} />;
-            case 'AddCigar':
-                return <AddCigar navigate={navigate} humidorId={params.humidorId} {...dbProps} theme={theme} />;
-            case 'EditCigar':
-                 const cigarToEdit = cigars.find(c => c.id === params.cigarId);
-                 if (!cigarToEdit) return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} {...dbProps} theme={theme} />;
-                return <EditCigar cigar={cigarToEdit} navigate={navigate} {...dbProps} theme={theme} />;
-            case 'AddHumidor':
-                 return <AddHumidor navigate={navigate} {...dbProps} theme={theme} />;
-            case 'EditHumidor':
-                 const humidorToEdit = humidors.find(h => h.id === params.humidorId);
-                 if (!humidorToEdit) return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} {...dbProps} theme={theme} />;
-                return <EditHumidor humidor={humidorToEdit} navigate={navigate} goveeApiKey={goveeApiKey} goveeDevices={goveeDevices} {...dbProps} theme={theme} />;
             default:
-                return <Dashboard navigate={navigate} cigars={cigars} humidors={humidors} theme={theme} />;
+                return <Dashboard navigate={navigate} cigars={cigars} humidors={humidors} theme={theme} {...dashboardPanelVisibility} />;
         }
     };
 
-    // SVG pattern for background
-    const svgPattern = `%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23a0522d' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E`;
-    const encodedSvgPattern = encodeURIComponent(svgPattern);
-
+    // The main return statement for the App component.
     return (
-        <div className={`font-sans antialiased ${theme.bg} ${theme.text} min-h-screen`} style={{ backgroundImage: `url("data:image/svg+xml,${encodedSvgPattern}")` }}>
-            <div className={`max-w-md mx-auto ${theme.bg}/95 min-h-screen shadow-2xl shadow-black relative`}>
-                <div className="fixed top-0 left-0 right-0 max-w-md mx-auto h-8 z-50" style={{background: 'linear-gradient(to bottom, rgba(0,0,0,0.3), transparent)'}}></div>
+        <div className={`min-h-screen font-sans ${theme.bg} ${theme.text}`}>
+            <div className="max-w-md mx-auto">
                 {renderScreen()}
-                <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto h-24 z-40" style={{background: 'linear-gradient(to top, rgba(0,0,0,0.3), transparent)'}}></div>
-                <BottomNav activeScreen={navigation.screen} navigate={navigate} theme={theme} />
             </div>
+            <BottomNav activeScreen={navigation.screen} navigate={navigate} theme={theme} />
         </div>
     );
 }
