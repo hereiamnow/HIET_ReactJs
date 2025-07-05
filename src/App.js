@@ -1452,45 +1452,52 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
                             Add Humidor
                         </button>
                     </div>
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                         {humidors.map(humidor => {
                             const cigarsInHumidor = cigars.filter(c => c.humidorId === humidor.id);
                             const cigarCount = cigarsInHumidor.reduce((sum, c) => sum + c.quantity, 0);
                             const humidorValue = cigarsInHumidor.reduce((sum, c) => sum + (c.quantity * (c.price || 0)), 0);
                             const humidorCapacity = parseHumidorSize(humidor.size);
-                            const percentageFull = humidorCapacity > 0 ? Math.round((cigarCount / humidorCapacity) * 100) : 0;
+                            const percentageFull = humidorCapacity > 0 ? Math.min(Math.round((cigarCount / humidorCapacity) * 100), 100) : 0;
+                            const capacityColor = percentageFull > 90 ? 'bg-red-500' : theme.primaryBg;
 
                             return (
-                                <div key={humidor.id} className="bg-gray-800/50 rounded-xl overflow-hidden group cursor-pointer" onClick={() => navigate('MyHumidor', { humidorId: humidor.id })}>
+                                <div key={humidor.id} className="bg-gray-800/50 rounded-xl overflow-hidden group cursor-pointer shadow-lg hover:shadow-amber-500/20 transition-shadow duration-300" onClick={() => navigate('MyHumidor', { humidorId: humidor.id })}>
                                     <div className="relative">
                                         <img src={humidor.image} alt={humidor.name} className="w-full h-32 object-cover" />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
                                         <div className="absolute bottom-0 left-0 p-4">
                                             <h2 className="text-2xl font-bold text-white">{humidor.name}</h2>
                                             <p className="text-sm text-gray-300">{humidor.location}</p>
                                         </div>
-                                        <div className="absolute top-2 right-2 bg-black/50 text-white text-xs font-bold px-2 py-1 rounded-full">{cigarCount} Cigars</div>
                                     </div>
-                                    <div className="p-4 bg-gray-800 grid grid-cols-4 gap-2 text-center">
-                                        <div className="flex flex-col items-center justify-center">
-                                            <svg className="w-5 h-5 text-green-400 mb-1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                                            <p className="font-bold text-white text-sm">${humidorValue.toFixed(2)}</p>
-                                            <p className="text-xs text-gray-400">Value</p>
+                                    <div className="p-4 bg-gray-800 flex gap-4">
+                                        <div className="flex flex-col justify-center items-center space-y-2 pr-4 border-r border-gray-700">
+                                            <div className="flex items-center gap-2">
+                                                <Thermometer className="w-6 h-6 text-red-400"/>
+                                                <span className="text-2xl font-bold text-white">{humidor.temp}°F</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Droplets className="w-6 h-6 text-blue-400"/>
+                                                <span className="text-2xl font-bold text-white">{humidor.humidity}%</span>
+                                            </div>
                                         </div>
-                                        <div className="flex flex-col items-center justify-center">
-                                            <Droplets className="w-5 h-5 text-blue-400 mb-1"/>
-                                            <p className="font-bold text-white text-sm">{humidor.humidity}%</p>
-                                            <p className="text-xs text-gray-400">Humidity</p>
-                                        </div>
-                                        <div className="flex flex-col items-center justify-center">
-                                            <Thermometer className="w-5 h-5 text-red-400 mb-1"/>
-                                            <p className="font-bold text-white text-sm">{humidor.temp}°F</p>
-                                            <p className="text-xs text-gray-400">Temp</p>
-                                        </div>
-                                        <div className="flex flex-col items-center justify-center">
-                                            <Box className="w-5 h-5 text-purple-400 mb-1"/>
-                                            <p className="font-bold text-white text-sm">{percentageFull}%</p>
-                                            <p className="text-xs text-gray-400">Full</p>
+                                        <div className="flex-grow flex flex-col justify-center">
+                                            <div>
+                                                <label className="text-xs text-gray-400">Capacity</label>
+                                                <div className="relative w-full bg-gray-700 rounded-full h-6 mt-1">
+                                                    <div style={{ width: `${percentageFull}%` }} className={`h-full rounded-full ${capacityColor} transition-all duration-500`}></div>
+                                                    <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-white">{percentageFull}% Full</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-between mt-2">
+                                                <div className="text-xs text-gray-400">
+                                                    Value: <span className="font-bold text-white">${humidorValue.toFixed(2)}</span>
+                                                </div>
+                                                <div className="text-xs text-gray-400">
+                                                    Cigars: <span className="font-bold text-white">{cigarCount}</span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
