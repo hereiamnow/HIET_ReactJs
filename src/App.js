@@ -1,17 +1,14 @@
 // File: App.js
 // Author: ADHD developer
 // Date: July 5, 2025
-// Time: 6:51 PM CDT
+// Time: 10:26 PM CDT
 
 // Description of Changes:
-// - Redesigned the `CigarDetail` page layout for improved information hierarchy and a more modern aesthetic.
-// - Moved the main action toolbar (Export, Edit, Delete) to the top-right corner, overlaying the header image.
-// - Relocated the rating badge to overlay the bottom-right of the header image, next to the cigar name.
-// - Consolidated the "Flavor Notes" and a new "Description" field into the main "Cigar Profile" panel.
-// - Combined the quantity controls and the "Smoke This" button into a single, cohesive action bar for a cleaner user experience.
-// - Added a collapsible "Roxy's Corner" panel to the `CigarDetail` screen.
-// - Refactored `DeleteCigarsModal` to accept a `count` prop for dynamic messaging.
-// - Fixed a UI bug in the `AlertsScreen` where the max humidity input was incorrectly labeled.
+// - Replaced the standard quantity input field on the `EditCigar` screen with the interactive stepper control from the `CigarDetail` page.
+// - Created a reusable `QuantityControl` component to ensure UI consistency between the edit and detail views.
+// - Added the "Auto-fill Details" feature to the `EditCigar` screen with smart-merge logic.
+// - Redesigned the `CigarDetail` page layout for improved information hierarchy.
+// - Consolidated all cigar information into a single, comprehensive "Cigar Profile" panel.
 
 // Next Suggestions:
 // - Implement drag-and-drop reordering for the dashboard panels on desktop.
@@ -632,6 +629,21 @@ const ManualReadingModal = ({ isOpen, onClose, onSave, initialTemp, initialHumid
         </div>
     );
 };
+
+/**
+ * A reusable component for adjusting quantity.
+ */
+const QuantityControl = ({ quantity, onChange, theme }) => (
+    <div className="flex items-center gap-2">
+        <button type="button" onClick={() => onChange(quantity - 1)} className={`${theme.button} text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl active:bg-gray-500 disabled:opacity-50`} disabled={quantity <= 0}>
+            <Minus className="w-5 h-5"/>
+        </button>
+        <span className={`text-lg ${theme.text} font-bold w-10 text-center`}>{quantity}</span>
+        <button type="button" onClick={() => onChange(quantity + 1)} className={`${theme.button} text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl active:bg-gray-500`}>
+            <Plus className="w-5 h-5"/>
+        </button>
+    </div>
+);
 
 
 // --- API CALL ---
@@ -1866,9 +1878,7 @@ const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
                 {/* Combined Action Bar */}
                 <div className="flex items-center bg-gray-800/50 rounded-full p-1">
                     <div className="flex items-center gap-2 flex-shrink-0">
-                        <button onClick={() => handleQuantityChange(cigar.quantity - 1)} className="bg-gray-600 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl active:bg-gray-500"><Minus className="w-5 h-5"/></button>
-                        <span className="text-lg text-white font-bold w-10 text-center">{cigar.quantity}</span>
-                        <button onClick={() => handleQuantityChange(cigar.quantity + 1)} className="bg-gray-600 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl active:bg-gray-500"><Plus className="w-5 h-5"/></button>
+                        <QuantityControl quantity={cigar.quantity} onChange={handleQuantityChange} theme={themes["Humidor Hub"]} />
                     </div>
                     <button onClick={handleSmokeCigar} disabled={cigar.quantity === 0} className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-full ml-2 hover:bg-amber-600 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">
                         <Cigarette className="w-5 h-5"/> Smoke This
@@ -2102,12 +2112,20 @@ const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
     const [formData, setFormData] = useState({ ...cigar, shortDescription: cigar.shortDescription || '', description: cigar.description || '', flavorNotes: cigar.flavorNotes || [] });
     const [strengthSuggestions, setStrengthSuggestions] = useState([]);
     const [isFlavorModalOpen, setIsFlavorModalOpen] = useState(false);
+    const [isAutofilling, setIsAutofilling] = useState(false);
+    const [modalState, setModalState] = useState({ isOpen: false, content: '', isLoading: false });
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
         if (name === 'strength') {
             setStrengthSuggestions(value ? strengthOptions.filter(opt => opt.toLowerCase().includes(value.toLowerCase())) : []);
+        }
+    };
+    
+    const handleQuantityChange = (newQuantity) => {
+        if (newQuantity >= 0) {
+            setFormData(prev => ({ ...prev, quantity: newQuantity }));
         }
     };
 
@@ -2124,6 +2142,69 @@ const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
         navigate('CigarDetail', { cigarId: cigar.id });
     };
 
+    const handleAutofill = async () => {
+        setIsAutofilling(true);
+        const prompt = `You are a cigar database. A user is editing an existing cigar record and wants to fill in any missing details.
+
+Here is the existing data for the cigar:
+- Brand: ${formData.brand || 'Not specified'}
+- Name: ${formData.name}
+- Shape: ${formData.shape || 'Not specified'}
+- Size: ${formData.size || 'Not specified'}
+- Country: ${formData.country || 'Not specified'}
+- Wrapper: ${formData.wrapper || 'Not specified'}
+- Binder: ${formData.binder || 'Not specified'}
+- Filler: ${formData.filler || 'Not specified'}
+- Strength: ${formData.strength || 'Not specified'}
+- Description: ${formData.description ? 'Already has a description.' : 'Not specified'}
+
+Based on the cigar name "${formData.name}", provide a complete and accurate JSON object with all available details. The schema MUST be: { "brand": "string", "shape": "string", "size": "string", "country": "string", "wrapper": "string", "binder": "string", "filler": "string", "strength": "Mild" | "Mild-Medium" | "Medium" | "Medium-Full" | "Full", "flavorNotes": ["string"], "shortDescription": "string", "description": "string", "image": "string", "rating": "number" }.
+
+Do not include any text or markdown formatting outside of the JSON object.`;
+        
+        const responseSchema = {
+            type: "OBJECT",
+            properties: {
+                brand: { type: "STRING" },
+                shape: { type: "STRING" },
+                size: { type: "STRING" },
+                country: { type: "STRING" },
+                wrapper: { type: "STRING" },
+                binder: { type: "STRING" },
+                filler: { type: "STRING" },
+                strength: { type: "STRING", enum: ["Mild", "Mild-Medium", "Medium", "Medium-Full", "Full"] },
+                flavorNotes: { type: "ARRAY", items: { type: "STRING" } },
+                shortDescription: { type: "STRING" },
+                description: { type: "STRING" },
+                image: { type: "STRING" },
+                rating: { type: "NUMBER" }
+            },
+        };
+
+        const result = await callGeminiAPI(prompt, responseSchema);
+        
+        if (typeof result === 'object' && result !== null) {
+            setFormData(prevData => {
+                const updatedData = { ...prevData };
+                for (const key in result) {
+                    // Smart merge: only update if the existing field is empty/falsy
+                    if (!updatedData[key] || (Array.isArray(updatedData[key]) && updatedData[key].length === 0)) {
+                         updatedData[key] = result[key];
+                    }
+                }
+                return updatedData;
+            });
+            setModalState({ isOpen: true, content: 'Successfully filled in missing details!', isLoading: false });
+        } else {
+            console.error("Gemini API response was not a valid object:", result);
+            setModalState({ isOpen: true, content: `Failed to parse auto-fill data. Please try again. Error: ${result}`, isLoading: false });
+        }
+        
+        setIsAutofilling(false);
+    };
+
+    const closeModal = () => setModalState({ isOpen: false, content: '', isLoading: false });
+
     // Function to update flavor notes from modal
     const handleFlavorNotesUpdate = (newNotes) => {
         setFormData(prev => ({ ...prev, flavorNotes: newNotes }));
@@ -2131,6 +2212,7 @@ const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
 
     return (
         <div className="p-4 pb-24">
+            {modalState.isOpen && <GeminiModal title="Auto-fill Status" content={modalState.content} isLoading={modalState.isLoading} onClose={closeModal} />}
             {isFlavorModalOpen && <FlavorNotesModal cigar={{ flavorNotes: formData.flavorNotes }} db={db} appId={appId} userId={userId} onClose={() => setIsFlavorModalOpen(false)} setSelectedNotes={handleFlavorNotesUpdate} />}
 
             <div className="flex items-center mb-6">
@@ -2142,6 +2224,12 @@ const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
                 <InputField name="image" label="Image URL" placeholder="https://example.com/cigar.png" value={formData.image} onChange={handleInputChange} theme={theme} />
                 <InputField name="brand" label="Brand" placeholder="e.g., Padrón" value={formData.brand} onChange={handleInputChange} theme={theme} />
                 <InputField name="name" label="Name / Line" placeholder="e.g., 1964 Anniversary" value={formData.name} onChange={handleInputChange} theme={theme} />
+                
+                <button onClick={handleAutofill} disabled={isAutofilling} className="w-full flex items-center justify-center gap-2 bg-purple-600/20 border border-purple-500 text-purple-300 font-bold py-2 rounded-lg hover:bg-purple-600/30 transition-colors disabled:opacity-50">
+                    {isAutofilling ? <LoaderCircle className="w-5 h-5 animate-spin"/> : <Sparkles className="w-5 h-5" />}
+                    {isAutofilling ? 'Thinking...' : '✨ Auto-fill Details'}
+                </button>
+
                 <InputField name="shortDescription" label="Short Description" placeholder="Brief overview of the cigar..." value={formData.shortDescription} onChange={handleInputChange} theme={theme} />
                 <TextAreaField name="description" label="Description" placeholder="Notes on this cigar..." value={formData.description} onChange={handleInputChange} theme={theme} />
                 <div className="grid grid-cols-2 gap-4">
@@ -2175,8 +2263,13 @@ const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
                     </div>
                     <InputField name="price" label="Price Paid" placeholder="e.g., 15.50" type="number" value={formData.price} onChange={handleInputChange} theme={theme} />
                 </div>
-                <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} onChange={handleInputChange} theme={theme} />
-                <InputField name="quantity" label="Quantity" placeholder="e.g., 5" type="number" value={formData.quantity} onChange={handleInputChange} theme={theme} />
+                <div className="grid grid-cols-2 gap-4 items-end">
+                    <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} onChange={handleInputChange} theme={theme} />
+                    <div>
+                         <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>Quantity</label>
+                         <QuantityControl quantity={formData.quantity} onChange={handleQuantityChange} theme={theme} />
+                    </div>
+                </div>
 
                 <div className="bg-gray-800/50 p-4 rounded-xl">
                     <div className="flex justify-between items-center mb-3">
