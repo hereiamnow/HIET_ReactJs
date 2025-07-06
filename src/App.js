@@ -1,14 +1,15 @@
 // File: App.js
 // Author: ADHD developer
 // Date: July 5, 2025
-// Time: 10:26 PM CDT
+// Time: 11:02 PM CDT
 
 // Description of Changes:
-// - Replaced the standard quantity input field on the `EditCigar` screen with the interactive stepper control from the `CigarDetail` page.
-// - Created a reusable `QuantityControl` component to ensure UI consistency between the edit and detail views.
+// - Simplified the `CigarDetail` action bar by removing the quantity stepper control.
+// - Made the "Smoke This" button full-width to serve as the primary action on the page.
+// - Relocated the quantity control on the `EditCigar` screen to a prominent, centered position.
+// - Increased the font size of the quantity display for better readability.
 // - Added the "Auto-fill Details" feature to the `EditCigar` screen with smart-merge logic.
 // - Redesigned the `CigarDetail` page layout for improved information hierarchy.
-// - Consolidated all cigar information into a single, comprehensive "Cigar Profile" panel.
 
 // Next Suggestions:
 // - Implement drag-and-drop reordering for the dashboard panels on desktop.
@@ -634,13 +635,13 @@ const ManualReadingModal = ({ isOpen, onClose, onSave, initialTemp, initialHumid
  * A reusable component for adjusting quantity.
  */
 const QuantityControl = ({ quantity, onChange, theme }) => (
-    <div className="flex items-center gap-2">
-        <button type="button" onClick={() => onChange(quantity - 1)} className={`${theme.button} text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl active:bg-gray-500 disabled:opacity-50`} disabled={quantity <= 0}>
-            <Minus className="w-5 h-5"/>
+    <div className="flex items-center gap-4">
+        <button type="button" onClick={() => onChange(quantity - 1)} className={`${theme.button} text-white rounded-full w-12 h-12 flex items-center justify-center text-2xl active:bg-gray-500 disabled:opacity-50`} disabled={quantity <= 0}>
+            <Minus className="w-6 h-6"/>
         </button>
-        <span className={`text-lg ${theme.text} font-bold w-10 text-center`}>{quantity}</span>
-        <button type="button" onClick={() => onChange(quantity + 1)} className={`${theme.button} text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl active:bg-gray-500`}>
-            <Plus className="w-5 h-5"/>
+        <span className={`text-3xl ${theme.text} font-bold w-16 text-center`}>{quantity}</span>
+        <button type="button" onClick={() => onChange(quantity + 1)} className={`${theme.button} text-white rounded-full w-12 h-12 flex items-center justify-center text-2xl active:bg-gray-500`}>
+            <Plus className="w-6 h-6"/>
         </button>
     </div>
 );
@@ -1786,12 +1787,6 @@ const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [isRoxyOpen, setIsRoxyOpen] = useState(true); // State for Roxy's Corner panel
 
-    const handleQuantityChange = async (newQuantity) => {
-        if (newQuantity < 0) return;
-        const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
-        await updateDoc(cigarRef, { quantity: newQuantity });
-    };
-    
     const handleSmokeCigar = async () => {
         if (cigar.quantity > 0) {
             const newQuantity = cigar.quantity - 1;
@@ -1875,15 +1870,10 @@ const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
             </div>
             
             <div className="p-4 space-y-6">
-                {/* Combined Action Bar */}
-                <div className="flex items-center bg-gray-800/50 rounded-full p-1">
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                        <QuantityControl quantity={cigar.quantity} onChange={handleQuantityChange} theme={themes["Humidor Hub"]} />
-                    </div>
-                    <button onClick={handleSmokeCigar} disabled={cigar.quantity === 0} className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-full ml-2 hover:bg-amber-600 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">
-                        <Cigarette className="w-5 h-5"/> Smoke This
-                    </button>
-                </div>
+                {/* Simplified Action Bar */}
+                <button onClick={handleSmokeCigar} disabled={cigar.quantity === 0} className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-lg hover:bg-amber-600 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">
+                    <Cigarette className="w-5 h-5"/> Smoke This ({cigar.quantity} in stock)
+                </button>
                 
                 {/* Updated Cigar Profile Panel */}
                 <div className="bg-gray-800/50 p-4 rounded-xl space-y-4">
@@ -2263,14 +2253,8 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                     </div>
                     <InputField name="price" label="Price Paid" placeholder="e.g., 15.50" type="number" value={formData.price} onChange={handleInputChange} theme={theme} />
                 </div>
-                <div className="grid grid-cols-2 gap-4 items-end">
-                    <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} onChange={handleInputChange} theme={theme} />
-                    <div>
-                         <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>Quantity</label>
-                         <QuantityControl quantity={formData.quantity} onChange={handleQuantityChange} theme={theme} />
-                    </div>
-                </div>
-
+                <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} onChange={handleInputChange} theme={theme} />
+                
                 <div className="bg-gray-800/50 p-4 rounded-xl">
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="font-bold text-amber-300 text-lg flex items-center"><Tag className="w-5 h-5 mr-3 text-amber-400"/> Flavor Notes</h3>
@@ -2283,6 +2267,11 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                             <p className="text-sm text-gray-500">No notes selected. Click the edit icon to add some!</p>
                         )}
                     </div>
+                </div>
+
+                <div className="flex flex-col items-center py-4">
+                    <label className={`text-sm font-medium ${theme.subtleText} mb-2`}>Quantity</label>
+                    <QuantityControl quantity={formData.quantity} onChange={handleQuantityChange} theme={theme} />
                 </div>
 
                 <div className="pt-4 flex space-x-4">
