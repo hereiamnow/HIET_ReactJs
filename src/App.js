@@ -10,6 +10,7 @@
 // - The `EditCigar` screen now includes a field to manually set or correct the `dateAdded`.
 // - Enhanced "Roxy's Corner" on the Cigar Detail page with a new "Aging Potential" analysis feature.
 // - Simplified the `CigarDetail` action bar by removing the quantity stepper and making "Smoke This" a full-width button.
+// - Added image placeholder at the top of Add and Edit Cigar Screens, matching the size of the cigar detail image.
 
 // Next Suggestions:
 // - Implement drag-and-drop reordering for the dashboard panels on desktop.
@@ -17,6 +18,11 @@
 // - Implement full Firebase authentication flow (sign-up, login, password reset).
 // - Enhance error handling with user-friendly messages for all API calls and database operations.
 // - Add more robust input validation for all forms.
+// - Give the user the option to reset the date when moving cigars to a new humidor.
+// - Add font support in ThemeModal for custom fonts. Serif and sans-serif fonts.
+// - Implement a "Cigar of the Day" feature that highlights a random cigar from the user's collection each day picked by Roxy.
+// - Add a "Cigar Journal" feature where users can log their smoking experiences, notes, and ratings for each cigar.
+// - Add CSV import functionality to allow users to bulk add humidors from a CSV file.
 
 // Import necessary libraries and components.
 // React is the main library for building the user interface.
@@ -103,7 +109,7 @@ const themes = {
 
 // A comprehensive list of possible flavor notes a user can select.
 const allFlavorNotes = [
-    'Earthy', 'Woody', 'Spicy', 'Nutty', 'Sweet', 'Fruity', 'Floral', 'Herbal',
+    'Earth','Earthy', 'Woody', 'Spice','Spicy', 'Nutty', 'Sweet', 'Fruity', 'Floral', 'Herbal',
     'Leather', 'Coffee', 'Cocoa', 'Chocolate', 'Creamy', 'Pepper', 'Cedar', 'Oak',
     'Cinnamon', 'Vanilla', 'Honey', 'Caramel', 'Citrus', 'Dried Fruit', 'Hay', 'Toasted',
     'Dark Cherry', 'Roasted Nuts', 'Toasted Bread'
@@ -120,6 +126,8 @@ const cigarShapes = [
 ].sort();
 
 // A list of fun tips for Roxy's corner on the dashboard.
+// These tips are meant to educate and entertain users about cigars.
+// TODO: Add more tips and rotate them regularly.
 const roxysTips = [
     "Did you know? A steady 70% humidity is perfect for aging most cigars. Don't let it fluctuate!",
     "Remember to rotate your cigars every few months to ensure they age evenly. It's like a little cigar ballet!",
@@ -950,7 +958,7 @@ const ChartCard = ({ title, children, action }) => (
     </div>
 );
 
-// BrowseByWrapperPanel component
+// BrowseByWrapperPanel component  - July 5, 2025 - 1:32:00 AM CDT
 const BrowseByWrapperPanel = ({ cigars, navigate, theme }) => {
     const [isCollapsed, setIsCollapsed] = useState(true);
 
@@ -1116,7 +1124,7 @@ const BrowseByCountryPanel = ({ cigars, navigate, theme }) => {
     );
 };
 
-// NEW: LiveEnvironmentPanel component
+// NEW: LiveEnvironmentPanel component - July 5, 2025 - 2:00:00 AM CDT
 const LiveEnvironmentPanel = ({ humidors, theme }) => {
     const [isCollapsed, setIsCollapsed] = useState(true);
     const firstHumidor = humidors[0];
@@ -2082,16 +2090,29 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
     };
 
     return (
-        <div className="p-4 pb-24">
+        <div className="pb-24">
             {modalState.isOpen && <GeminiModal title="Auto-fill Status" content={modalState.content} isLoading={modalState.isLoading} onClose={closeModal} />}
             {isFlavorModalOpen && <FlavorNotesModal cigar={{ flavorNotes: formData.flavorNotes }} db={db} appId={appId} userId={userId} onClose={() => setIsFlavorModalOpen(false)} setSelectedNotes={handleFlavorNotesUpdate} />}
 
-            <div className="flex items-center mb-6">
-                <button onClick={() => navigate('MyHumidor', { humidorId })} className="p-2 -ml-2 mr-2"><ChevronLeft className={`w-7 h-7 ${theme.text}`} /></button>
-                <h1 className={`text-3xl font-bold ${theme.text}`}>Add New Cigar</h1>
+            <div className="relative">
+                {/* Image Placeholder / Preview */}
+                <img
+                    src={formData.image || `https://placehold.co/400x600/5a3825/ffffff?text=${formData.name.replace(/\s/g, '+') || 'Cigar+Image'}`}
+                    alt={formData.name || "Cigar Image"}
+                    className="w-full h-64 object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
+                <div className="absolute top-4 left-4">
+                    <button onClick={() => navigate('MyHumidor', { humidorId })} className="p-2 -ml-2 mr-2 bg-black/50 rounded-full">
+                        <ChevronLeft className={`w-7 h-7 ${theme.text}`} />
+                    </button>
+                </div>
+                <div className="absolute bottom-0 p-4">
+                    <h1 className={`text-3xl font-bold ${theme.text}`}>Add New Cigar</h1>
+                </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="p-4 space-y-4">
                 <InputField name="image" label="Image URL" placeholder="https://example.com/cigar.png" value={formData.image} onChange={handleInputChange} theme={theme} />
                 
                 <InputField name="name" label="Name / Line" placeholder="e.g., 1964 Anniversary" value={formData.name} onChange={handleInputChange} theme={theme} />
@@ -2270,16 +2291,29 @@ Do not include any text or markdown formatting outside of the JSON object.`;
     };
 
     return (
-        <div className="p-4 pb-24">
+        <div className="pb-24">
             {modalState.isOpen && <GeminiModal title="Auto-fill Status" content={modalState.content} isLoading={modalState.isLoading} onClose={closeModal} />}
             {isFlavorModalOpen && <FlavorNotesModal cigar={{ flavorNotes: formData.flavorNotes }} db={db} appId={appId} userId={userId} onClose={() => setIsFlavorModalOpen(false)} setSelectedNotes={handleFlavorNotesUpdate} />}
 
-            <div className="flex items-center mb-6">
-                <button onClick={() => navigate('CigarDetail', { cigarId: cigar.id })} className="p-2 -ml-2 mr-2"><ChevronLeft className="w-7 h-7 text-white" /></button>
-                <h1 className="text-3xl font-bold text-white">Edit Cigar</h1>
+            <div className="relative">
+                {/* Image Placeholder / Preview */}
+                <img
+                    src={formData.image || `https://placehold.co/400x600/5a3825/ffffff?text=${formData.name.replace(/\s/g, '+') || 'Cigar+Image'}`}
+                    alt={formData.name || "Cigar Image"}
+                    className="w-full h-64 object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
+                <div className="absolute top-4 left-4">
+                    <button onClick={() => navigate('CigarDetail', { cigarId: cigar.id })} className="p-2 -ml-2 mr-2 bg-black/50 rounded-full">
+                        <ChevronLeft className="w-7 h-7 text-white" />
+                    </button>
+                </div>
+                <div className="absolute bottom-0 p-4">
+                    <h1 className="text-3xl font-bold text-white">Edit Cigar</h1>
+                </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="p-4 space-y-4">
                 <InputField name="image" label="Image URL" placeholder="https://example.com/cigar.png" value={formData.image} onChange={handleInputChange} theme={theme} />
                 <InputField name="brand" label="Brand" placeholder="e.g., Padrón" value={formData.brand} onChange={handleInputChange} theme={theme} />
                 <InputField name="name" label="Name / Line" placeholder="e.g., 1964 Anniversary" value={formData.name} onChange={handleInputChange} theme={theme} />
@@ -2547,6 +2581,7 @@ const EditHumidor = ({ navigate, db, appId, userId, humidor, goveeApiKey, goveeD
 
             <div className="space-y-4">
                 <InputField name="image" label="Image URL" placeholder="https://example.com/humidor.png" value={formData.image} onChange={handleInputChange} theme={theme} />
+                
                 <InputField name="name" label="Humidor Name" placeholder="e.g., The Big One" value={formData.name} onChange={handleInputChange} theme={theme} />
                 <InputField name="shortDescription" label="Short Description" placeholder="e.g., Main aging unit" value={formData.shortDescription} onChange={handleInputChange} theme={theme} />
                 <TextAreaField name="longDescription" label="Long Description" placeholder="e.g., A 150-count mahogany humidor..." value={formData.longDescription} onChange={handleInputChange} theme={theme} />
@@ -2616,6 +2651,15 @@ const DashboardSettingsScreen = ({ navigate, theme, dashboardPanelVisibility, se
             </div>
             <div className="bg-gray-800/50 p-4 rounded-xl space-y-2">
                 <ToggleSwitch
+                    label="Live Environment"
+                    isChecked={dashboardPanelVisibility.showLiveEnvironment}
+                    onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showLiveEnvironment: !prev.showLiveEnvironment }))}
+                />
+                <ToggleSwitch
+                    label="Inventory Analysis"
+                    isChecked={dashboardPanelVisibility.showInventoryAnalysis}
+                    onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showInventoryAnalysis: !prev.showInventoryAnalysis }))}
+                />                <ToggleSwitch
                     label="Browse by Wrapper"
                     isChecked={dashboardPanelVisibility.showWrapperPanel}
                     onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showWrapperPanel: !prev.showWrapperPanel }))}
@@ -2629,16 +2673,6 @@ const DashboardSettingsScreen = ({ navigate, theme, dashboardPanelVisibility, se
                     label="Browse by Country"
                     isChecked={dashboardPanelVisibility.showCountryPanel}
                     onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showCountryPanel: !prev.showCountryPanel }))}
-                />
-                <ToggleSwitch
-                    label="Live Environment"
-                    isChecked={dashboardPanelVisibility.showLiveEnvironment}
-                    onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showLiveEnvironment: !prev.showLiveEnvironment }))}
-                />
-                <ToggleSwitch
-                    label="Inventory Analysis"
-                    isChecked={dashboardPanelVisibility.showInventoryAnalysis}
-                    onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showInventoryAnalysis: !prev.showInventoryAnalysis }))}
                 />
             </div>
         </div>
@@ -2783,6 +2817,11 @@ const DataSyncScreen = ({ navigate, db, appId, userId, cigars, humidors }) => {
                     <p className="text-sm text-gray-400 mb-4">Download your entire cigar inventory as a CSV or JSON file for backups.</p>
                     <button onClick={() => setIsExportModalOpen(true)} className="w-full flex items-center justify-center gap-2 bg-green-600/80 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-colors"><Download className="w-5 h-5" />Export Collection</button>
                 </div>
+                  <div className="bg-gray-800/50 p-4 rounded-xl">
+                    <h3 className="font-bold text-amber-300 text-lg mb-2">Import Humidors</h3>
+                    <p className="text-sm text-gray-400 mb-4">Import humidors from a CSV file. Ensure the file matches the exported format.</p>
+                    <button className="w-full flex items-center justify-center gap-2 bg-blue-600/80 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors"><UploadCloud className="w-5 h-5" />Import from CSV</button>
+                </div>               
                 <div className="bg-gray-800/50 p-4 rounded-xl">
                     <h3 className="font-bold text-amber-300 text-lg mb-2">Export Environment Data</h3>
                     <p className="text-sm text-gray-400 mb-4">Download temperature and humidity readings for all your humidors in CSV format.</p>
@@ -2796,25 +2835,25 @@ const DataSyncScreen = ({ navigate, db, appId, userId, cigars, humidors }) => {
 const APP_FIELDS = [
     { key: 'name', label: 'Cigar Name', required: true },
     { key: 'brand', label: 'Brand', required: true },
-    { key: 'quantity', label: 'Quantity', required: true, type: 'number' },
-    { key: 'price', label: 'Price', required: false, type: 'number' },
-    { key: 'rating', label: 'Rating (Official)', required: false, type: 'number' },
-    { key: 'userRating', label: 'My Rating', required: false, type: 'number' },
-    { key: 'strength', label: 'Strength', required: false },
+    { key: 'line', label: 'Product Line', required: false },
     { key: 'shape', label: 'Shape', required: false },
-    { key: 'size', label: 'Size (e.g., 5.5x50)', required: false },
+    { key: 'isBoxPress', label: 'Is Box Pressed', required: false, type: 'boolean' },
+    { key: 'length_inches', label: 'Length (in)', required: false, type: 'number' },
+    { key: 'ring_gauge', label: 'Ring Gauge', required: false, type: 'number' },
+    { key: 'size', label: 'Size (e.g., 5.5x50)', required: false },     
     { key: 'country', label: 'Country', required: false },
     { key: 'wrapper', label: 'Wrapper', required: false },
     { key: 'binder', label: 'Binder', required: false },
     { key: 'filler', label: 'Filler', required: false },
-    { key: 'image', label: 'Image URL', required: false },
-    { key: 'description', label: 'Long Description', required: false },
-    { key: 'shortDescription', label: 'Short Description', required: false },
-    { key: 'line', label: 'Product Line', required: false },
-    { key: 'isBoxPress', label: 'Is Box Pressed', required: false, type: 'boolean' },
-    { key: 'length_inches', label: 'Length (in)', required: false, type: 'number' },
-    { key: 'ring_gauge', label: 'Ring Gauge', required: false, type: 'number' },
+    { key: 'strength', label: 'Strength', required: false },
     { key: 'flavorNotes', label: 'Flavor Notes (semicolon-separated)', required: false, type: 'array' },
+    { key: 'rating', label: 'Rating (Official)', required: false, type: 'number' },
+    { key: 'userRating', label: 'My Rating', required: false, type: 'number' },
+    { key: 'price', label: 'Price', required: false, type: 'number' },
+    { key: 'quantity', label: 'Quantity', required: true, type: 'number' },
+    { key: 'image', label: 'Image URL', required: false },
+    { key: 'shortDescription', label: 'Short Description', required: false },
+    { key: 'description', label: 'Long Description', required: false }    
 ];
 
 const ImportCsvModal = ({ humidors, db, appId, userId, onClose, navigate }) => {
