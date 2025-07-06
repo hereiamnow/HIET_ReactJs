@@ -1,15 +1,15 @@
 // File: App.js
 // Author: ADHD developer
 // Date: July 5, 2025
-// Time: 11:02 PM CDT
+// Time: 11:17 PM CDT
 
 // Description of Changes:
-// - Simplified the `CigarDetail` action bar by removing the quantity stepper control.
-// - Made the "Smoke This" button full-width to serve as the primary action on the page.
-// - Relocated the quantity control on the `EditCigar` screen to a prominent, centered position.
-// - Increased the font size of the quantity display for better readability.
-// - Added the "Auto-fill Details" feature to the `EditCigar` screen with smart-merge logic.
-// - Redesigned the `CigarDetail` page layout for improved information hierarchy.
+// - Implemented the "Aged in Humidor" feature to track how long a cigar has been stored.
+// - Added a `dateAdded` field that is automatically set when a cigar is added and reset when it's moved.
+// - The `CigarDetail` page now displays the date added and the total time in the humidor.
+// - The `EditCigar` screen now includes a field to manually set or correct the `dateAdded`.
+// - Enhanced "Roxy's Corner" on the Cigar Detail page with a new "Aging Potential" analysis feature.
+// - Simplified the `CigarDetail` action bar by removing the quantity stepper and making "Smoke This" a full-width button.
 
 // Next Suggestions:
 // - Implement drag-and-drop reordering for the dashboard panels on desktop.
@@ -23,7 +23,7 @@
 // useState, useEffect, and useMemo are "hooks" that let us use state and other React features in functional components.
 import React, { useState, useEffect, useMemo } from 'react';
 // lucide-react provides a set of clean, modern icons used throughout the app.
-import { Thermometer, Droplets, Bell, Plus, Search, X, ChevronLeft, Image as ImageIcon, Star, Wind, Coffee, GlassWater, LoaderCircle, Sparkles, Box, Briefcase, LayoutGrid, List, BookOpen, Leaf, Flame, MapPin, Tag, Minus, Edit, Trash2, Upload, Link2, Settings as SettingsIcon, User, Database, Info, Download, UploadCloud, ChevronDown, Shield, FileText, LogOut, Palette, BarChart2, TrendingUp, PieChart as PieChartIcon, Move, Check, Zap, AlertTriangle, Filter, ArrowDownWideNarrow, ArrowUpWideNarrow, Cigarette } from 'lucide-react';
+import { Thermometer, Droplets, Bell, Plus, Search, X, ChevronLeft, Image as ImageIcon, Star, Wind, Coffee, GlassWater, LoaderCircle, Sparkles, Box, Briefcase, LayoutGrid, List, BookOpen, Leaf, Flame, MapPin, Tag, Minus, Edit, Trash2, Upload, Link2, Settings as SettingsIcon, User, Database, Info, Download, UploadCloud, ChevronDown, Shield, FileText, LogOut, Palette, BarChart2, TrendingUp, PieChart as PieChartIcon, Move, Check, Zap, AlertTriangle, Filter, ArrowDownWideNarrow, ArrowUpWideNarrow, Cigarette, Calendar as CalendarIcon } from 'lucide-react';
 // recharts is a library for creating the charts (bar, line, pie) on the dashboard.
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 // Import Firebase libraries for database and authentication
@@ -195,6 +195,51 @@ const parseHumidorSize = (sizeString) => {
     if (!sizeString || typeof sizeString !== 'string') return 0;
     const match = sizeString.match(/\d+/); // Find the first sequence of digits
     return match ? parseInt(match[0], 10) : 0;
+};
+
+/**
+ * Formats an ISO date string into a more readable format (e.g., "July 5, 2025").
+ */
+const formatDate = (isoString) => {
+    if (!isoString) return 'N/A';
+    const date = new Date(isoString);
+    // Add timeZone to prevent off-by-one day errors
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        timeZone: 'UTC' 
+    });
+};
+
+/**
+ * Calculates the age of a cigar based on its added date.
+ * Returns a human-readable string like "1 Year, 2 Months".
+ */
+const calculateAge = (isoString) => {
+    if (!isoString) return 'N/A';
+    const startDate = new Date(isoString);
+    const now = new Date();
+    
+    let years = now.getFullYear() - startDate.getFullYear();
+    let months = now.getMonth() - startDate.getMonth();
+    
+    if (months < 0 || (months === 0 && now.getDate() < startDate.getDate())) {
+        years--;
+        months = (months + 12) % 12;
+    }
+
+    if (years > 0) {
+        return `${years} Year${years > 1 ? 's' : ''}${months > 0 ? `, ${months} Month${months > 1 ? 's' : ''}`: ''}`;
+    }
+    if (months > 0) {
+        return `${months} Month${months > 1 ? 's' : ''}`;
+    }
+    
+    // Calculate days if less than a month
+    const diffTime = Math.abs(now - startDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return `${diffDays} Day${diffDays !== 1 ? 's' : ''}`;
 };
 
 
@@ -1608,7 +1653,7 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
         const batch = writeBatch(db);
         selectedCigarIds.forEach(cigarId => {
             const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigarId);
-            batch.update(cigarRef, { humidorId: destinationHumidorId });
+            batch.update(cigarRef, { humidorId: destinationHumidorId, dateAdded: new Date().toISOString() });
         });
         await batch.commit();
         setIsMoveModalOpen(false);
@@ -1822,6 +1867,22 @@ const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
         setModalState({ isOpen: true, type: 'similar', content: result, isLoading: false });
     };
 
+    const handleAgingPotential = async () => {
+        setModalState({ isOpen: true, type: 'aging', content: '', isLoading: true });
+        const timeInHumidor = calculateAge(cigar.dateAdded);
+        const prompt = `You are a master tobacconist and cigar aging expert named Roxy. A user is asking about the aging potential of their cigar.
+
+Cigar Details:
+- Name: ${cigar.brand} ${cigar.name}
+- Wrapper: ${cigar.wrapper}
+- Strength: ${cigar.strength}
+- Time already aged: ${timeInHumidor}
+
+Provide a brief, encouraging, and slightly personalized note about this cigar's aging potential. Mention when it might be at its peak for smoking. Keep it to 2-3 sentences and maintain your persona as a friendly, knowledgeable dog.`;
+        const result = await callGeminiAPI(prompt);
+        setModalState({ isOpen: true, type: 'aging', content: result, isLoading: false });
+    };
+
     const closeModal = () => setModalState({ isOpen: false, type: null, content: '', isLoading: false });
 
     const RatingBadge = ({ rating }) => {
@@ -1840,7 +1901,7 @@ const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
 
     return (
         <div className="pb-24">
-            {modalState.isOpen && <GeminiModal title={modalState.type === 'pairings' ? "Pairing Suggestions" : modalState.type === 'notes' ? "Tasting Note Idea" : "Similar Smokes"} content={modalState.content} isLoading={modalState.isLoading} onClose={closeModal} />}
+            {modalState.isOpen && <GeminiModal title={modalState.type === 'pairings' ? "Pairing Suggestions" : modalState.type === 'notes' ? "Tasting Note Idea" : modalState.type === 'aging' ? "Aging Potential" : "Similar Smokes"} content={modalState.content} isLoading={modalState.isLoading} onClose={closeModal} />}
             {isFlavorModalOpen && <FlavorNotesModal cigar={cigar} db={db} appId={appId} userId={userId} onClose={() => setIsFlavorModalOpen(false)} />}
             <DeleteCigarsModal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} onConfirm={handleDeleteCigar} count={1} />
             {isExportModalOpen && <ExportModal cigars={[cigar]} onClose={() => setIsExportModalOpen(false)} />}
@@ -1886,6 +1947,8 @@ const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
                         <DetailItem label="Wrapper" value={cigar.wrapper} />
                         <DetailItem label="Binder" value={cigar.binder} />
                         <DetailItem label="Filler" value={cigar.filler} />
+                        <DetailItem label="Date Added" value={formatDate(cigar.dateAdded)} />
+                        <DetailItem label="Time in Humidor" value={calculateAge(cigar.dateAdded)} />
                     </div>
                     
                     <div className="border-t border-gray-700 pt-4">
@@ -1919,6 +1982,7 @@ const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
                             <button onClick={handleSuggestPairings} className="w-full flex items-center justify-center bg-amber-500/20 border border-amber-500 text-amber-300 font-bold py-3 rounded-lg hover:bg-amber-500/30 transition-colors"><Sparkles className="w-5 h-5 mr-2" /> Suggest Pairings</button>
                             <button onClick={handleGenerateNote} className="w-full flex items-center justify-center bg-sky-500/20 border border-sky-500 text-sky-300 font-bold py-3 rounded-lg hover:bg-sky-500/30 transition-colors"><Sparkles className="w-5 h-5 mr-2" /> Generate Note Idea</button>
                             <button onClick={handleFindSimilar} className="w-full flex items-center justify-center bg-green-500/20 border border-green-500 text-green-300 font-bold py-3 rounded-lg hover:bg-green-500/30 transition-colors"><Sparkles className="w-5 h-5 mr-2" /> Find Similar Smokes</button>
+                            <button onClick={handleAgingPotential} className="w-full flex items-center justify-center bg-purple-500/20 border border-purple-500 text-purple-300 font-bold py-3 rounded-lg hover:bg-purple-500/30 transition-colors"><CalendarIcon className="w-5 h-5 mr-2" /> Aging Potential</button>
                         </div>
                     )}
                 </div>
@@ -1928,7 +1992,7 @@ const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
 };
 
 const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
-    const [formData, setFormData] = useState({ brand: '', name: '', shape: '', size: '', wrapper: '', binder: '', filler: '', country: '', strength: '', price: '', rating: '', quantity: 1, image: '', shortDescription: '', description: '', flavorNotes: [] });
+    const [formData, setFormData] = useState({ brand: '', name: '', shape: '', size: '', wrapper: '', binder: '', filler: '', country: '', strength: '', price: '', rating: '', quantity: 1, image: '', shortDescription: '', description: '', flavorNotes: [], dateAdded: new Date().toISOString().split('T')[0] });
     const [strengthSuggestions, setStrengthSuggestions] = useState([]);
     const [isAutofilling, setIsAutofilling] = useState(false);
     const [modalState, setModalState] = useState({ isOpen: false, content: '', isLoading: false });
@@ -1949,8 +2013,9 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
 
     const handleSave = async () => {
         const newCigar = {
-            humidorId: humidorId,
             ...formData,
+            humidorId: humidorId,
+            dateAdded: new Date(formData.dateAdded).toISOString(),
             flavorNotes: Array.isArray(formData.flavorNotes) ? formData.flavorNotes : [],
             rating: Number(formData.rating) || 0,
             price: Number(formData.price) || 0,
@@ -2072,7 +2137,10 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                     </div>
                     <InputField name="price" label="Price Paid" placeholder="e.g., 15.50" type="number" value={formData.price} onChange={handleInputChange} theme={theme} />
                 </div>
-                <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} onChange={handleInputChange} theme={theme} />
+                <div className="grid grid-cols-2 gap-4">
+                    <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} onChange={handleInputChange} theme={theme} />
+                    <InputField name="dateAdded" label="Date Added" type="date" value={formData.dateAdded} onChange={handleInputChange} theme={theme} />
+                </div>
                 <InputField name="quantity" label="Quantity" placeholder="e.g., 5" type="number" value={formData.quantity} onChange={handleInputChange} theme={theme} />
                 
                 <div className="bg-gray-800/50 p-4 rounded-xl">
@@ -2099,7 +2167,7 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
 };
 
 const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
-    const [formData, setFormData] = useState({ ...cigar, shortDescription: cigar.shortDescription || '', description: cigar.description || '', flavorNotes: cigar.flavorNotes || [] });
+    const [formData, setFormData] = useState({ ...cigar, shortDescription: cigar.shortDescription || '', description: cigar.description || '', flavorNotes: cigar.flavorNotes || [], dateAdded: cigar.dateAdded ? cigar.dateAdded.split('T')[0] : new Date().toISOString().split('T')[0] });
     const [strengthSuggestions, setStrengthSuggestions] = useState([]);
     const [isFlavorModalOpen, setIsFlavorModalOpen] = useState(false);
     const [isAutofilling, setIsAutofilling] = useState(false);
@@ -2128,6 +2196,7 @@ const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
         const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
         const { id, ...dataToSave } = formData;
         dataToSave.flavorNotes = Array.isArray(dataToSave.flavorNotes) ? dataToSave.flavorNotes : [];
+        dataToSave.dateAdded = new Date(formData.dateAdded).toISOString();
         await updateDoc(cigarRef, dataToSave);
         navigate('CigarDetail', { cigarId: cigar.id });
     };
@@ -2253,7 +2322,10 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                     </div>
                     <InputField name="price" label="Price Paid" placeholder="e.g., 15.50" type="number" value={formData.price} onChange={handleInputChange} theme={theme} />
                 </div>
-                <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} onChange={handleInputChange} theme={theme} />
+                <div className="grid grid-cols-2 gap-4">
+                    <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} onChange={handleInputChange} theme={theme} />
+                    <InputField name="dateAdded" label="Date Added" type="date" value={formData.dateAdded} onChange={handleInputChange} theme={theme} />
+                </div>
                 
                 <div className="bg-gray-800/50 p-4 rounded-xl">
                     <div className="flex justify-between items-center mb-3">
