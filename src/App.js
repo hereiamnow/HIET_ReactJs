@@ -1,15 +1,17 @@
 // File: App.js
 // Author: ADHD developer
 // Date: July 5, 2025
-// Time: 6:29 PM CDT
+// Time: 6:51 PM CDT
 
 // Description of Changes:
+// - Redesigned the `CigarDetail` page layout for improved information hierarchy and a more modern aesthetic.
+// - Moved the main action toolbar (Export, Edit, Delete) to the top-right corner, overlaying the header image.
+// - Relocated the rating badge to overlay the bottom-right of the header image, next to the cigar name.
+// - Consolidated the "Flavor Notes" and a new "Description" field into the main "Cigar Profile" panel.
+// - Combined the quantity controls and the "Smoke This" button into a single, cohesive action bar for a cleaner user experience.
 // - Added a collapsible "Roxy's Corner" panel to the `CigarDetail` screen.
-// - Moved the AI-powered actions (Suggest Pairings, Generate Note, Find Similar) into the new "Roxy's Corner" panel for better organization.
-// - Refactored `DeleteCigarsModal` to accept a `count` prop, enabling it to display a dynamic message for single or multiple deletions.
-// - Fixed a UI bug in the `AlertsScreen` where the maximum humidity input field was incorrectly labeled with "°F" instead of "%".
-// - Integrated the "Summarize My Collection" feature directly into "Roxy's Corner" on the Dashboard.
-// - Updated the Humidor Card on the "My Humidors" screen with an enhanced, more visual layout.
+// - Refactored `DeleteCigarsModal` to accept a `count` prop for dynamic messaging.
+// - Fixed a UI bug in the `AlertsScreen` where the max humidity input was incorrectly labeled.
 
 // Next Suggestions:
 // - Implement drag-and-drop reordering for the dashboard panels on desktop.
@@ -1818,7 +1820,7 @@ const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
     const RatingBadge = ({ rating }) => {
         if (!rating || rating === 0) return null;
         return (
-            <div className={`flex flex-col items-center justify-center w-16 h-16 rounded-full border-2 ${getRatingColor(rating)}`}>
+            <div className={`flex flex-col items-center justify-center w-16 h-16 rounded-full border-2 ${getRatingColor(rating)} bg-gray-900/50 backdrop-blur-sm`}>
                 <span className="text-2xl font-bold text-white">{rating}</span>
                 <span className="text-xs text-white/80 -mt-1">RATED</span>
             </div>
@@ -1839,49 +1841,43 @@ const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
             <div className="relative">
                 <img src={cigar.image || `https://placehold.co/400x600/5a3825/ffffff?text=${cigar.brand.replace(/\s/g, '+')}`} alt={cigar.name} className="w-full h-64 object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
-                <div className="absolute top-4 left-4">
-                    <button onClick={() => navigate('MyHumidor', { humidorId: cigar.humidorId })} className="p-2 bg-black/50 rounded-full"><ChevronLeft className="w-7 h-7 text-white" /></button>
+                
+                {/* Toolbar moved to top */}
+                <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
+                    <button onClick={() => navigate('MyHumidor', { humidorId: cigar.humidorId })} className="p-2 bg-black/50 rounded-full text-white"><ChevronLeft className="w-7 h-7" /></button>
+                    <div className="flex items-center gap-2 bg-black/50 p-2 rounded-full">
+                        <button onClick={() => setIsExportModalOpen(true)} className="text-white hover:text-green-400 transition-colors"><Download className="w-5 h-5" /></button>
+                        <button onClick={() => navigate('EditCigar', { cigarId: cigar.id })} className="text-white hover:text-amber-400 transition-colors"><Edit className="w-5 h-5" /></button>
+                        <button onClick={() => setIsDeleteModalOpen(true)} className="text-white hover:text-red-500 transition-colors"><Trash2 className="w-5 h-5" /></button>
+                    </div>
                 </div>
-                <div className="absolute bottom-0 p-4">
-                    <p className="text-gray-300 text-sm font-semibold uppercase">{cigar.brand}</p>
-                    <h1 className="text-3xl font-bold text-white">{cigar.name}</h1>
+
+                {/* Rating Badge and Title moved to bottom */}
+                <div className="absolute bottom-0 p-4 w-full flex justify-between items-end">
+                    <div>
+                        <p className="text-gray-300 text-sm font-semibold uppercase">{cigar.brand}</p>
+                        <h1 className="text-3xl font-bold text-white">{cigar.name}</h1>
+                    </div>
+                    <RatingBadge rating={cigar.rating} />
                 </div>
             </div>
             
             <div className="p-4 space-y-6">
-                <div className="flex justify-end items-center bg-gray-800/50 p-3 rounded-xl gap-4">
-                    <button onClick={() => setIsExportModalOpen(true)} className="flex flex-col items-center gap-1 text-gray-300 hover:text-green-400 transition-colors">
-                        <Download className="w-5 h-5" />
-                        <span className="text-xs font-medium">Export</span>
-                    </button>
-                    <button onClick={() => navigate('EditCigar', { cigarId: cigar.id })} className="flex flex-col items-center gap-1 text-gray-300 hover:text-amber-400 transition-colors">
-                        <Edit className="w-5 h-5" />
-                        <span className="text-xs font-medium">Edit</span>
-                    </button>
-                    <button onClick={() => setIsDeleteModalOpen(true)} className="flex flex-col items-center gap-1 text-gray-300 hover:text-red-500 transition-colors">
-                        <Trash2 className="w-5 h-5" />
-                        <span className="text-xs font-medium">Delete</span>
-                    </button>
-                </div>
-
-                <div className="flex justify-between items-center">
-                    <RatingBadge rating={cigar.rating} />
-                    <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-2 bg-gray-700 rounded-full p-1">
-                            <button onClick={() => handleQuantityChange(cigar.quantity - 1)} className="bg-gray-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-2xl active:bg-gray-500"><Minus className="w-5 h-5"/></button>
-                            <span className="text-lg text-white font-bold w-10 text-center">{cigar.quantity}</span>
-                            <button onClick={() => handleQuantityChange(cigar.quantity + 1)} className="bg-gray-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-2xl active:bg-gray-500"><Plus className="w-5 h-5"/></button>
-                        </div>
-                        <span className="text-gray-400 text-sm">in stock</span>
+                {/* Combined Action Bar */}
+                <div className="flex items-center bg-gray-800/50 rounded-full p-1">
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                        <button onClick={() => handleQuantityChange(cigar.quantity - 1)} className="bg-gray-600 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl active:bg-gray-500"><Minus className="w-5 h-5"/></button>
+                        <span className="text-lg text-white font-bold w-10 text-center">{cigar.quantity}</span>
+                        <button onClick={() => handleQuantityChange(cigar.quantity + 1)} className="bg-gray-600 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl active:bg-gray-500"><Plus className="w-5 h-5"/></button>
                     </div>
+                    <button onClick={handleSmokeCigar} disabled={cigar.quantity === 0} className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-full ml-2 hover:bg-amber-600 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">
+                        <Cigarette className="w-5 h-5"/> Smoke This
+                    </button>
                 </div>
                 
-                <button onClick={handleSmokeCigar} disabled={cigar.quantity === 0} className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-lg hover:bg-amber-600 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">
-                    <Cigarette className="w-5 h-5"/> Smoke This
-                </button>
-                
-                <div className="bg-gray-800/50 p-4 rounded-xl">
-                    <h3 className="font-bold text-amber-300 text-lg mb-3">Cigar Profile</h3>
+                {/* Updated Cigar Profile Panel */}
+                <div className="bg-gray-800/50 p-4 rounded-xl space-y-4">
+                    <h3 className="font-bold text-amber-300 text-lg">Cigar Profile</h3>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                         <DetailItem label="Shape" value={cigar.shape} />
                         <DetailItem label="Size" value={cigar.size} />
@@ -1891,19 +1887,27 @@ const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
                         <DetailItem label="Binder" value={cigar.binder} />
                         <DetailItem label="Filler" value={cigar.filler} />
                     </div>
-                </div>
-
-                <div className="bg-gray-800/50 p-4 rounded-xl">
-                    <div className="flex justify-between items-center mb-3">
-                        <h3 className="font-bold text-amber-300 text-lg flex items-center"><Tag className="w-5 h-5 mr-3 text-amber-400"/> Flavor Notes</h3>
-                        <button onClick={() => setIsFlavorModalOpen(true)} className="text-gray-400 hover:text-amber-400 p-1"><Edit className="w-4 h-4"/></button>
+                    
+                    <div className="border-t border-gray-700 pt-4">
+                         <p className="text-xs text-gray-400">Description</p>
+                         <p className="font-light text-white text-sm">{cigar.description || 'No description provided.'}</p>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                        {cigar.flavorNotes.map(note => (<span key={note} className={`text-xs font-semibold px-3 py-1 rounded-full ${getFlavorTagColor(note)}`}>{note}</span>))}
+
+                    <div className="border-t border-gray-700 pt-4">
+                        <div className="flex justify-between items-center mb-3">
+                            <h4 className="font-bold text-white flex items-center"><Tag className="w-4 h-4 mr-2 text-amber-400"/> Flavor Notes</h4>
+                            <button onClick={() => setIsFlavorModalOpen(true)} className="text-gray-400 hover:text-amber-400 p-1"><Edit className="w-4 h-4"/></button>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {cigar.flavorNotes && cigar.flavorNotes.length > 0 ? 
+                                cigar.flavorNotes.map(note => (<span key={note} className={`text-xs font-semibold px-3 py-1 rounded-full ${getFlavorTagColor(note)}`}>{note}</span>))
+                                : <p className="text-sm text-gray-500">No flavor notes added.</p>
+                            }
+                        </div>
                     </div>
                 </div>
                 
-                {/* NEW: Roxy's Corner Collapsible Panel */}
+                {/* Roxy's Corner Collapsible Panel */}
                 <div className="bg-amber-900/20 border border-amber-800 rounded-xl overflow-hidden">
                     <button onClick={() => setIsRoxyOpen(!isRoxyOpen)} className="w-full p-4 flex justify-between items-center">
                          <h3 className="font-bold text-amber-300 text-lg flex items-center"><Wind className="w-5 h-5 mr-2"/> Roxy's Corner</h3>
