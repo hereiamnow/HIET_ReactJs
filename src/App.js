@@ -14,6 +14,11 @@
 // - Implemented CSV import/export functionality for Humidors.
 // - Redesigned the Data & Sync screen with collapsible sections for better organization.
 // - Made ImportCsvModal and ExportModal generic to handle both Cigars and Humidors.
+// - CigarDetail: Added short description label to top of profile panel with wrapping text.
+// - CigarDetail: Replaced interactive Flavor Notes control with a static display of notes.
+// - CigarDetail: Added a Roxy-type confirmation message when "Smoke This" button is clicked.
+// - EditCigar: Made Auto-fill Status confirmation message more Roxy-like and disappear after 3 seconds.
+// - EditCigar: Made the Quantity control more prominent and turn red when the value is "0".
 
 // Next Suggestions:
 // - Implement drag-and-drop reordering for the dashboard panels on desktop.
@@ -695,7 +700,7 @@ const QuantityControl = ({ quantity, onChange, theme }) => (
         <button type="button" onClick={() => onChange(quantity - 1)} className={`${theme.button} text-white rounded-full w-12 h-12 flex items-center justify-center text-2xl active:bg-gray-500 disabled:opacity-50`} disabled={quantity <= 0}>
             <Minus className="w-6 h-6"/>
         </button>
-        <span className={`text-3xl ${theme.text} font-bold w-16 text-center`}>{quantity}</span>
+        <span className={`text-3xl ${quantity === 0 ? 'text-red-500' : theme.text} font-bold w-16 text-center`}>{quantity}</span>
         <button type="button" onClick={() => onChange(quantity + 1)} className={`${theme.button} text-white rounded-full w-12 h-12 flex items-center justify-center text-2xl active:bg-gray-500`}>
             <Plus className="w-6 h-6"/>
         </button>
@@ -1820,7 +1825,7 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
                     {filteredAndSortedCigars.map(cigar => (viewMode === 'grid' ? <GridCigarCard key={cigar.id} cigar={cigar} navigate={navigate} isSelectMode={isSelectMode} isSelected={selectedCigarIds.includes(cigar.id)} onSelect={handleSelectCigar} /> : <ListCigarCard key={cigar.id} cigar={cigar} navigate={navigate} isSelectMode={isSelectMode} isSelected={selectedCigarIds.includes(cigar.id)} onSelect={handleSelectCigar} />))}
                      {filteredAndSortedCigars.length === 0 && (
                         <div className="col-span-full text-center py-10">
-                            <p className="text-gray-400">No cigars found matching your criteria.</p>
+                            <p className="text-gray-400">No cigars match your search.</p>
                              <button onClick={() => navigate('AddCigar', { humidorId: humidor.id })} className="mt-4 flex items-center mx-auto gap-2 bg-amber-500 text-white font-bold text-sm px-4 py-2 rounded-full hover:bg-amber-600 transition-colors"><Plus className="w-4 h-4" />Add First Cigar</button>
                         </div>
                     )}
@@ -1842,12 +1847,15 @@ const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [isRoxyOpen, setIsRoxyOpen] = useState(true); // State for Roxy's Corner panel
+    const [showSmokeConfirmation, setShowSmokeConfirmation] = useState(false); // State for smoke confirmation message
 
     const handleSmokeCigar = async () => {
         if (cigar.quantity > 0) {
             const newQuantity = cigar.quantity - 1;
             const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
             await updateDoc(cigarRef, { quantity: newQuantity });
+            setShowSmokeConfirmation(true); // Show confirmation message
+            setTimeout(() => setShowSmokeConfirmation(false), 3000); // Hide after 3 seconds
         }
     };
 
@@ -1946,11 +1954,22 @@ Provide a brief, encouraging, and slightly personalized note about this cigar's 
                 <button onClick={handleSmokeCigar} disabled={cigar.quantity === 0} className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-lg hover:bg-amber-600 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">
                     <Cigarette className="w-5 h-5"/> Smoke This ({cigar.quantity} in stock)
                 </button>
+                {showSmokeConfirmation && (
+                    <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
+                        <Check className="w-5 h-5" />
+                        <span>Enjoy your smoke!</span>
+                    </div>
+                )}
                 
                 {/* Updated Cigar Profile Panel */}
                 <div className="bg-gray-800/50 p-4 rounded-xl space-y-4">
                     <h3 className="font-bold text-amber-300 text-lg">Cigar Profile</h3>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                        {/* Short Description moved to top */}
+                        <div className="col-span-2">
+                            <p className="text-xs text-gray-400">Short Description</p>
+                            <p className="font-light text-white text-sm break-words">{cigar.shortDescription || 'No short description provided.'}</p>
+                        </div>
                         <DetailItem label="Shape" value={cigar.shape} />
                         <DetailItem label="Size" value={cigar.size} />
                         <DetailItem label="Origin" value={cigar.country} />
@@ -1968,10 +1987,7 @@ Provide a brief, encouraging, and slightly personalized note about this cigar's 
                     </div>
 
                     <div className="border-t border-gray-700 pt-4">
-                        <div className="flex justify-between items-center mb-3">
-                            <h4 className="font-bold text-white flex items-center"><Tag className="w-4 h-4 mr-2 text-amber-400"/> Flavor Notes</h4>
-                            <button onClick={() => setIsFlavorModalOpen(true)} className="text-gray-400 hover:text-amber-400 p-1"><Edit className="w-4 h-4"/></button>
-                        </div>
+                        <h4 className="font-bold text-white flex items-center mb-3"><Tag className="w-4 h-4 mr-2 text-amber-400"/> Flavor Notes</h4>
                         <div className="flex flex-wrap gap-2">
                             {cigar.flavorNotes && cigar.flavorNotes.length > 0 ? 
                                 cigar.flavorNotes.map(note => (<span key={note} className={`text-xs font-semibold px-3 py-1 rounded-full ${getFlavorTagColor(note)}`}>{note}</span>))
@@ -2226,6 +2242,11 @@ const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
     };
 
     const handleAutofill = async () => {
+        if (!formData.name) {
+            setModalState({ isOpen: true, content: "Please enter a cigar name to auto-fill.", isLoading: false });
+            setTimeout(() => setModalState({ isOpen: false, content: '', isLoading: false }), 3000); // Disappear after 3 seconds
+            return;
+        }
         setIsAutofilling(true);
         const prompt = `You are a cigar database. A user is editing an existing cigar record and wants to fill in any missing details.
 
@@ -2241,7 +2262,7 @@ Here is the existing data for the cigar:
 - Strength: ${formData.strength || 'Not specified'}
 - Description: ${formData.description ? 'Already has a description.' : 'Not specified'}
 
-Based on the cigar name "${formData.name}", provide a complete and accurate JSON object with all available details. The schema MUST be: { "brand": "string", "shape": "string", "size": "string", "country": "string", "wrapper": "string", "binder": "string", "filler": "string", "strength": "Mild" | "Mild-Medium" | "Medium" | "Medium-Full" | "Full", "flavorNotes": ["string"], "shortDescription": "string", "description": "string", "image": "string", "rating": "number" }.
+Based on the cigar name "${formData.name}", provide a complete and accurate JSON object with all available details. The schema MUST be: { "brand": "string", "shape": "string", "size": "string", "country": "string", "wrapper": "string", "binder": "string", "filler": "string", "strength": "Mild" | "Mild-Medium" | "Medium" | "Medium-Full" | "Full", "flavorNotes": ["string"], "shortDescription": "string", "STRING", "image": "string", "rating": "number" }.
 
 Do not include any text or markdown formatting outside of the JSON object.`;
         
@@ -2277,10 +2298,12 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                 }
                 return updatedData;
             });
-            setModalState({ isOpen: true, content: 'Successfully filled in missing details!', isLoading: false });
+            setModalState({ isOpen: true, content: 'Woof! Roxy found some details for you. Looks good!', isLoading: false });
+            setTimeout(() => setModalState({ isOpen: false, content: '', isLoading: false }), 3000); // Disappear after 3 seconds
         } else {
             console.error("Gemini API response was not a valid object:", result);
-            setModalState({ isOpen: true, content: `Failed to parse auto-fill data. Please try again. Error: ${result}`, isLoading: false });
+            setModalState({ isOpen: true, content: `Ruff! Roxy couldn't fetch details. Try a different name or fill manually. Error: ${result}`, isLoading: false });
+            setTimeout(() => setModalState({ isOpen: false, content: '', isLoading: false }), 3000); // Disappear after 3 seconds
         }
         
         setIsAutofilling(false);
