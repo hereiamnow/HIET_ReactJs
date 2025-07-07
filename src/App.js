@@ -11,6 +11,9 @@
 // - Enhanced "Roxy's Corner" on the Cigar Detail page with a new "Aging Potential" analysis feature.
 // - Simplified the `CigarDetail` action bar by removing the quantity stepper and making "Smoke This" a full-width button.
 // - Added image placeholder at the top of Add and Edit Cigar Screens, matching the size of the cigar detail image.
+// - Implemented CSV import/export functionality for Humidors.
+// - Redesigned the Data & Sync screen with collapsible sections for better organization.
+// - Made ImportCsvModal and ExportModal generic to handle both Cigars and Humidors.
 
 // Next Suggestions:
 // - Implement drag-and-drop reordering for the dashboard panels on desktop.
@@ -22,7 +25,7 @@
 // - Add font support in ThemeModal for custom fonts. Serif and sans-serif fonts.
 // - Implement a "Cigar of the Day" feature that highlights a random cigar from the user's collection each day picked by Roxy.
 // - Add a "Cigar Journal" feature where users can log their smoking experiences, notes, and ratings for each cigar.
-// - Add CSV import functionality to allow users to bulk add humidors from a CSV file.
+// - Implement Firebase Storage integration for image uploads.
 
 // Import necessary libraries and components.
 // React is the main library for building the user interface.
@@ -1737,7 +1740,7 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
              {isMoveModalOpen && <MoveCigarsModal onClose={() => setIsMoveModalOpen(false)} onMove={handleMoveCigars} destinationHumidors={humidors.filter(h => h.id !== humidor.id)} theme={theme}/>}
             <DeleteHumidorModal isOpen={isDeleteHumidorModalOpen} onClose={() => setIsDeleteHumidorModalOpen(false)} onConfirm={handleConfirmDeleteHumidor} humidor={humidor} cigarsInHumidor={filteredAndSortedCigars} otherHumidors={humidors.filter(h => h.id !== humidor.id)}/>
             <DeleteCigarsModal isOpen={isDeleteCigarsModalOpen} onClose={() => setIsDeleteCigarsModalOpen(false)} onConfirm={handleConfirmDeleteCigars} count={selectedCigarIds.length}/>
-            {isExportModalOpen && <ExportModal cigars={filteredAndSortedCigars} onClose={() => setIsExportModalOpen(false)} />}
+            {isExportModalOpen && <ExportModal data={filteredAndSortedCigars} dataType="cigar" onClose={() => setIsExportModalOpen(false)} />}
             {isManualReadingModalOpen && <ManualReadingModal isOpen={isManualReadingModalOpen} onClose={() => setIsManualReadingModalOpen(false)} onSave={handleSaveManualReading} initialTemp={humidor.temp} initialHumidity={humidor.humidity}/>}
 
             <div className="relative">
@@ -1912,7 +1915,7 @@ Provide a brief, encouraging, and slightly personalized note about this cigar's 
             {modalState.isOpen && <GeminiModal title={modalState.type === 'pairings' ? "Pairing Suggestions" : modalState.type === 'notes' ? "Tasting Note Idea" : modalState.type === 'aging' ? "Aging Potential" : "Similar Smokes"} content={modalState.content} isLoading={modalState.isLoading} onClose={closeModal} />}
             {isFlavorModalOpen && <FlavorNotesModal cigar={cigar} db={db} appId={appId} userId={userId} onClose={() => setIsFlavorModalOpen(false)} />}
             <DeleteCigarsModal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} onConfirm={handleDeleteCigar} count={1} />
-            {isExportModalOpen && <ExportModal cigars={[cigar]} onClose={() => setIsExportModalOpen(false)} />}
+            {isExportModalOpen && <ExportModal data={[cigar]} dataType="cigar" onClose={() => setIsExportModalOpen(false)} />}
 
             <div className="relative">
                 <img src={cigar.image || `https://placehold.co/400x600/5a3825/ffffff?text=${cigar.brand.replace(/\s/g, '+')}`} alt={cigar.name} className="w-full h-64 object-cover" />
@@ -2783,10 +2786,47 @@ const IntegrationsScreen = ({ navigate, goveeApiKey, setGoveeApiKey, goveeDevice
     );
 };
 
+// Reusable Collapsible Panel component
+const CollapsiblePanel = ({ title, description, children, icon: Icon, theme }) => {
+    const [isCollapsed, setIsCollapsed] = useState(true);
+    return (
+        <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
+            <button onClick={() => setIsCollapsed(!isCollapsed)} className="w-full p-4 flex justify-between items-center">
+                <h3 className="font-bold text-amber-300 text-lg flex items-center">
+                    {Icon && <Icon className="w-5 h-5 mr-2"/>} {title}
+                </h3>
+                <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
+            </button>
+            {!isCollapsed && (
+                <div className="px-4 pb-4 space-y-4">
+                    <p className="text-gray-400 text-sm">{description}</p>
+                    {children}
+                </div>
+            )}
+        </div>
+    );
+};
+
+// Define fields for Humidor import/export
+const APP_HUMIDOR_FIELDS = [
+    { key: 'name', label: 'Humidor Name', required: true },
+    { key: 'shortDescription', label: 'Short Description', required: false },
+    { key: 'longDescription', label: 'Long Description', required: false },
+    { key: 'size', label: 'Size', required: false },
+    { key: 'location', label: 'Location', required: false },
+    { key: 'image', label: 'Image URL', required: false },
+    { key: 'type', label: 'Type', required: false },
+    { key: 'temp', label: 'Temperature', required: false, type: 'number' },
+    { key: 'humidity', label: 'Humidity', required: false, type: 'number' },
+    { key: 'goveeDeviceId', label: 'Govee Device ID', required: false },
+    { key: 'goveeDeviceModel', label: 'Govee Device Model', required: false },
+];
+
 
 const DataSyncScreen = ({ navigate, db, appId, userId, cigars, humidors }) => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+    const [modalDataType, setModalDataType] = useState(null); // 'cigar' or 'humidor'
 
     const exportEnvironmentData = () => {
         let headers = ['humidorId,name,humidity,temp'];
@@ -2798,40 +2838,52 @@ const DataSyncScreen = ({ navigate, db, appId, userId, cigars, humidors }) => {
         downloadFile({ data: [...headers, ...envCsv].join('\n'), fileName: 'humidor_environment_export.csv', fileType: 'text/csv' });
     };
 
+    const handleOpenExportModal = (type) => {
+        setModalDataType(type);
+        setIsExportModalOpen(true);
+    };
+
+    const handleOpenImportModal = (type) => {
+        setModalDataType(type);
+        setIsImportModalOpen(true);
+    };
+
     return (
         <div className="p-4 pb-24">
-            {isImportModalOpen && <ImportCsvModal humidors={humidors} db={db} appId={appId} userId={userId} navigate={navigate} onClose={() => setIsImportModalOpen(false)} />}
-            {isExportModalOpen && <ExportModal cigars={cigars} onClose={() => setIsExportModalOpen(false)} />}
+            {isImportModalOpen && <ImportCsvModal dataType={modalDataType} data={modalDataType === 'cigar' ? cigars : humidors} db={db} appId={appId} userId={userId} onClose={() => setIsImportModalOpen(false)} humidors={humidors} />}
+            {isExportModalOpen && <ExportModal dataType={modalDataType} data={modalDataType === 'cigar' ? cigars : humidors} onClose={() => setIsExportModalOpen(false)} />}
+            
             <div className="flex items-center mb-6">
                 <button onClick={() => navigate('Settings')} className="p-2 -ml-2 mr-2"><ChevronLeft className="w-7 h-7 text-white" /></button>
                 <h1 className="text-3xl font-bold text-white">Import & Export</h1>
             </div>
+            
             <div className="space-y-6">
-                 <div className="bg-gray-800/50 p-4 rounded-xl">
-                    <h3 className="font-bold text-amber-300 text-lg mb-2">Import Collection</h3>
-                    <p className="text-sm text-gray-400 mb-4">Import cigars from a CSV file. Ensure the file matches the exported format.</p>
-                    <button onClick={() => setIsImportModalOpen(true)} className="w-full flex items-center justify-center gap-2 bg-blue-600/80 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors"><UploadCloud className="w-5 h-5" />Import from CSV</button>
-                </div>
-                <div className="bg-gray-800/50 p-4 rounded-xl">
-                    <h3 className="font-bold text-amber-300 text-lg mb-2">Export Collection</h3>
-                    <p className="text-sm text-gray-400 mb-4">Download your entire cigar inventory as a CSV or JSON file for backups.</p>
-                    <button onClick={() => setIsExportModalOpen(true)} className="w-full flex items-center justify-center gap-2 bg-green-600/80 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-colors"><Download className="w-5 h-5" />Export Collection</button>
-                </div>
-                  <div className="bg-gray-800/50 p-4 rounded-xl">
-                    <h3 className="font-bold text-amber-300 text-lg mb-2">Import Humidors</h3>
-                    <p className="text-sm text-gray-400 mb-4">Import humidors from a CSV file. Ensure the file matches the exported format.</p>
-                    <button className="w-full flex items-center justify-center gap-2 bg-blue-600/80 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors"><UploadCloud className="w-5 h-5" />Import from CSV</button>
-                </div>               
-                <div className="bg-gray-800/50 p-4 rounded-xl">
-                    <h3 className="font-bold text-amber-300 text-lg mb-2">Export Environment Data</h3>
-                    <p className="text-sm text-gray-400 mb-4">Download temperature and humidity readings for all your humidors in CSV format.</p>
-                    <button onClick={exportEnvironmentData} className="w-full flex items-center justify-center gap-2 bg-purple-600/80 text-white font-bold py-3 rounded-lg hover:bg-purple-700 transition-colors"><Download className="w-5 h-5" />Export Environment CSV</button>
-                </div>
+                <CollapsiblePanel title="Cigar Collection" description="Import or export your individual cigar data." icon={Cigarette}>
+                    <div className="grid grid-cols-1 gap-4">
+                        <button onClick={() => handleOpenExportModal('cigar')} className="w-full flex items-center justify-center gap-2 bg-green-600/80 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-colors"><Download className="w-5 h-5" />Export Cigars</button>
+                        <button onClick={() => handleOpenImportModal('cigar')} className="w-full flex items-center justify-center gap-2 bg-blue-600/80 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors"><UploadCloud className="w-5 h-5" />Import Cigars from CSV</button>
+                    </div>
+                </CollapsiblePanel>
+
+                <CollapsiblePanel title="Humidor Management" description="Transfer your humidor setup and details." icon={Box}>
+                    <div className="grid grid-cols-1 gap-4">
+                        <button onClick={() => handleOpenExportModal('humidor')} className="w-full flex items-center justify-center gap-2 bg-green-600/80 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-colors"><Download className="w-5 h-5" />Export Humidors</button>
+                        <button onClick={() => handleOpenImportModal('humidor')} className="w-full flex items-center justify-center gap-2 bg-blue-600/80 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors"><UploadCloud className="w-5 h-5" />Import Humidors from CSV</button>
+                    </div>
+                </CollapsiblePanel>
+
+                <CollapsiblePanel title="Environment Data" description="Download historical temperature and humidity data for all humidors." icon={Thermometer}>
+                    <div className="grid grid-cols-1 gap-4">
+                        <button onClick={exportEnvironmentData} className="w-full flex items-center justify-center gap-2 bg-purple-600/80 text-white font-bold py-3 rounded-lg hover:bg-purple-700 transition-colors"><Download className="w-5 h-5" />Export Environment CSV</button>
+                    </div>
+                </CollapsiblePanel>
             </div>
         </div>
     );
 };
 
+// Define fields for Cigar import/export
 const APP_FIELDS = [
     { key: 'name', label: 'Cigar Name', required: true },
     { key: 'brand', label: 'Brand', required: true },
@@ -2856,7 +2908,10 @@ const APP_FIELDS = [
     { key: 'description', label: 'Long Description', required: false }    
 ];
 
-const ImportCsvModal = ({ humidors, db, appId, userId, onClose, navigate }) => {
+/**
+ * Generic ImportCsvModal component to handle both cigar and humidor imports.
+ */
+const ImportCsvModal = ({ dataType, data, db, appId, userId, onClose, humidors }) => {
     const [step, setStep] = useState('selectFile');
     const [selectedHumidor, setSelectedHumidor] = useState(humidors[0]?.id || '');
     const [csvHeaders, setCsvHeaders] = useState([]);
@@ -2867,6 +2922,10 @@ const ImportCsvModal = ({ humidors, db, appId, userId, onClose, navigate }) => {
     const [importedCount, setImportedCount] = useState(0);
 
     const fileInputRef = React.useRef(null);
+
+    // Determine which set of fields to use based on dataType
+    const currentAppFields = dataType === 'cigar' ? APP_FIELDS : APP_HUMIDOR_FIELDS;
+    const collectionName = dataType === 'cigar' ? 'cigars' : 'humidors';
 
     const handleFileChange = (event) => {
         const file = event.target.files[0];
@@ -2879,6 +2938,7 @@ const ImportCsvModal = ({ humidors, db, appId, userId, onClose, navigate }) => {
             const text = e.target.result;
             const lines = text.split(/[\r\n]+/).filter(line => line.trim() !== '');
             if (lines.length < 2) {
+                // Use a custom message box instead of alert()
                 alert("CSV file must have a header and at least one data row.");
                 setIsProcessing(false);
                 return;
@@ -2890,7 +2950,7 @@ const ImportCsvModal = ({ humidors, db, appId, userId, onClose, navigate }) => {
             setCsvRows(rows.filter(row => row.length === headers.length));
             
             const initialMapping = {};
-            APP_FIELDS.forEach(appField => {
+            currentAppFields.forEach(appField => {
                 const matchedHeader = headers.find(header => header.toLowerCase().replace(/[\s_]/g, '') === appField.label.toLowerCase().replace(/[\s_]/g, ''));
                 if (matchedHeader) {
                     initialMapping[appField.key] = matchedHeader;
@@ -2913,17 +2973,22 @@ const ImportCsvModal = ({ humidors, db, appId, userId, onClose, navigate }) => {
     const handleImport = async () => {
         setStep('importing');
         const batch = writeBatch(db);
-        const cigarsCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'cigars');
+        const targetCollectionRef = collection(db, 'artifacts', appId, 'users', userId, collectionName);
         let count = 0;
 
         csvRows.forEach(row => {
-            const newCigar = {
-                humidorId: selectedHumidor,
-                flavorNotes: [],
-                quantity: 1,
+            const newItem = {
+                // Add humidorId for cigars, but not for humidors themselves
+                ...(dataType === 'cigar' && { humidorId: selectedHumidor }),
+                // Initialize arrays for certain fields
+                ...(dataType === 'cigar' && { flavorNotes: [] }),
+                // Default quantity for cigars
+                ...(dataType === 'cigar' && { quantity: 1 }),
+                // Default temp/humidity for humidors if not provided
+                ...(dataType === 'humidor' && { temp: 70, humidity: 70 }),
             };
 
-            APP_FIELDS.forEach(appField => {
+            currentAppFields.forEach(appField => {
                 const mappedHeader = fieldMapping[appField.key];
                 if (mappedHeader && mappedHeader !== 'none') {
                     const headerIndex = csvHeaders.indexOf(mappedHeader);
@@ -2932,27 +2997,45 @@ const ImportCsvModal = ({ humidors, db, appId, userId, onClose, navigate }) => {
                     let value = row[headerIndex]?.trim();
                     
                     if (appField.type === 'number') {
-                        value = parseFloat(value) || 0;
+                        newItem[appField.key] = parseFloat(value) || 0;
                     } else if (appField.type === 'boolean') {
-                        value = value?.toLowerCase() === 'true' || value === '1';
+                        newItem[appField.key] = value?.toLowerCase() === 'true' || value === '1';
                     } else if (appField.type === 'array') {
-                        value = value ? value.split(';').map(s => s.trim()).filter(Boolean) : [];
+                        newItem[appField.key] = value ? value.split(';').map(s => s.trim()).filter(Boolean) : [];
+                    } else {
+                        newItem[appField.key] = value;
                     }
-                    
-                    newCigar[appField.key] = value;
                 }
             });
 
-            if (newCigar.name && newCigar.brand) {
-                const cigarRef = doc(cigarsCollectionRef);
-                batch.set(cigarRef, newCigar);
+            // Ensure required fields are present before adding
+            const isValidItem = currentAppFields.every(field => {
+                if (field.required) {
+                    return newItem[field.key] !== undefined && newItem[field.key] !== null && newItem[field.key] !== '';
+                }
+                return true;
+            });
+
+            if (isValidItem) {
+                const itemRef = doc(targetCollectionRef); // Firestore will generate a new ID
+                batch.set(itemRef, newItem);
                 count++;
+            } else {
+                console.warn(`Skipping row due to missing required fields for ${dataType}:`, row);
             }
         });
 
-        await batch.commit();
-        setImportedCount(count);
-        setStep('complete');
+        try {
+            await batch.commit();
+            setImportedCount(count);
+            setStep('complete');
+        } catch (error) {
+            console.error("Error during batch import:", error);
+            // Use a custom message box instead of alert()
+            alert(`Import failed: ${error.message}. Check console for details.`);
+            setStep('selectFile'); // Go back to file selection on error
+            setIsProcessing(false);
+        }
     };
     
     const handleReset = () => {
@@ -2965,7 +3048,7 @@ const ImportCsvModal = ({ humidors, db, appId, userId, onClose, navigate }) => {
     };
 
     const isMappingValid = useMemo(() => {
-        const requiredFields = APP_FIELDS.filter(f => f.required);
+        const requiredFields = currentAppFields.filter(f => f.required);
         return requiredFields.every(f => fieldMapping[f.key] && fieldMapping[f.key] !== 'none');
     }, [fieldMapping]);
 
@@ -2975,18 +3058,20 @@ const ImportCsvModal = ({ humidors, db, appId, userId, onClose, navigate }) => {
                 return (
                     <>
                         <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-bold text-amber-400 flex items-center"><UploadCloud className="w-5 h-5 mr-2"/> Import from CSV</h3>
+                            <h3 className="text-xl font-bold text-amber-400 flex items-center"><UploadCloud className="w-5 h-5 mr-2"/> Import {dataType === 'cigar' ? 'Cigars' : 'Humidors'} from CSV</h3>
                             <button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button>
                         </div>
                         <div className="space-y-4">
+                            {dataType === 'cigar' && (
+                                <div>
+                                    <label className="text-sm font-medium text-gray-300 mb-1 block">1. Select Destination Humidor</label>
+                                    <select value={selectedHumidor} onChange={(e) => setSelectedHumidor(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white">
+                                        {humidors.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+                                    </select>
+                                </div>
+                            )}
                             <div>
-                                <label className="text-sm font-medium text-gray-300 mb-1 block">1. Select Destination Humidor</label>
-                                <select value={selectedHumidor} onChange={(e) => setSelectedHumidor(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white">
-                                    {humidors.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="text-sm font-medium text-gray-300 mb-1 block">2. Choose CSV File</label>
+                                <label className="text-sm font-medium text-gray-300 mb-1 block">{dataType === 'cigar' ? '2' : '1'}. Choose CSV File</label>
                                 <input type="file" ref={fileInputRef} onChange={handleFileChange} style={{ display: 'none' }} accept=".csv" />
                                 <button onClick={() => fileInputRef.current.click()} className="w-full flex items-center justify-center gap-2 bg-blue-600/80 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors">
                                     {isProcessing ? <LoaderCircle className="w-5 h-5 animate-spin"/> : <Upload className="w-5 h-5"/>}
@@ -3005,7 +3090,7 @@ const ImportCsvModal = ({ humidors, db, appId, userId, onClose, navigate }) => {
                         </div>
                         <p className="text-sm text-gray-400 mb-4">Match your CSV columns to the app's fields. Required fields are marked with *.</p>
                         <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
-                            {APP_FIELDS.map(appField => (
+                            {currentAppFields.map(appField => (
                                 <div key={appField.key} className="grid grid-cols-2 gap-4 items-center">
                                     <label className="text-sm font-medium text-gray-200 text-right">{appField.label}{appField.required && '*'}</label>
                                     <select value={fieldMapping[appField.key] || 'none'} onChange={(e) => handleMappingChange(appField.key, e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white">
@@ -3027,7 +3112,7 @@ const ImportCsvModal = ({ humidors, db, appId, userId, onClose, navigate }) => {
                 return (
                     <div className="flex flex-col items-center justify-center h-48">
                         <LoaderCircle className="w-12 h-12 text-amber-500 animate-spin" />
-                        <p className="mt-4 text-gray-300">Importing your cigars...</p>
+                        <p className="mt-4 text-gray-300">Importing your {dataType === 'cigar' ? 'cigars' : 'humidors'}...</p>
                     </div>
                 );
             case 'complete':
@@ -3036,7 +3121,7 @@ const ImportCsvModal = ({ humidors, db, appId, userId, onClose, navigate }) => {
                         <div className="flex justify-center items-center mb-4">
                             <h3 className="text-xl font-bold text-green-400 flex items-center"><Check className="w-6 h-6 mr-2"/> Import Complete</h3>
                         </div>
-                        <p className="text-center text-gray-300 mb-6">Successfully imported {importedCount} cigars into <span className="font-bold text-white">{humidors.find(h => h.id === selectedHumidor)?.name}</span>.</p>
+                        <p className="text-center text-gray-300 mb-6">Successfully imported {importedCount} {dataType === 'cigar' ? 'cigars' : 'humidors'}.</p>
                         <button onClick={onClose} className="w-full bg-amber-500 text-white font-bold py-3 rounded-lg hover:bg-amber-600 transition-colors">Done</button>
                     </>
                 );
@@ -3053,28 +3138,63 @@ const ImportCsvModal = ({ humidors, db, appId, userId, onClose, navigate }) => {
     );
 };
 
-const ExportModal = ({ cigars, onClose }) => {
-    const exportToCsv = () => {
-        let headers = ['id,name,brand,line,shape,isBoxPress,length_inches,ring_gauge,Size,Country of Origin,wrapper,binder,filler,strength,flavorNotes,rating,userRating,price,quantity,image,shortDescription,description'];
-        let usersCsv = cigars.reduce((acc, cigar) => {
-            const {
-                id, name, brand, line = '', shape, isBoxPress = false, length_inches = 0, ring_gauge = 0,
-                size, country, wrapper, binder, filler, strength, flavorNotes, rating, userRating = 0,
-                quantity, price, image = '', shortDescription = '', description = ''
-            } = cigar;
-            acc.push([
-                id, name, brand, line, shape, isBoxPress ? 'TRUE' : 'FALSE', length_inches, ring_gauge,
-                size, country, wrapper, binder, filler, strength, `"${(flavorNotes || []).join(';')}"`,
-                rating, userRating, price, quantity, image, `"${shortDescription}"`, `"${description}"`
-            ].join(','));
+/**
+ * Generic ExportModal component to handle both cigar and humidor exports.
+ */
+const ExportModal = ({ data, dataType, onClose }) => {
+    const getHeaders = () => {
+        if (dataType === 'cigar') {
+            return ['id,name,brand,line,shape,isBoxPress,length_inches,ring_gauge,Size,Country of Origin,wrapper,binder,filler,strength,flavorNotes,rating,userRating,price,quantity,image,shortDescription,description'];
+        } else if (dataType === 'humidor') {
+            return ['id,name,shortDescription,longDescription,size,location,image,type,temp,humidity,goveeDeviceId,goveeDeviceModel'];
+        }
+        return [];
+    };
+
+    const formatDataForCsv = () => {
+        const headers = getHeaders();
+        const csvRows = data.reduce((acc, item) => {
+            if (dataType === 'cigar') {
+                const {
+                    id, name, brand, line = '', shape, isBoxPress = false, length_inches = 0, ring_gauge = 0,
+                    size, country, wrapper, binder, filler, strength, flavorNotes, rating, userRating = 0,
+                    quantity, price, image = '', shortDescription = '', description = ''
+                } = item;
+                acc.push([
+                    id, name, brand, line, shape, isBoxPress ? 'TRUE' : 'FALSE', length_inches, ring_gauge,
+                    size, country, wrapper, binder, filler, strength, `"${(flavorNotes || []).join(';')}"`,
+                    rating, userRating, price, quantity, image, `"${shortDescription}"`, `"${description}"`
+                ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')); // Escape double quotes
+            } else if (dataType === 'humidor') {
+                const {
+                    id, name, shortDescription = '', longDescription = '', size = '', location = '',
+                    image = '', type = '', temp = 0, humidity = 0, goveeDeviceId = '', goveeDeviceModel = ''
+                } = item;
+                acc.push([
+                    id, name, shortDescription, longDescription, size, location, image, type, temp, humidity,
+                    goveeDeviceId, goveeDeviceModel
+                ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')); // Escape double quotes
+            }
             return acc;
         }, []);
-        downloadFile({ data: [...headers, ...usersCsv].join('\n'), fileName: 'humidor_hub_export.csv', fileType: 'text/csv' });
+        return [...headers, ...csvRows].join('\n');
+    };
+
+    const exportToCsv = () => {
+        downloadFile({
+            data: formatDataForCsv(),
+            fileName: `humidor_hub_${dataType}s_export.csv`,
+            fileType: 'text/csv',
+        });
         onClose();
     };
 
     const exportToJson = () => {
-        downloadFile({ data: JSON.stringify(cigars, null, 2), fileName: 'humidor_hub_export.json', fileType: 'application/json' });
+        downloadFile({
+            data: JSON.stringify(data, null, 2),
+            fileName: `humidor_hub_${dataType}s_export.json`,
+            fileType: 'application/json',
+        });
         onClose();
     };
 
@@ -3082,11 +3202,11 @@ const ExportModal = ({ cigars, onClose }) => {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100]" onClick={onClose}>
             <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-sm flex flex-col" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-amber-400 flex items-center"><Download className="w-5 h-5 mr-2"/> Export Collection</h3>
+                    <h3 className="text-xl font-bold text-amber-400 flex items-center"><Download className="w-5 h-5 mr-2"/> Export {dataType === 'cigar' ? 'Cigars' : 'Humidors'}</h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button>
                 </div>
                 <div className="space-y-4">
-                    <p className="text-sm text-gray-400">Choose a format to download your cigar collection.</p>
+                    <p className="text-sm text-gray-400">Choose a format to download your {dataType} collection.</p>
                     <button onClick={exportToCsv} className="w-full flex items-center justify-center gap-2 bg-green-600/80 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-colors">Export as CSV</button>
                     <button onClick={exportToJson} className="w-full flex items-center justify-center gap-2 bg-blue-600/80 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors">Export as JSON</button>
                 </div>
