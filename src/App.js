@@ -1,7 +1,7 @@
 // File: App.js
 // Author: ADHD developer
-// Date: July 5, 2025
-// Time: 11:17 PM CDT
+// Date: July 7, 2025
+// Time: 10:48 PM CDT
 
 // Description of Changes:
 // - Implemented the "Aged in Humidor" feature to track how long a cigar has been stored.
@@ -25,6 +25,11 @@
 // - Dashboard: Created a reusable `MyCollectionStatsCards` component from the existing stats cards.
 // - Dashboard: Removed icons from `StatCards` within the `MyCollectionStatsCards` component.
 // - Dashboard: Moved the `MyCollectionStatsCards` component above the "Roxy's Tips" panel.
+// - Add/Edit Cigar: Connected 'Length' to `length_inches` and 'Gauge' to `ring_gauge`.
+// - Add/Edit Cigar: Implemented auto-update and flashing for `length_inches` and `ring_gauge` when a 'Shape' is selected.
+// - Edit Cigar: Increased the size of the Quantity digit control.
+// - Cigar Detail: Updated the 'Size' label in the Cigar Profile panel to show 'length_inches x ring_gauge'.
+// - Add Cigar: Replaced the simple Quantity input field with the interactive `QuantityControl` component.
 
 
 // Next Suggestions:
@@ -42,7 +47,7 @@
 // Import necessary libraries and components.
 // React is the main library for building the user interface.
 // useState, useEffect, and useMemo are "hooks" that let us use state and other React features in functional components.
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react'; // Import useRef for flashing effect
 // lucide-react provides a set of clean, modern icons used throughout the app.
 import { Thermometer, Droplets, Bell, Plus, Search, X, ChevronLeft, Image as ImageIcon, Star, Wind, Coffee, GlassWater, LoaderCircle, Sparkles, Box, Briefcase, LayoutGrid, List, BookOpen, Leaf, Flame, MapPin, Tag, Minus, Edit, Trash2, Upload, Link2, Settings as SettingsIcon, User, Database, Info, Download, UploadCloud, ChevronDown, Shield, FileText, LogOut, Palette, BarChart2, TrendingUp, PieChart as PieChartIcon, Move, Check, Zap, AlertTriangle, Filter, ArrowDownWideNarrow, ArrowUpWideNarrow, Cigarette, Calendar as CalendarIcon } from 'lucide-react';
 // recharts is a library for creating the charts (bar, line, pie) on the dashboard.
@@ -52,7 +57,7 @@ import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Cart
 // Import Firebase libraries for database and authentication
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, writeBatch, connectFirestoreEmulator } from "firebase/firestore";
-import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, connectAuthEmulator } from "firebase/auth";
+import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, connectAuthEmulator } = "firebase/auth";
 
 // --- FIREBASE CONFIGURATION ---
 // These variables are placeholders that will be replaced by the environment.
@@ -140,6 +145,28 @@ const cigarShapes = [
     'Panetela', 'Lancero', 'Grand Corona', 'Presidente', 'Figurado', 'Belicoso',
     'Torpedo', 'Piramide', 'Perfecto', 'Diadema', 'Culebra', 'Double Robusto'
 ].sort();
+
+// Common cigar dimensions by shape for auto-fill suggestions
+const commonCigarDimensions = {
+    'Corona': { length_inches: 5.5, ring_gauge: 42 },
+    'Robusto': { length_inches: 5, ring_gauge: 50 },
+    'Toro': { length_inches: 6, ring_gauge: 52 },
+    'Churchill': { length_inches: 7, ring_gauge: 48 },
+    'Double Corona': { length_inches: 7.5, ring_gauge: 49 },
+    'Lonsdale': { length_inches: 6.5, ring_gauge: 42 },
+    'Panetela': { length_inches: 6, ring_gauge: 38 },
+    'Lancero': { length_inches: 7.5, ring_gauge: 38 },
+    'Perfecto': { length_inches: 4.5, ring_gauge: 48 }, // Example, can vary widely
+    'Piramide': { length_inches: 6.2, ring_gauge: 52 },
+    'Torpedo': { length_inches: 6, ring_gauge: 52 },
+    'Belicoso': { length_inches: 5, ring_gauge: 50 },
+    'Figurado': { length_inches: null, ring_gauge: null }, // Varies too much
+    'Parejo': { length_inches: null, ring_gauge: null }, // General term
+    'Double Robusto': { length_inches: 5.5, ring_gauge: 54 },
+    'Grand Corona': { length_inches: 5.6, ring_gauge: 46 },
+    'Presidente': { length_inches: 8, ring_gauge: 52 }
+};
+
 
 // A list of fun tips for Roxy's corner on the dashboard.
 // These tips are meant to educate and entertain users about cigars.
@@ -709,7 +736,8 @@ const QuantityControl = ({ quantity, onChange, theme }) => (
         <button type="button" onClick={() => onChange(quantity - 1)} className={`${theme.button} text-white rounded-full w-12 h-12 flex items-center justify-center text-2xl active:bg-gray-500 disabled:opacity-50`} disabled={quantity <= 0}>
             <Minus className="w-6 h-6"/>
         </button>
-        <span className={`text-3xl ${quantity === 0 ? 'text-red-500' : theme.text} font-bold w-16 text-center`}>{quantity}</span>
+        {/* Increased font size for the quantity display */}
+        <span className={`text-5xl ${quantity === 0 ? 'text-red-500' : theme.text} font-bold w-16 text-center`}>{quantity}</span>
         <button type="button" onClick={() => onChange(quantity + 1)} className={`${theme.button} text-white rounded-full w-12 h-12 flex items-center justify-center text-2xl active:bg-gray-500`}>
             <Plus className="w-6 h-6"/>
         </button>
@@ -858,7 +886,7 @@ const ListCigarCard = ({ cigar, navigate, isSelectMode, isSelected, onSelect }) 
     );
 };
 
-const InputField = ({ name, label, placeholder, type = 'text', value, onChange, theme }) => (
+const InputField = ({ name, label, placeholder, type = 'text', value, onChange, theme, className = '', inputRef }) => (
     <div>
         <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>{label}</label>
         <input
@@ -867,7 +895,8 @@ const InputField = ({ name, label, placeholder, type = 'text', value, onChange, 
             placeholder={placeholder}
             value={value || ''}
             onChange={onChange}
-            className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} placeholder-gray-500 focus:outline-none focus:ring-2 ${theme.ring}`}
+            ref={inputRef} // Apply ref here
+            className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} placeholder-gray-500 focus:outline-none focus:ring-2 ${theme.ring} ${className}`}
         />
     </div>
 );
@@ -1631,7 +1660,7 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <Droplets className="w-6 h-6 text-blue-400"/>
-                                                <span className="2xl font-bold text-white">{humidor.humidity}%</span>
+                                                <span className="text-2xl font-bold text-white">{humidor.humidity}%</span>
                                             </div>
                                         </div>
                                         <div className="flex-grow flex flex-col justify-center">
@@ -1915,7 +1944,6 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
                      {filteredAndSortedCigars.length === 0 && (
                         <div className="col-span-full text-center py-10">
                             <p className="text-gray-400">No cigars match your search.</p>
-                             <button onClick={() => navigate('AddCigar', { humidorId: humidor.id })} className="mt-4 flex items-center mx-auto gap-2 bg-amber-500 text-white font-bold text-sm px-4 py-2 rounded-full hover:bg-amber-600 transition-colors"><Plus className="w-4 h-4" />Add First Cigar</button>
                         </div>
                     )}
                 </div>
@@ -2060,7 +2088,8 @@ Provide a brief, encouraging, and slightly personalized note about this cigar's 
                             <p className="font-light text-white text-sm break-words">{cigar.shortDescription || 'No short description provided.'}</p>
                         </div>
                         <DetailItem label="Shape" value={cigar.shape} />
-                        <DetailItem label="Size" value={cigar.size} />
+                        {/* Updated Size display to combine length_inches and ring_gauge */}
+                        <DetailItem label="Size" value={cigar.length_inches && cigar.ring_gauge ? `${cigar.length_inches} x ${cigar.ring_gauge}` : cigar.size} />
                         <DetailItem label="Origin" value={cigar.country} />
                         <DetailItem label="Strength" value={cigar.strength} />
                         <DetailItem label="Wrapper" value={cigar.wrapper} />
@@ -2108,23 +2137,56 @@ Provide a brief, encouraging, and slightly personalized note about this cigar's 
 };
 
 const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
-    const [formData, setFormData] = useState({ brand: '', name: '', shape: '', size: '', wrapper: '', binder: '', filler: '', country: '', strength: '', price: '', rating: '', quantity: 1, image: '', shortDescription: '', description: '', flavorNotes: [], dateAdded: new Date().toISOString().split('T')[0] });
+    // Initialize formData with new fields length_inches and ring_gauge
+    const [formData, setFormData] = useState({ brand: '', name: '', shape: '', size: '', wrapper: '', binder: '', filler: '', country: '', strength: '', price: '', rating: '', quantity: 1, image: '', shortDescription: '', description: '', flavorNotes: [], dateAdded: new Date().toISOString().split('T')[0], length_inches: '', ring_gauge: '' });
     const [strengthSuggestions, setStrengthSuggestions] = useState([]);
     const [isAutofilling, setIsAutofilling] = useState(false);
     const [modalState, setModalState] = useState({ isOpen: false, content: '', isLoading: false });
     const [isFlavorModalOpen, setIsFlavorModalOpen] = useState(false);
 
+    // Refs for flashing effect
+    const lengthInputRef = useRef(null);
+    const gaugeInputRef = useRef(null);
+    const [isLengthFlashing, setIsLengthFlashing] = useState(false);
+    const [isGaugeFlashing, setIsGaugeFlashing] = useState(false);
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+        
         if (name === 'strength') {
             setStrengthSuggestions(value ? strengthOptions.filter(opt => opt.toLowerCase().includes(value.toLowerCase())) : []);
+        } else if (name === 'shape') {
+            // Auto-update length_inches and ring_gauge based on selected shape
+            const dimensions = commonCigarDimensions[value];
+            if (dimensions) {
+                setFormData(prev => ({
+                    ...prev,
+                    length_inches: dimensions.length_inches || '',
+                    ring_gauge: dimensions.ring_gauge || ''
+                }));
+                // Trigger flashing effect for updated fields
+                if (dimensions.length_inches) {
+                    setIsLengthFlashing(true);
+                    setTimeout(() => setIsLengthFlashing(false), 500);
+                }
+                if (dimensions.ring_gauge) {
+                    setIsGaugeFlashing(true);
+                    setTimeout(() => setIsGaugeFlashing(false), 500);
+                }
+            }
         }
     };
 
     const handleSuggestionClick = (value) => {
         setFormData({ ...formData, strength: value });
         setStrengthSuggestions([]);
+    };
+
+    const handleQuantityChange = (newQuantity) => {
+        if (newQuantity >= 0) {
+            setFormData(prev => ({ ...prev, quantity: newQuantity }));
+        }
     };
 
     const handleSave = async () => {
@@ -2136,6 +2198,8 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
             rating: Number(formData.rating) || 0,
             price: Number(formData.price) || 0,
             quantity: Number(formData.quantity) || 1,
+            length_inches: Number(formData.length_inches) || 0, // Ensure number type
+            ring_gauge: Number(formData.ring_gauge) || 0,     // Ensure number type
         };
         const cigarsCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'cigars');
         await addDoc(cigarsCollectionRef, newCigar);
@@ -2148,7 +2212,7 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
             return;
         }
         setIsAutofilling(true);
-        const prompt = `You are a cigar database. Based on the cigar name "${formData.name}", provide its details as a JSON object. The schema MUST be: { "brand": "string", "shape": "string", "size": "string", "country": "string", "wrapper": "string", "binder": "string", "filler": "string", "strength": "Mild" | "Mild-Medium" | "Medium" | "Medium-Full" | "Full", "flavorNotes": ["string", "string", "string", "string"], "shortDescription": "string", "description": "string", "image": "string", "rating": "number" }. If you cannot determine a value, use an empty string "" or an empty array [] or 0 for rating. Do not include any text or markdown formatting outside of the JSON object.`;
+        const prompt = `You are a cigar database. Based on the cigar name "${formData.name}", provide its details as a JSON object. The schema MUST be: { "brand": "string", "shape": "string", "size": "string", "country": "string", "wrapper": "string", "binder": "string", "filler": "string", "strength": "Mild" | "Mild-Medium" | "Medium" | "Medium-Full" | "Full", "flavorNotes": ["string", "string", "string", "string"], "shortDescription": "string", "description": "string", "image": "string", "rating": "number", "length_inches": "number", "ring_gauge": "number" }. If you cannot determine a value, use an empty string "" or an empty array [] or 0 for rating, or null for numbers. Do not include any text or markdown formatting outside of the JSON object.`;
         
         const responseSchema = {
             type: "OBJECT",
@@ -2165,9 +2229,11 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                 shortDescription: { type: "STRING" },
                 description: { type: "STRING" },
                 image: { type: "STRING" },
-                rating: { type: "NUMBER" }
+                rating: { type: "NUMBER" },
+                length_inches: { type: "NUMBER" }, // Added to schema
+                ring_gauge: { type: "NUMBER" }     // Added to schema
             },
-            required: ["brand", "shape", "size", "country", "wrapper", "binder", "filler", "strength", "flavorNotes", "shortDescription", "description", "image", "rating"]
+            required: ["brand", "shape", "size", "country", "wrapper", "binder", "filler", "strength", "flavorNotes", "shortDescription", "description", "image", "rating", "length_inches", "ring_gauge"]
         };
 
         const result = await callGeminiAPI(prompt, responseSchema);
@@ -2180,7 +2246,9 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                 image: result.image || '',
                 shortDescription: result.shortDescription || '',
                 description: result.description || '',
-                flavorNotes: Array.isArray(result.flavorNotes) ? result.flavorNotes : []
+                flavorNotes: Array.isArray(result.flavorNotes) ? result.flavorNotes : [],
+                length_inches: result.length_inches || '', // Ensure it's set
+                ring_gauge: result.ring_gauge || ''       // Ensure it's set
             }));
         } else {
             console.error("Gemini API response was not a valid object:", result);
@@ -2250,8 +2318,10 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                    <InputField name="length" label="Length" placeholder="e.g., 6" value={formData.length} onChange={handleInputChange} theme={theme} />
-                    <InputField name="gauge" label="Gauge" placeholder="e.g., 52" value={formData.gauge} onChange={handleInputChange} theme={theme} />
+                    {/* Updated name to length_inches and added flashing class */}
+                    <InputField name="length_inches" label="Length (inches)" placeholder="e.g., 6" type="number" value={formData.length_inches} onChange={handleInputChange} theme={theme} className={isLengthFlashing ? 'ring-2 ring-amber-400 animate-pulse' : ''} inputRef={lengthInputRef} />
+                    {/* Updated name to ring_gauge and added flashing class */}
+                    <InputField name="ring_gauge" label="Ring Gauge" placeholder="e.g., 52" type="number" value={formData.ring_gauge} onChange={handleInputChange} theme={theme} className={isGaugeFlashing ? 'ring-2 ring-amber-400 animate-pulse' : ''} inputRef={gaugeInputRef} />
                 </div>
 
 
@@ -2278,7 +2348,12 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                     <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} onChange={handleInputChange} theme={theme} />
                     <InputField name="dateAdded" label="Date Added" type="date" value={formData.dateAdded} onChange={handleInputChange} theme={theme} />
                 </div>
-                <InputField name="quantity" label="Quantity" placeholder="e.g., 5" type="number" value={formData.quantity} onChange={handleInputChange} theme={theme} />
+                
+                {/* Replaced existing Quantity input with QuantityControl component */}
+                <div className="flex flex-col items-center py-4">
+                    <label className={`text-sm font-medium ${theme.subtleText} mb-2`}>Quantity</label>
+                    <QuantityControl quantity={formData.quantity} onChange={handleQuantityChange} theme={theme} />
+                </div>
                 
                 <div className="bg-gray-800/50 p-4 rounded-xl">
                     <div className="flex justify-between items-center mb-3">
@@ -2304,17 +2379,42 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
 };
 
 const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
-    const [formData, setFormData] = useState({ ...cigar, shortDescription: cigar.shortDescription || '', description: cigar.description || '', flavorNotes: cigar.flavorNotes || [], dateAdded: cigar.dateAdded ? cigar.dateAdded.split('T')[0] : new Date().toISOString().split('T')[0] });
+    const [formData, setFormData] = useState({ ...cigar, shortDescription: cigar.shortDescription || '', description: cigar.description || '', flavorNotes: cigar.flavorNotes || [], dateAdded: cigar.dateAdded ? cigar.dateAdded.split('T')[0] : new Date().toISOString().split('T')[0], length_inches: cigar.length_inches || '', ring_gauge: cigar.ring_gauge || '' });
     const [strengthSuggestions, setStrengthSuggestions] = useState([]);
     const [isFlavorModalOpen, setIsFlavorModalOpen] = useState(false);
     const [isAutofilling, setIsAutofilling] = useState(false);
     const [modalState, setModalState] = useState({ isOpen: false, content: '', isLoading: false });
+
+    // Refs for flashing effect
+    const lengthInputRef = useRef(null);
+    const gaugeInputRef = useRef(null);
+    const [isLengthFlashing, setIsLengthFlashing] = useState(false);
+    const [isGaugeFlashing, setIsGaugeFlashing] = useState(false);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
         if (name === 'strength') {
             setStrengthSuggestions(value ? strengthOptions.filter(opt => opt.toLowerCase().includes(value.toLowerCase())) : []);
+        } else if (name === 'shape') {
+            // Auto-update length_inches and ring_gauge based on selected shape
+            const dimensions = commonCigarDimensions[value];
+            if (dimensions) {
+                setFormData(prev => ({
+                    ...prev,
+                    length_inches: dimensions.length_inches || '',
+                    ring_gauge: dimensions.ring_gauge || ''
+                }));
+                // Trigger flashing effect for updated fields
+                if (dimensions.length_inches) {
+                    setIsLengthFlashing(true);
+                    setTimeout(() => setIsLengthFlashing(false), 500);
+                }
+                if (dimensions.ring_gauge) {
+                    setIsGaugeFlashing(true);
+                    setTimeout(() => setIsGaugeFlashing(false), 500);
+                }
+            }
         }
     };
     
@@ -2334,6 +2434,8 @@ const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
         const { id, ...dataToSave } = formData;
         dataToSave.flavorNotes = Array.isArray(dataToSave.flavorNotes) ? dataToSave.flavorNotes : [];
         dataToSave.dateAdded = new Date(formData.dateAdded).toISOString();
+        dataToSave.length_inches = Number(formData.length_inches) || 0; // Ensure number type
+        dataToSave.ring_gauge = Number(formData.ring_gauge) || 0;     // Ensure number type
         await updateDoc(cigarRef, dataToSave);
         navigate('CigarDetail', { cigarId: cigar.id });
     };
@@ -2359,7 +2461,7 @@ Here is the existing data for the cigar:
 - Strength: ${formData.strength || 'Not specified'}
 - Description: ${formData.description ? 'Already has a description.' : 'Not specified'}
 
-Based on the cigar name "${formData.name}", provide a complete and accurate JSON object with all available details. The schema MUST be: { "brand": "string", "shape": "string", "size": "string", "country": "string", "wrapper": "string", "binder": "string", "filler": "string", "strength": "Mild" | "Mild-Medium" | "Medium" | "Medium-Full" | "Full", "flavorNotes": ["string"], "shortDescription": "string", "STRING", "image": "string", "rating": "number" }.
+Based on the cigar name "${formData.name}", provide a complete and accurate JSON object with all available details. The schema MUST be: { "brand": "string", "shape": "string", "size": "string", "country": "string", "wrapper": "string", "binder": "string", "filler": "string", "strength": "Mild" | "Mild-Medium" | "Medium" | "Medium-Full" | "Full", "flavorNotes": ["string"], "shortDescription": "string", "STRING", "image": "string", "rating": "number", "length_inches": "number", "ring_gauge": "number" }.
 
 Do not include any text or markdown formatting outside of the JSON object.`;
         
@@ -2378,7 +2480,9 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                 shortDescription: { type: "STRING" },
                 description: { type: "STRING" },
                 image: { type: "STRING" },
-                rating: { type: "NUMBER" }
+                rating: { type: "NUMBER" },
+                length_inches: { type: "NUMBER" },
+                ring_gauge: { type: "NUMBER" }
             },
         };
 
@@ -2432,7 +2536,7 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                     </button>
                 </div>
                 <div className="absolute bottom-0 p-4">
-                    <h1 className="3xl font-bold text-white">Edit Cigar</h1>
+                    <h1 className="text-3xl font-bold text-white">Edit Cigar</h1>
                 </div>
             </div>
 
@@ -2464,8 +2568,10 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                     <InputField name="size" label="Size" placeholder="e.g., 5.5x50" value={formData.size} onChange={handleInputChange} theme={theme} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                    <InputField name="length" label="Length" placeholder="e.g., 6" value={formData.length} onChange={handleInputChange} theme={theme} />
-                    <InputField name="gauge" label="Gauge" placeholder="e.g., 52" value={formData.gauge} onChange={handleInputChange} theme={theme} />
+                    {/* Updated name to length_inches and added flashing class */}
+                    <InputField name="length_inches" label="Length (inches)" placeholder="e.g., 6" type="number" value={formData.length_inches} onChange={handleInputChange} theme={theme} className={isLengthFlashing ? 'ring-2 ring-amber-400 animate-pulse' : ''} inputRef={lengthInputRef} />
+                    {/* Updated name to ring_gauge and added flashing class */}
+                    <InputField name="ring_gauge" label="Ring Gauge" placeholder="e.g., 52" type="number" value={formData.ring_gauge} onChange={handleInputChange} theme={theme} className={isGaugeFlashing ? 'ring-2 ring-amber-400 animate-pulse' : ''} inputRef={gaugeInputRef} />
                 </div>
 
                  <div className="grid grid-cols-2 gap-4">
@@ -3371,7 +3477,7 @@ const AboutScreen = ({ navigate }) => {
             <div className="space-y-6 bg-gray-800/50 p-6 rounded-xl">
                  <div className="flex flex-col items-center">
                     <Box className="w-16 h-16 text-amber-400 mb-4" />
-                    <h2 className="2xl font-bold text-white">Humidor Hub</h2>
+                    <h2 className="text-2xl font-bold text-white">Humidor Hub</h2>
                     <p className="text-gray-400">Version 1.1.0</p>
                 </div>
                 <p className="text-gray-300 text-center">Your personal assistant for managing and enjoying your cigar collection.</p>
@@ -3406,7 +3512,7 @@ const ProfileScreen = ({ navigate, cigars, theme }) => {
             <div className="space-y-6">
                 <div className="flex flex-col items-center p-6 bg-gray-800/50 rounded-xl">
                     <img src="https://placehold.co/100x100/3a2d27/ffffff?text=User" alt="User Avatar" className="w-24 h-24 rounded-full border-4 border-amber-400"/>
-                    <h2 className="2xl font-bold text-white mt-4">Cigar Aficionado</h2>
+                    <h2 className="text-2xl font-bold text-white mt-4">Cigar Aficionado</h2>
                     <p className="text-gray-400">Hudson Bend, TX</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
