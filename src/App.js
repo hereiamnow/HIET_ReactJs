@@ -22,6 +22,9 @@
 // - Dashboard: Conditionally display a new "Roxy's Tips" panel when no humidors are present, instructing the user to add a humidor and cigars.
 // - Dashboard: Conditionally display a friendly message within "Roxy's Corner" when humidors are present but no cigars, encouraging the user to add or move cigars.
 // - Dashboard: All data-dependent panels and buttons (e.g., Inventory Analysis, Browse by panels, Ask Roxy for Summary button) now only display if relevant data (humidors or cigars) is present, in addition to their settings-based visibility.
+// - Dashboard: Created a reusable `MyCollectionStatsCards` component from the existing stats cards.
+// - Dashboard: Removed icons from `StatCards` within the `MyCollectionStatsCards` component.
+// - Dashboard: Moved the `MyCollectionStatsCards` component above the "Roxy's Tips" panel.
 
 
 // Next Suggestions:
@@ -298,7 +301,8 @@ const Gauge = ({ value, maxValue, label, unit, icon: Icon }) => {
 const StatCard = ({ title, value, icon: Icon, theme }) => (
     <div className={`${theme.card} p-4 rounded-xl flex items-center space-x-4`}>
         <div className="p-3 rounded-lg" style={{backgroundColor: 'rgba(255,255,255,0.1)'}}>
-             <Icon className={`w-6 h-6 ${theme.primary}`} />
+             {/* Conditionally render icon if provided */}
+             {Icon && <Icon className={`w-6 h-6 ${theme.primary}`} />}
         </div>
         <div>
             <p className={`${theme.subtleText} text-sm`}>{title}</p>
@@ -1282,6 +1286,22 @@ const InventoryAnalysisPanel = ({ cigars, theme }) => {
     );
 };
 
+/**
+ * MyCollectionStatsCards component displays key statistics about the user's collection.
+ * It's a reusable component to keep the Dashboard cleaner.
+ */
+const MyCollectionStatsCards = ({ totalCigars, totalValue, humidors, theme }) => {
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            {/* StatCards no longer display icons to optimize space. */}
+            <StatCard title="Total Cigars" value={totalCigars} theme={theme} />
+            {/* The DollarSignIcon was previously passed directly, now removed as per request. */}
+            <StatCard title="Est. Value" value={`$${totalValue.toFixed(2)}`} theme={theme} />
+            <StatCard title="Humidors" value={humidors.length} theme={theme} />
+        </div>
+    );
+};
+
 const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showStrengthPanel, showCountryPanel, showLiveEnvironment, showInventoryAnalysis }) => {
     const [roxyTip, setRoxyTip] = useState('');
     const [isRoxyOpen, setIsRoxyOpen] = useState(true);
@@ -1324,6 +1344,14 @@ const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showSt
             <h1 className={`text-3xl font-bold ${theme.text} mb-2`}>Dashboard</h1>
             <p className={`${theme.subtleText} mb-6`}>Your collection's live overview.</p>
 
+            {/* Moved MyCollectionStatsCards above the conditional Roxy's Tips panel. */}
+            <MyCollectionStatsCards
+                totalCigars={totalCigars}
+                totalValue={totalValue}
+                humidors={humidors}
+                theme={theme}
+            />
+
             {/* New: Roxy's Tips panel when no humidors are present */}
             {!hasHumidors && (
                 <div className="bg-amber-900/20 border border-amber-800 rounded-xl p-4 mb-6 text-center">
@@ -1352,12 +1380,6 @@ const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showSt
                 </div>
             )}
 
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <StatCard title="Total Cigars" value={totalCigars} icon={Box} theme={theme} />
-                <StatCard title="Est. Value" value={`$${totalValue.toFixed(2)}`} icon={(props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>} theme={theme} />
-                <StatCard title="Humidors" value={humidors.length} icon={Briefcase} theme={theme} />
-            </div>
 
             <div className="space-y-6">
                 {/* Existing Roxy's Corner panel */}
@@ -1470,9 +1492,6 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
     const handleSearchChange = (e) => {
         const query = e.target.value;
         setSearchQuery(query);
-        setActiveWrapperFilter(''); // Clear wrapper filter if user starts searching
-        setActiveStrengthFilter(''); // Clear strength filter if user starts searching
-        setActiveCountryFilter(''); // July 5, 2025 - 2:00:00 AM CDT: Clear country filter if user starts searching
         if (query.length > 1) {
             const allSuggestions = cigars.map(c => c.brand).concat(cigars.map(c => c.name)).filter(name => name.toLowerCase().includes(query.toLowerCase()));
             const uniqueSuggestions = [...new Set(allSuggestions)];
@@ -1612,7 +1631,7 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <Droplets className="w-6 h-6 text-blue-400"/>
-                                                <span className="text-2xl font-bold text-white">{humidor.humidity}%</span>
+                                                <span className="2xl font-bold text-white">{humidor.humidity}%</span>
                                             </div>
                                         </div>
                                         <div className="flex-grow flex flex-col justify-center">
@@ -1738,7 +1757,7 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
     const handleMoveCigars = async (destinationHumidorId) => {
         const batch = writeBatch(db);
         selectedCigarIds.forEach(cigarId => {
-            const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigarId);
+            const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
             batch.update(cigarRef, { humidorId: destinationHumidorId, dateAdded: new Date().toISOString() });
         });
         await batch.commit();
@@ -1780,7 +1799,7 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
     const handleConfirmDeleteCigars = async () => {
         const batch = writeBatch(db);
         selectedCigarIds.forEach(cigarId => {
-            const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigarId);
+            const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
             batch.delete(cigarRef);
         });
         await batch.commit();
@@ -2413,7 +2432,7 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                     </button>
                 </div>
                 <div className="absolute bottom-0 p-4">
-                    <h1 className="text-3xl font-bold text-white">Edit Cigar</h1>
+                    <h1 className="3xl font-bold text-white">Edit Cigar</h1>
                 </div>
             </div>
 
@@ -3352,7 +3371,7 @@ const AboutScreen = ({ navigate }) => {
             <div className="space-y-6 bg-gray-800/50 p-6 rounded-xl">
                  <div className="flex flex-col items-center">
                     <Box className="w-16 h-16 text-amber-400 mb-4" />
-                    <h2 className="text-2xl font-bold text-white">Humidor Hub</h2>
+                    <h2 className="2xl font-bold text-white">Humidor Hub</h2>
                     <p className="text-gray-400">Version 1.1.0</p>
                 </div>
                 <p className="text-gray-300 text-center">Your personal assistant for managing and enjoying your cigar collection.</p>
