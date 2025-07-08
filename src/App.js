@@ -1,30 +1,27 @@
 // File: App.js
-// Project: Humidor Hub
-// Description: Main application file for Humidor Hub, a cigar management app.
-// Version: 1.0.0
 // Author: ADHD developer
-// Date: July 7, 2025
-// Time: 9:09 PM CDT
+// Date: July 5, 2025
+// Time: 11:17 PM CDT
 
 // Description of Changes:
-// - 070725 - Implemented the "Aged in Humidor" feature to track how long a cigar has been stored.
-// - 070725 - Added a `dateAdded` field that is automatically set when a cigar is added and reset when it's moved.
-// - 070725 - The `CigarDetail` page now displays the date added and the total time in the humidor.
-// - 070725 - The `EditCigar` screen now includes a field to manually set or correct the `dateAdded`.
-// - 070725 - Enhanced "Roxy's Corner" on the Cigar Detail page with a new "Aging Potential" analysis feature.
-// - 070725 - Simplified the `CigarDetail` action bar by removing the quantity stepper and making "Smoke This" a full-width button.
-// - 070725 - Added image placeholder at the top of Add and Edit Cigar Screens, matching the size of the cigar detail image.
-// - 070725 - Implemented CSV import/export functionality for Humidors.
-// - 070725 - Redesigned the Data & Sync screen with collapsible sections for better organization.
-// - 070725 - Made ImportCsvModal and ExportModal generic to handle both Cigars and Humidors.
-// - 070725 - CigarDetail: Added short description label to top of profile panel with wrapping text.
-// - 070725 - CigarDetail: Replaced interactive Flavor Notes control with a static display of notes.
-// - 070725 - CigarDetail: Added a Roxy-type confirmation message when "Smoke This" button is clicked.
-// - 070725 - EditCigar: Made Auto-fill Status confirmation message more Roxy-like and disappear after 3 seconds.
-// - 070725 - EditCigar: Made the Quantity control more prominent and turn red when the value is "0".
-// - 070725 - Dashboard: Conditionally display "LiveEnvironmentPanel" only if humidors exist.
-// - 070725 - Dashboard: Conditionally display "InventoryAnalysisPanel", "BrowseByWrapperPanel", "BrowseByStrengthPanel", and "BrowseByCountryPanel" only if cigars exist.
-// - 070725 - Dashboard: Conditionally display "Ask Roxy for a Summary" button only if cigars exist.
+// - Implemented the "Aged in Humidor" feature to track how long a cigar has been stored.
+// - Added a `dateAdded` field that is automatically set when a cigar is added and reset when it's moved.
+// - The `CigarDetail` page now displays the date added and the total time in the humidor.
+// - The `EditCigar` screen now includes a field to manually set or correct the `dateAdded`.
+// - Enhanced "Roxy's Corner" on the Cigar Detail page with a new "Aging Potential" analysis feature.
+// - Simplified the `CigarDetail` action bar by removing the quantity stepper and making "Smoke This" a full-width button.
+// - Added image placeholder at the top of Add and Edit Cigar Screens, matching the size of the cigar detail image.
+// - Implemented CSV import/export functionality for Humidors.
+// - Redesigned the Data & Sync screen with collapsible sections for better organization.
+// - Made ImportCsvModal and ExportModal generic to handle both Cigars and Humidors.
+// - CigarDetail: Added short description label to top of profile panel with wrapping text.
+// - CigarDetail: Replaced interactive Flavor Notes control with a static display of notes.
+// - CigarDetail: Added a Roxy-type confirmation message when "Smoke This" button is clicked.
+// - EditCigar: Made Auto-fill Status confirmation message more Roxy-like and disappear after 3 seconds.
+// - EditCigar: Made the Quantity control more prominent and turn red when the value is "0".
+// - Dashboard: Conditionally display a new "Roxy's Tips" panel when no humidors are present, instructing the user to add a humidor and cigars.
+// - Dashboard: Conditionally display a friendly message within "Roxy's Corner" when humidors are present but no cigars, encouraging the user to add or move cigars.
+// - Dashboard: All data-dependent panels and buttons (e.g., Inventory Analysis, Browse by panels, Ask Roxy for Summary button) now only display if relevant data (humidors or cigars) is present, in addition to their settings-based visibility.
 
 
 // Next Suggestions:
@@ -1327,6 +1324,35 @@ const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showSt
             <h1 className={`text-3xl font-bold ${theme.text} mb-2`}>Dashboard</h1>
             <p className={`${theme.subtleText} mb-6`}>Your collection's live overview.</p>
 
+            {/* New: Roxy's Tips panel when no humidors are present */}
+            {!hasHumidors && (
+                <div className="bg-amber-900/20 border border-amber-800 rounded-xl p-4 mb-6 text-center">
+                    <h3 className="font-bold text-amber-300 text-lg flex items-center justify-center mb-3">
+                        <Wind className="w-5 h-5 mr-2"/> Roxy's Tips!
+                    </h3>
+                    <p className="text-amber-200 text-sm mb-4">
+                        Looks like your humidor collection is empty! Add your first humidor and some cigars to get insightful analytics on your dashboard.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <button
+                            onClick={() => navigate('AddHumidor')}
+                            className="flex-1 flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-2 rounded-lg hover:bg-amber-600 transition-colors"
+                        >
+                            <Plus className="w-4 h-4"/> Add Humidor
+                        </button>
+                        {/* Disable Add Cigar if no humidors exist to put them in */}
+                        <button
+                            disabled={true}
+                            title="Add a humidor first to add cigars"
+                            className="flex-1 flex items-center justify-center gap-2 bg-gray-700 text-gray-500 font-bold py-2 rounded-lg cursor-not-allowed"
+                        >
+                            <Cigarette className="w-4 h-4"/> Add Cigar
+                        </button>
+                    </div>
+                </div>
+            )}
+
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <StatCard title="Total Cigars" value={totalCigars} icon={Box} theme={theme} />
                 <StatCard title="Est. Value" value={`$${totalValue.toFixed(2)}`} icon={(props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>} theme={theme} />
@@ -1334,6 +1360,7 @@ const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showSt
             </div>
 
             <div className="space-y-6">
+                {/* Existing Roxy's Corner panel */}
                 <div className="bg-amber-900/20 border border-amber-800 rounded-xl overflow-hidden">
                     <button onClick={() => setIsRoxyOpen(!isRoxyOpen)} className="w-full p-4 flex justify-between items-center">
                          <h3 className="font-bold text-amber-300 text-lg flex items-center"><Wind className="w-5 h-5 mr-2"/> Roxy's Corner</h3>
@@ -1341,12 +1368,37 @@ const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showSt
                     </button>
                     {isRoxyOpen && (
                         <div className="px-4 pb-4">
-                            <p className="text-amber-200 text-sm">{roxyTip}</p>
-                            {/* Conditionally render "Ask Roxy for a Summary" button if there are cigars */}
-                            {hasCigars && (
-                                <button onClick={handleSummarizeCollection} className="mt-4 w-full flex items-center justify-center bg-purple-600/20 border border-purple-500 text-purple-300 font-bold py-2 rounded-lg hover:bg-purple-600/30 transition-colors">
-                                    <Sparkles className="w-5 h-5 mr-2" /> Ask Roxy for a Summary
-                                </button>
+                            {/* New: Friendly message when humidors exist but no cigars */}
+                            {hasHumidors && !hasCigars ? (
+                                <div className="text-amber-200 text-sm mb-4">
+                                    <p className="mb-3">Woof! Your humidors are looking a bit empty. Add some cigars or move them here to get personalized insights and organize your collection!</p>
+                                    <div className="flex flex-col sm:flex-row gap-3">
+                                        <button
+                                            // Pass the ID of the first humidor if available, otherwise null.
+                                            // The AddCigar screen should handle the case of no humidor selected.
+                                            onClick={() => navigate('AddCigar', { humidorId: humidors.length > 0 ? humidors[0].id : null })}
+                                            className="flex-1 flex items-center justify-center gap-2 bg-amber-500/20 border border-amber-500 text-amber-300 font-bold py-2 rounded-lg hover:bg-amber-500/30 transition-colors"
+                                        >
+                                            <Plus className="w-4 h-4"/> Add Cigar
+                                        </button>
+                                        <button
+                                            onClick={() => navigate('HumidorsScreen')}
+                                            className="flex-1 flex items-center justify-center gap-2 bg-sky-500/20 border border-sky-500 text-sky-300 font-bold py-2 rounded-lg hover:bg-sky-500/30 transition-colors"
+                                        >
+                                            <Move className="w-4 h-4"/> Manage & Move
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    <p className="text-amber-200 text-sm">{roxyTip}</p>
+                                    {/* Conditionally render "Ask Roxy for a Summary" button if there are cigars */}
+                                    {hasCigars && (
+                                        <button onClick={handleSummarizeCollection} className="mt-4 w-full flex items-center justify-center bg-purple-600/20 border border-purple-500 text-purple-300 font-bold py-2 rounded-lg hover:bg-purple-600/30 transition-colors">
+                                            <Sparkles className="w-5 h-5 mr-2" /> Ask Roxy for a Summary
+                                        </button>
+                                    )}
+                                </>
                             )}
                         </div>
                     )}
@@ -3335,7 +3387,7 @@ const ProfileScreen = ({ navigate, cigars, theme }) => {
             <div className="space-y-6">
                 <div className="flex flex-col items-center p-6 bg-gray-800/50 rounded-xl">
                     <img src="https://placehold.co/100x100/3a2d27/ffffff?text=User" alt="User Avatar" className="w-24 h-24 rounded-full border-4 border-amber-400"/>
-                    <h2 className="text-2xl font-bold text-white mt-4">Cigar Aficionado</h2>
+                    <h2 className="2xl font-bold text-white mt-4">Cigar Aficionado</h2>
                     <p className="text-gray-400">Hudson Bend, TX</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
