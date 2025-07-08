@@ -1,24 +1,31 @@
 // File: App.js
+// Project: Humidor Hub
+// Description: Main application file for Humidor Hub, a cigar management app.
+// Version: 1.0.0
 // Author: ADHD developer
-// Date: July 5, 2025
-// Time: 11:17 PM CDT
+// Date: July 7, 2025
+// Time: 9:09 PM CDT
 
 // Description of Changes:
-// - Implemented the "Aged in Humidor" feature to track how long a cigar has been stored.
-// - Added a `dateAdded` field that is automatically set when a cigar is added and reset when it's moved.
-// - The `CigarDetail` page now displays the date added and the total time in the humidor.
-// - The `EditCigar` screen now includes a field to manually set or correct the `dateAdded`.
-// - Enhanced "Roxy's Corner" on the Cigar Detail page with a new "Aging Potential" analysis feature.
-// - Simplified the `CigarDetail` action bar by removing the quantity stepper and making "Smoke This" a full-width button.
-// - Added image placeholder at the top of Add and Edit Cigar Screens, matching the size of the cigar detail image.
-// - Implemented CSV import/export functionality for Humidors.
-// - Redesigned the Data & Sync screen with collapsible sections for better organization.
-// - Made ImportCsvModal and ExportModal generic to handle both Cigars and Humidors.
-// - CigarDetail: Added short description label to top of profile panel with wrapping text.
-// - CigarDetail: Replaced interactive Flavor Notes control with a static display of notes.
-// - CigarDetail: Added a Roxy-type confirmation message when "Smoke This" button is clicked.
-// - EditCigar: Made Auto-fill Status confirmation message more Roxy-like and disappear after 3 seconds.
-// - EditCigar: Made the Quantity control more prominent and turn red when the value is "0".
+// - 070725 - Implemented the "Aged in Humidor" feature to track how long a cigar has been stored.
+// - 070725 - Added a `dateAdded` field that is automatically set when a cigar is added and reset when it's moved.
+// - 070725 - The `CigarDetail` page now displays the date added and the total time in the humidor.
+// - 070725 - The `EditCigar` screen now includes a field to manually set or correct the `dateAdded`.
+// - 070725 - Enhanced "Roxy's Corner" on the Cigar Detail page with a new "Aging Potential" analysis feature.
+// - 070725 - Simplified the `CigarDetail` action bar by removing the quantity stepper and making "Smoke This" a full-width button.
+// - 070725 - Added image placeholder at the top of Add and Edit Cigar Screens, matching the size of the cigar detail image.
+// - 070725 - Implemented CSV import/export functionality for Humidors.
+// - 070725 - Redesigned the Data & Sync screen with collapsible sections for better organization.
+// - 070725 - Made ImportCsvModal and ExportModal generic to handle both Cigars and Humidors.
+// - 070725 - CigarDetail: Added short description label to top of profile panel with wrapping text.
+// - 070725 - CigarDetail: Replaced interactive Flavor Notes control with a static display of notes.
+// - 070725 - CigarDetail: Added a Roxy-type confirmation message when "Smoke This" button is clicked.
+// - 070725 - EditCigar: Made Auto-fill Status confirmation message more Roxy-like and disappear after 3 seconds.
+// - 070725 - EditCigar: Made the Quantity control more prominent and turn red when the value is "0".
+// - 070725 - Dashboard: Conditionally display "LiveEnvironmentPanel" only if humidors exist.
+// - 070725 - Dashboard: Conditionally display "InventoryAnalysisPanel", "BrowseByWrapperPanel", "BrowseByStrengthPanel", and "BrowseByCountryPanel" only if cigars exist.
+// - 070725 - Dashboard: Conditionally display "Ask Roxy for a Summary" button only if cigars exist.
+
 
 // Next Suggestions:
 // - Implement drag-and-drop reordering for the dashboard panels on desktop.
@@ -40,11 +47,12 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Thermometer, Droplets, Bell, Plus, Search, X, ChevronLeft, Image as ImageIcon, Star, Wind, Coffee, GlassWater, LoaderCircle, Sparkles, Box, Briefcase, LayoutGrid, List, BookOpen, Leaf, Flame, MapPin, Tag, Minus, Edit, Trash2, Upload, Link2, Settings as SettingsIcon, User, Database, Info, Download, UploadCloud, ChevronDown, Shield, FileText, LogOut, Palette, BarChart2, TrendingUp, PieChart as PieChartIcon, Move, Check, Zap, AlertTriangle, Filter, ArrowDownWideNarrow, ArrowUpWideNarrow, Cigarette, Calendar as CalendarIcon } from 'lucide-react';
 // recharts is a library for creating the charts (bar, line, pie) on the dashboard.
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+
+
 // Import Firebase libraries for database and authentication
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, writeBatch, connectFirestoreEmulator } from "firebase/firestore";
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, connectAuthEmulator } from "firebase/auth";
-
 
 // --- FIREBASE CONFIGURATION ---
 // These variables are placeholders that will be replaced by the environment.
@@ -966,7 +974,7 @@ const ChartCard = ({ title, children, action }) => (
     </div>
 );
 
-// BrowseByWrapperPanel component  - July 5, 2025 - 1:32:00 AM CDT
+
 const BrowseByWrapperPanel = ({ cigars, navigate, theme }) => {
     const [isCollapsed, setIsCollapsed] = useState(true);
 
@@ -1011,7 +1019,7 @@ const BrowseByWrapperPanel = ({ cigars, navigate, theme }) => {
     );
 };
 
-// BrowseByStrengthPanel component - July 5, 2025 - 1:32:00 AM CDT
+
 const BrowseByStrengthPanel = ({ cigars, navigate, theme }) => {
     const [isCollapsed, setIsCollapsed] = useState(true); // Defaults to collapsed
 
@@ -1065,7 +1073,6 @@ const BrowseByStrengthPanel = ({ cigars, navigate, theme }) => {
     );
 };
 
-// NEW: BrowseByCountryPanel component - July 5, 2025 - 2:00:00 AM CDT
 const BrowseByCountryPanel = ({ cigars, navigate, theme }) => {
     const [isCollapsed, setIsCollapsed] = useState(true); // Defaults to collapsed
 
@@ -1132,7 +1139,6 @@ const BrowseByCountryPanel = ({ cigars, navigate, theme }) => {
     );
 };
 
-// NEW: LiveEnvironmentPanel component - July 5, 2025 - 2:00:00 AM CDT
 const LiveEnvironmentPanel = ({ humidors, theme }) => {
     const [isCollapsed, setIsCollapsed] = useState(true);
     const firstHumidor = humidors[0];
@@ -1157,7 +1163,6 @@ const LiveEnvironmentPanel = ({ humidors, theme }) => {
     );
 };
 
-// NEW: InventoryAnalysisPanel component
 const InventoryAnalysisPanel = ({ cigars, theme }) => {
     const [isCollapsed, setIsCollapsed] = useState(true);
     const [chartViews, setChartViews] = useState({ brands: 'bar', countries: 'bar', strength: 'bar' });
@@ -1311,6 +1316,11 @@ const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showSt
         setModalState({ isOpen: true, content: result, isLoading: false });
     };
 
+    // Determine if humidors are present
+    const hasHumidors = humidors && humidors.length > 0;
+    // Determine if cigars are present
+    const hasCigars = cigars && cigars.length > 0;
+
     return (
         <div className="p-4 pb-24">
             {modalState.isOpen && <GeminiModal title="Collection Summary" content={modalState.content} isLoading={modalState.isLoading} onClose={() => setModalState({ isOpen: false, content: '', isLoading: false })} />}
@@ -1332,18 +1342,26 @@ const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showSt
                     {isRoxyOpen && (
                         <div className="px-4 pb-4">
                             <p className="text-amber-200 text-sm">{roxyTip}</p>
-                            <button onClick={handleSummarizeCollection} className="mt-4 w-full flex items-center justify-center bg-purple-600/20 border border-purple-500 text-purple-300 font-bold py-2 rounded-lg hover:bg-purple-600/30 transition-colors">
-                                <Sparkles className="w-5 h-5 mr-2" /> Ask Roxy for a Summary
-                            </button>
+                            {/* Conditionally render "Ask Roxy for a Summary" button if there are cigars */}
+                            {hasCigars && (
+                                <button onClick={handleSummarizeCollection} className="mt-4 w-full flex items-center justify-center bg-purple-600/20 border border-purple-500 text-purple-300 font-bold py-2 rounded-lg hover:bg-purple-600/30 transition-colors">
+                                    <Sparkles className="w-5 h-5 mr-2" /> Ask Roxy for a Summary
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>
 
-                {showLiveEnvironment && <LiveEnvironmentPanel humidors={humidors} theme={theme} />}
-                {showInventoryAnalysis && <InventoryAnalysisPanel cigars={cigars} theme={theme} />}
-                {showWrapperPanel && <BrowseByWrapperPanel cigars={cigars} navigate={navigate} theme={theme} />}
-                {showStrengthPanel && <BrowseByStrengthPanel cigars={cigars} navigate={navigate} theme={theme} />}
-                {showCountryPanel && <BrowseByCountryPanel cigars={cigars} navigate={navigate} theme={theme} />}
+                {/* Conditionally render LiveEnvironmentPanel if there are humidors and it's enabled in settings */}
+                {hasHumidors && showLiveEnvironment && <LiveEnvironmentPanel humidors={humidors} theme={theme} />}
+                {/* Conditionally render InventoryAnalysisPanel if there are cigars and it's enabled in settings */}
+                {hasCigars && showInventoryAnalysis && <InventoryAnalysisPanel cigars={cigars} theme={theme} />}
+                {/* Conditionally render BrowseByWrapperPanel if there are cigars and it's enabled in settings */}
+                {hasCigars && showWrapperPanel && <BrowseByWrapperPanel cigars={cigars} navigate={navigate} theme={theme} />}
+                {/* Conditionally render BrowseByStrengthPanel if there are cigars and it's enabled in settings */}
+                {hasCigars && showStrengthPanel && <BrowseByStrengthPanel cigars={cigars} navigate={navigate} theme={theme} />}
+                {/* Conditionally render BrowseByCountryPanel if there are cigars and it's enabled in settings */}
+                {hasCigars && showCountryPanel && <BrowseByCountryPanel cigars={cigars} navigate={navigate} theme={theme} />}
             </div>
         </div>
     );
@@ -2120,7 +2138,8 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                     alt={formData.name || "Cigar Image"}
                     className="w-full h-64 object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
+
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>                
                 <div className="absolute top-4 left-4">
                     <button onClick={() => navigate('MyHumidor', { humidorId })} className="p-2 -ml-2 mr-2 bg-black/50 rounded-full">
                         <ChevronLeft className={`w-7 h-7 ${theme.text}`} />
@@ -2158,6 +2177,13 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                     />
                     <InputField name="size" label="Size" placeholder="e.g., 5.5x50" value={formData.size} onChange={handleInputChange} theme={theme} />
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <InputField name="length" label="Length" placeholder="e.g., 6" value={formData.length} onChange={handleInputChange} theme={theme} />
+                    <InputField name="gauge" label="Gauge" placeholder="e.g., 52" value={formData.gauge} onChange={handleInputChange} theme={theme} />
+                </div>
+
+
                  <div className="grid grid-cols-2 gap-4">
                     <InputField name="wrapper" label="Wrapper" placeholder="e.g., Maduro" value={formData.wrapper} onChange={handleInputChange} theme={theme} />
                     <InputField name="binder" label="Binder" placeholder="e.g., Nicaraguan" value={formData.binder} onChange={handleInputChange} theme={theme} />
@@ -2351,8 +2377,11 @@ Do not include any text or markdown formatting outside of the JSON object.`;
 
                 <InputField name="shortDescription" label="Short Description" placeholder="Brief overview of the cigar..." value={formData.shortDescription} onChange={handleInputChange} theme={theme} />
                 <TextAreaField name="description" label="Description" placeholder="Notes on this cigar..." value={formData.description} onChange={handleInputChange} theme={theme} />
+                
+                
                 <div className="grid grid-cols-2 gap-4">
                     <AutoCompleteInputField
+                        id="EditCigarShape"
                         name="shape"
                         label="Shape"
                         placeholder="e.g., Toro"
@@ -2363,6 +2392,11 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                     />
                     <InputField name="size" label="Size" placeholder="e.g., 5.5x50" value={formData.size} onChange={handleInputChange} theme={theme} />
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <InputField name="length" label="Length" placeholder="e.g., 6" value={formData.length} onChange={handleInputChange} theme={theme} />
+                    <InputField name="gauge" label="Gauge" placeholder="e.g., 52" value={formData.gauge} onChange={handleInputChange} theme={theme} />
+                </div>
+
                  <div className="grid grid-cols-2 gap-4">
                     <InputField name="wrapper" label="Wrapper" placeholder="e.g., Maduro" value={formData.wrapper} onChange={handleInputChange} theme={theme} />
                     <InputField name="binder" label="Binder" placeholder="e.g., Nicaraguan" value={formData.binder} onChange={handleInputChange} theme={theme} />
@@ -3337,6 +3371,7 @@ export default function App() {
     const [goveeDevices, setGoveeDevices] = useState([]);
     
     // State for controlling dashboard panel visibility
+    // Initialized to true, will be conditionally overridden in Dashboard component
     const [dashboardPanelVisibility, setDashboardPanelVisibility] = useState({
         showWrapperPanel: true,
         showStrengthPanel: true,
@@ -3478,6 +3513,7 @@ export default function App() {
         // A `switch` statement is used to select the correct component.
         switch (screen) {
             case 'Dashboard':
+                // Pass humidors and cigars count to Dashboard for conditional rendering of panels
                 return <Dashboard navigate={navigate} cigars={cigars} humidors={humidors} theme={theme} {...dashboardPanelVisibility} />;
             case 'HumidorsScreen':
                 return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} db={db} appId={appId} userId={userId} theme={theme} {...params} />;
