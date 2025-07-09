@@ -2143,7 +2143,7 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
             return;
         }
         setIsAutofilling(true);
-        const prompt = `You are a cigar database. Based on the cigar name "${formData.name}", provide its details as a JSON object. The schema MUST be: { "brand": "string", "shape": "string", "size": "string", "country": "string", "wrapper": "string", "binder": "string", "filler": "string", "strength": "Mild" | "Mild-Medium" | "Medium" | "Medium-Full" | "Full", "flavorNotes": ["string", "string", "string", "string"], "shortDescription": "string", "description": "string", "image": "string", "rating": "number", "length_inches": "number", "ring_gauge": "number" }. If you cannot determine a value, use an empty string "" or an empty array [] or 0 for rating, or null for numbers. Do not include any text or markdown formatting outside of the JSON object.`;
+        const prompt = `You are a cigar database. Based on the cigar name "${formData.name}", provide its details as a JSON object. The schema MUST be: { "brand": "string", "shape": "string", "size": "string", "country": "string", "wrapper": "string", "binder": "string", "filler": "string", "strength": "Mild" | "Mild-Medium" | "Medium" | "Medium-Full" | "Full", "flavorNotes": ["string", "string", "string", "string"], "shortDescription": "string", "description": "string", "image": "string", "rating": "number", "price": "number", "length_inches": "number", "ring_gauge": "number" }. If you cannot determine a value, use an empty string "" or an empty array [] or 0 for numbers. Do not include any text or markdown formatting outside of the JSON object.`;
 
         const responseSchema = {
             type: "OBJECT",
@@ -2161,10 +2161,11 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                 description: { type: "STRING" },
                 image: { type: "STRING" },
                 rating: { type: "NUMBER" },
+                price: { type: "NUMBER" },
                 length_inches: { type: "NUMBER" }, // Added to schema
                 ring_gauge: { type: "NUMBER" }     // Added to schema
             },
-            required: ["brand", "shape", "size", "country", "wrapper", "binder", "filler", "strength", "flavorNotes", "shortDescription", "description", "image", "rating", "length_inches", "ring_gauge"]
+            required: ["brand", "shape", "size", "country", "wrapper", "binder", "filler", "strength", "flavorNotes", "shortDescription", "description", "image", "rating", "price", "length_inches", "ring_gauge"]
         };
 
         const result = await callGeminiAPI(prompt, responseSchema);
@@ -2174,10 +2175,10 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                 ...prevData,
                 ...result,
                 rating: Number(result.rating) || 0,
+                price: Number(result.price) || 0,
                 image: result.image || '',
                 shortDescription: result.shortDescription || '',
-                description: result.description || '',
-                flavorNotes: Array.isArray(result.flavorNotes) ? result.flavorNotes : [],
+                description: result.description || '',                flavorNotes: Array.isArray(result.flavorNotes) ? result.flavorNotes : [],
                 length_inches: result.length_inches || '', // Ensure it's set
                 ring_gauge: result.ring_gauge || ''       // Ensure it's set
             }));
@@ -2457,9 +2458,10 @@ Here is the existing data for the cigar:
 - Binder: ${formData.binder || 'Not specified'}
 - Filler: ${formData.filler || 'Not specified'}
 - Strength: ${formData.strength || 'Not specified'}
+- Price: ${formData.price ? 'Already has a price.' : 'Not specified'}
 - Description: ${formData.description ? 'Already has a description.' : 'Not specified'}
 
-Based on the cigar name "${formData.name}", provide a complete and accurate JSON object with all available details. The schema MUST be: { "brand": "string", "shape": "string", "size": "string", "country": "string", "wrapper": "string", "binder": "string", "filler": "string", "strength": "Mild" | "Mild-Medium" | "Medium" | "Medium-Full" | "Full", "flavorNotes": ["string"], "shortDescription": "string", "STRING", "image": "string", "rating": "number", "length_inches": "number", "ring_gauge": "number" }.
+Based on the cigar name "${formData.name}", provide a complete and accurate JSON object with all available details. The schema MUST be: { "brand": "string", "shape": "string", "size": "string", "country": "string", "wrapper": "string", "binder": "string", "filler": "string", "strength": "Mild" | "Mild-Medium" | "Medium" | "Medium-Full" | "Full", "flavorNotes": ["string"], "shortDescription": "string", "description": "string", "image": "string", "rating": "number", "price": "number", "length_inches": "number", "ring_gauge": "number" }.
 
 Do not include any text or markdown formatting outside of the JSON object.`;
 
@@ -2479,6 +2481,7 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                 description: { type: "STRING" },
                 image: { type: "STRING" },
                 rating: { type: "NUMBER" },
+                price: { type: "NUMBER" },
                 length_inches: { type: "NUMBER" },
                 ring_gauge: { type: "NUMBER" }
             },
