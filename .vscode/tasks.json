@@ -1,0 +1,39 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		// Build and Start
+		{
+			"label": "npm: build",
+			"type": "npm",
+			"script": "build",
+			"group": "build",
+			"problemMatcher": [],
+			"detail": "react-scripts build"
+		},
+		{
+			"label": "npm: start",
+			"type": "npm",
+			"script": "start",
+			"group": "build",
+			"problemMatcher": [],
+			"detail": "react-scripts start"
+		},
+		// Unit Test
+		{
+			"label": "npm: test",
+			"type": "npm",
+			"script": "test",
+			"group": "test",
+			"problemMatcher": [],
+			"detail": "react-scripts test"
+		},
+		// Start Firebase Emulators
+		{
+			"label": "Start Firebase Emulators",
+			"type": "shell",
+			"command": "firebase emulators:start",
+			"group": "build",
+			"problemMatcher": []
+		}
+	]
+}

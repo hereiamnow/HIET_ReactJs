@@ -1,8 +1,8 @@
 // File: App.js
 // Project: Humidor Hub
 // Author: Shawn Miller (hereiamnow@gmail.com)
-// Date: July 7, 2025
-// Time: 10:48 PM CDT
+// Date: July 8, 2025
+// Time: 10:27 PM CDT
 
 // Description of Changes:
 // - Implemented the "Aged in Humidor" feature to track how long a cigar has been stored.
@@ -2190,14 +2190,6 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
             {isFlavorModalOpen && <FlavorNotesModal cigar={{ flavorNotes: formData.flavorNotes }} db={db} appId={appId} userId={userId} onClose={() => setIsFlavorModalOpen(false)} setSelectedNotes={handleFlavorNotesUpdate} />}
 
             <div className="relative">
-                {/* Image Placeholder / Preview */}
-                {/*
-                <img
-                    src={formData.image || `https://placehold.co/400x600/5a3825/ffffff?text=${formData.name.replace(/\s/g, '+') || 'Cigar+Image'}`}
-                    alt={formData.name || "Cigar Image"}
-                    className="w-full h-64 object-cover"
-                />
-                */}
                 <SmartImageModal
                     itemName={formData.name}
                     currentImage={formData.image || `https://placehold.co/400x600/5a3825/ffffff?text=${formData.name.replace(/\s/g, '+') || 'Cigar+Image'}`}
@@ -2208,8 +2200,7 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                         imagePosition: pos
                     }))}
                 />
-
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
+                {/* <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div> */}
                 <div className="absolute top-4 left-4">
                     <button onClick={() => navigate('MyHumidor', { humidorId })} className="p-2 -ml-2 mr-2 bg-black/50 rounded-full">
                         <ChevronLeft className={`w-7 h-7 ${theme.text}`} />
@@ -2220,22 +2211,22 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                 </div>
             </div>
 
-            <div className="p-4 space-y-4">
-                <InputField name="image" label="Image URL" placeholder="https://example.com/cigar.png" value={formData.image} onChange={handleInputChange} theme={theme} />
-
+            {/* Cigar Name and Details */}
+            <div id="pnlCigarNameAndDetails" className="p-4 space-y-4">
+                {/* Name / Line */}
                 <InputField name="name" label="Name / Line" placeholder="e.g., 1964 Anniversary" value={formData.name} onChange={handleInputChange} theme={theme} />
-
+                {/* Auto-fill Button */}
                 <button onClick={handleAutofill} disabled={isAutofilling} className="w-full flex items-center justify-center gap-2 bg-purple-600/20 border border-purple-500 text-purple-300 font-bold py-2 rounded-lg hover:bg-purple-600/30 transition-colors disabled:opacity-50">
                     {isAutofilling ? <LoaderCircle className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
                     {isAutofilling ? 'Thinking...' : '✨ Auto-fill Details'}
                 </button>
-
+                {/* Short Description */}
                 <InputField name="shortDescription" label="Short Description" placeholder="Brief overview of the cigar..." value={formData.shortDescription} onChange={handleInputChange} theme={theme} />
-
+                {/* Description */}
                 <TextAreaField name="description" label="Description" placeholder="Notes on this cigar..." value={formData.description} onChange={handleInputChange} theme={theme} />
-
+                {/* Brand */}
                 <InputField name="brand" label="Brand" placeholder="e.g., Padrón" value={formData.brand} onChange={handleInputChange} theme={theme} />
-                <div className="grid grid-cols-2 gap-4">
+                <div id="pnlShapeAndSize" className="grid grid-cols-2 gap-3">
                     <AutoCompleteInputField
                         name="shape"
                         label="Shape"
@@ -2247,14 +2238,35 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                     />
                     <InputField name="size" label="Size" placeholder="e.g., 5.5x50" value={formData.size} onChange={handleInputChange} theme={theme} />
                 </div>
-                {/* Gemini TODO: Convert InputField to AutoCompleteInputField. The InputField has a className and inputRef */}
-                <div className="grid grid-cols-2 gap-4">
-                    <InputField name="length_inches" label="Length (inches)" placeholder="e.g., 6" type="number" value={formData.length_inches} onChange={handleInputChange} theme={theme} className={isLengthFlashing ? 'ring-2 ring-amber-400 animate-pulse' : ''} inputRef={lengthInputRef} />
-                    <InputField name="ring_gauge" label="Ring Gauge" placeholder="e.g., 52" type="number" value={formData.ring_gauge} onChange={handleInputChange} theme={theme} className={isGaugeFlashing ? 'ring-2 ring-amber-400 animate-pulse' : ''} inputRef={gaugeInputRef} />
+                {/* Length and Ring Gauge */}
+                <div id="pnlLengthAndRing" className="grid grid-cols-2 gap-3">
+                    <AutoCompleteInputField
+                        name="length_inches"
+                        label="Length (inches)"
+                        placeholder="e.g., 6"
+                        type="number"
+                        value={formData.length_inches}
+                        onChange={handleInputChange}
+                        theme={theme}
+                        className={isLengthFlashing ? 'ring-2 ring-amber-400 animate-pulse' : ''}
+                        inputRef={lengthInputRef}
+                        suggestions={cigarLengths}
+                    />
+                    <AutoCompleteInputField
+                        name="ring_gauge"
+                        label="Ring Gauge"
+                        placeholder="e.g., 52"
+                        type="number"
+                        value={formData.ring_gauge}
+                        onChange={handleInputChange}
+                        theme={theme}
+                        className={isGaugeFlashing ? 'ring-2 ring-amber-400 animate-pulse' : ''}
+                        inputRef={gaugeInputRef}
+                        suggestions={cigarRingGauges}
+                    />
                 </div>
-
-
-                <div className="grid grid-cols-2 gap-4">
+                {/* Wrapper and Binder */}
+                <div id="pnlWrapperAndBinder" className="grid grid-cols-2 gap-3">
                     <AutoCompleteInputField
                         name="wrapper"
                         label="Wrapper"
@@ -2274,7 +2286,8 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                         theme={theme}
                     />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                {/* Filler and Country */}
+                <div id="pnlFillerAndCountry" className="grid grid-cols-2 gap-3">
                     <AutoCompleteInputField
                         name="filler"
                         label="Filler"
@@ -2294,7 +2307,8 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                         theme={theme}
                     />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                {/* Profile and Price */}
+                <div id="pnlProfileAndPrice" className="grid grid-cols-2 gap-3">
                     <div className="relative">
                         <AutoCompleteInputField
                             name="profile"
@@ -2315,18 +2329,13 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                     {/* TODO: Add to Gimini lookup as MSRP price */}
                     <InputField name="price" label="Price" placeholder="e.g., 23.50" type="number" value={formData.price} onChange={handleInputChange} theme={theme} />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                {/* Rating and Date Added */}
+                <div id="pnlRatingAndDate" className="grid grid-cols-2 gap-3">
                     <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} onChange={handleInputChange} theme={theme} />
                     <InputField name="dateAdded" Tooltip="Date Added to Humidor" label="Date Added" type="date" value={formData.dateAdded} onChange={handleInputChange} theme={theme} />
                 </div>
-
-                {/* Replaced existing Quantity input with QuantityControl component */}
-                <div className="flex flex-col items-center py-4">
-                    <label className={`text-sm font-medium ${theme.subtleText} mb-2`}>Quantity</label>
-                    <QuantityControl quantity={formData.quantity} onChange={handleQuantityChange} theme={theme} />
-                </div>
-
-                <div className="bg-gray-800/50 p-4 rounded-xl">
+                {/* Flavor Notes */}
+                <div id="pnlFlavorNotes" className="bg-gray-800/50 p-4 rounded-md">
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="font-bold text-amber-300 text-lg flex items-center"><Tag className="w-5 h-5 mr-3 text-amber-400" /> Flavor Notes</h3>
                         <button type="button" onClick={() => setIsFlavorModalOpen(true)} className="text-gray-400 hover:text-amber-400 p-1"><Edit className="w-4 h-4" /></button>
@@ -2338,10 +2347,15 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                             <p className="text-sm text-gray-500">No notes selected. Click the edit icon to add some!</p>
                         )}
                     </div>
+                </div>                
+                {/* QuantityControl Component */}
+                <div id="pnlQuantity" className="flex flex-col items-center py-4">
+                    <label className={`text-sm font-medium ${theme.subtleText} mb-2`}>Quantity</label>
+                    <QuantityControl quantity={formData.quantity} onChange={handleQuantityChange} theme={theme} />
                 </div>
             </div>
-
-            <div className="pt-4 flex space-x-4">
+            {/* Save/Cancel Buttons */}
+            <div id="pnlSaveCancelButtons" className="pt-4 flex space-x-4">
                 <button onClick={handleSave} className={`w-full ${theme.primaryBg} ${theme.text === 'text-white' ? 'text-white' : 'text-black'} font-bold py-3 rounded-lg ${theme.hoverPrimaryBg} transition-colors`}>Save Cigar</button>
                 <button onClick={() => navigate('MyHumidor', { humidorId })} className={`w-full ${theme.button} ${theme.text} font-bold py-3 rounded-lg transition-colors`}>Cancel</button>
             </div>
@@ -2532,26 +2546,28 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                         <ChevronLeft className="w-7 h-7 text-white" />
                     </button>
                 </div>
-                <div className="absolute bottom-0 p-4">
+                <div id="pnlEditCigarTitle" className="absolute bottom-0 p-4">
                     <h1 className="text-3xl font-bold text-white">Edit Cigar</h1>
                 </div>
             </div>
-
-            <div className="p-4 space-y-4">
-                <InputField name="image" label="Image URL" placeholder="https://example.com/cigar.png" value={formData.image} onChange={handleInputChange} theme={theme} />
+            
+            {/* Cigar Name and Details */}
+            <div id="pnlCigarNameAndDetails"className="p-4 space-y-4">
+                {/* Brand */}
                 <InputField name="brand" label="Brand" placeholder="e.g., Padrón" value={formData.brand} onChange={handleInputChange} theme={theme} />
+                {/* Name / Line */}
                 <InputField name="name" label="Name / Line" placeholder="e.g., 1964 Anniversary" value={formData.name} onChange={handleInputChange} theme={theme} />
-
+                {/* Auto-fill Button */}
                 <button onClick={handleAutofill} disabled={isAutofilling} className="w-full flex items-center justify-center gap-2 bg-purple-600/20 border border-purple-500 text-purple-300 font-bold py-2 rounded-lg hover:bg-purple-600/30 transition-colors disabled:opacity-50">
                     {isAutofilling ? <LoaderCircle className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
                     {isAutofilling ? 'Thinking...' : '✨ Auto-fill Details'}
                 </button>
-
+                {/* Short Description */}
                 <InputField name="shortDescription" label="Short Description" placeholder="Brief overview of the cigar..." value={formData.shortDescription} onChange={handleInputChange} theme={theme} />
+                {/* Description */}
                 <TextAreaField name="description" label="Description" placeholder="Notes on this cigar..." value={formData.description} onChange={handleInputChange} theme={theme} />
-
-
-                <div className="grid grid-cols-2 gap-4">
+                {/* Shape and Size */}
+                <div id="pnlShapeAndSize" className="grid grid-cols-2 gap-3">
                     <AutoCompleteInputField
                         id="EditCigarShape"
                         name="shape"
@@ -2564,8 +2580,8 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                     />
                     <InputField name="size" label="Size" placeholder="e.g., 5.5x50" value={formData.size} onChange={handleInputChange} theme={theme} />
                 </div>
-
-                <div className="grid grid-cols-2 gap-1">
+                {/* Length and Ring Gauge */}
+                <div id="pnlLengthAndRing" className="grid grid-cols-2 gap-3">
                     <AutoCompleteInputField
                         name="length_inches"
                         label="Length (inches)"
@@ -2591,8 +2607,8 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                         suggestions={cigarRingGauges}
                     />
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
+                {/* Wrapper and Binder */}
+                <div id="pnlWrapperAndBinder" className="grid grid-cols-2 gap-3">
                     <AutoCompleteInputField
                         name="wrapper"
                         label="Wrapper"
@@ -2612,7 +2628,8 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                         theme={theme}
                     />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                {/* Filler and Country */}
+                <div id="pnlFillerAndCountry" className="grid grid-cols-2 gap-3">
                     <AutoCompleteInputField
                         name="filler"
                         label="Filler"
@@ -2632,7 +2649,8 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                         theme={theme}
                     />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                {/* Profile and Price */}
+                <div id="pnlProfileAndPrice" className="grid grid-cols-2 gap-3">
                     <div className="relative">
                         <InputField name="strength" label="Strength" placeholder="e.g., Full" value={formData.strength} onChange={handleInputChange} theme={theme} />
                         {strengthSuggestions.length > 0 && (
@@ -2643,12 +2661,13 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                     </div>
                     <InputField name="price" label="Price Paid" placeholder="e.g., 15.50" type="number" value={formData.price} onChange={handleInputChange} theme={theme} />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                {/* Rating and Date Added */}
+                <div id="pnlRatingAndDate" className="grid grid-cols-2 gap-3">
                     <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} onChange={handleInputChange} theme={theme} />
                     <InputField name="dateAdded" label="Date Added" type="date" value={formData.dateAdded} onChange={handleInputChange} theme={theme} />
                 </div>
-
-                <div className="bg-gray-800/50 p-4 rounded-xl">
+                {/* Flavor Notes */}
+                <div id="pnlFlavorNotes" className="bg-gray-800/50 p-4 rounded-md">
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="font-bold text-amber-300 text-lg flex items-center"><Tag className="w-5 h-5 mr-3 text-amber-400" /> Flavor Notes</h3>
                         <button type="button" onClick={() => setIsFlavorModalOpen(true)} className="text-gray-400 hover:text-amber-400 p-1"><Edit className="w-4 h-4" /></button>
@@ -2661,13 +2680,13 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                         )}
                     </div>
                 </div>
-
-                <div className="flex flex-col items-center py-4">
+                {/* QuantityControl Component */}
+                <div id="pnlQuantity" className="flex flex-col items-center py-4">
                     <label className={`text-sm font-medium ${theme.subtleText} mb-2`}>Quantity</label>
                     <QuantityControl quantity={formData.quantity} onChange={handleQuantityChange} theme={theme} />
                 </div>
-
-                <div className="pt-4 flex space-x-4">
+                {/* Save/Cancel Buttons */}
+                <div id="pnlSaveCancelButtons" className="pt-4 flex space-x-4">
                     <button onClick={handleSave} className="w-full bg-amber-500 text-white font-bold py-3 rounded-lg hover:bg-amber-600 transition-colors">Save Changes</button>
                     <button onClick={() => navigate('CigarDetail', { cigarId: cigar.id })} className="w-full bg-gray-700 text-white font-bold py-3 rounded-lg hover:bg-gray-600 transition-colors">Cancel</button>
                 </div>
