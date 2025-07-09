@@ -229,11 +229,19 @@ const downloadFile = ({ data, fileName, fileType }) => {
 /**
  * Generates an image using the Gemini (Imagen 3) API.
  * @param {string} itemName - The name of the item to generate an image for.
+ * @param {string} [itemCategory] - The category of the item (e.g., 'cigar', 'humidor').
+ * @param {string} [itemType] - The specific type of the item (e.g., 'Desktop Humidor').
  * @returns {Promise<string>} A promise that resolves to a base64 image data URL.
  */
-const generateAiImage = async (itemName) => {
+const generateAiImage = async (itemName, itemCategory, itemType) => {
     // This prompt is sent to the AI to guide the image generation.
-    const prompt = `A professional, high-quality, photorealistic image of a ${itemName}, suitable for a product catalog. The background should be clean and simple, focusing on the product.`;
+    let prompt;
+    if (itemCategory === 'humidor') {
+        prompt = `A professional, high-quality, photorealistic image of a ${itemType || ''} ${itemName} humidor, suitable for a product catalog. The background should be clean and simple, focusing on the product.`;
+    } else {
+        // Default prompt for cigars or other items
+        prompt = `A professional, high-quality, photorealistic image of a ${itemName}, suitable for a product catalog. The background should be clean and simple, focusing on the product.`;
+    }
 
     // The payload is the data structure required by the Gemini API endpoint.
     const payload = {
@@ -937,7 +945,7 @@ const ManualReadingModal = ({ isOpen, onClose, onSave, initialTemp, initialHumid
  * The modal dialog for choosing and editing an image.
  * @param {object} props - The component's props.
  */
-const ImageUploadModal = ({ isOpen, onClose, onImageAccept, itemName, initialImage, initialPosition }) => {
+const ImageUploadModal = ({ isOpen, onClose, onImageAccept, itemName, initialImage, initialPosition, theme, itemCategory, itemType }) => {
     const [activeTab, setActiveTab] = useState('url');
     const [imageUrl, setImageUrl] = useState('');
     const [preview, setPreview] = useState('');
@@ -957,6 +965,8 @@ const ImageUploadModal = ({ isOpen, onClose, onImageAccept, itemName, initialIma
 
     if (!isOpen) return null; // Don't render the modal if it's not open.
 
+
+
     const handleFileChange = (event) => {
         const file = event.target.files[0];
         if (file) {
@@ -974,8 +984,7 @@ const ImageUploadModal = ({ isOpen, onClose, onImageAccept, itemName, initialIma
         setIsGenerating(true);
         setPreview('');
 
-        const generatedImage = await generateAiImage(itemName);
-        setPreview(generatedImage);
+        const generatedImage = await generateAiImage(itemName, itemCategory, itemType); setPreview(generatedImage);
         setModalPosition({ x: 50, y: 50 }); // Reset position for new AI images.
 
         setIsGenerating(false);
@@ -1057,7 +1066,7 @@ const ImageUploadModal = ({ isOpen, onClose, onImageAccept, itemName, initialIma
  * The main "Smart Image Modal" controller component. It orchestrates the child components.
  * @param {object} props - The component's props.
  */
-const SmartImageModal = ({ itemName, currentImage, currentPosition, onImageAccept }) => {
+const SmartImageModal = ({ itemName, currentImage, currentPosition, onImageAccept, theme, itemCategory, itemType }) => {
     // State to control whether the modal dialog is visible.
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -1074,9 +1083,12 @@ const SmartImageModal = ({ itemName, currentImage, currentPosition, onImageAccep
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)} // The modal can close itself.
                 onImageAccept={onImageAccept} // Passes the save function down to the modal.
-                itemName={itemName}
-                initialImage={currentImage}
-                initialPosition={currentPosition}
+                itemName={itemName} // Passes the item name for context
+                itemCategory={itemCategory} // Passes the item category for context
+                itemType={itemType} // Passes the item type for context
+                initialImage={currentImage}// Passes the current image to the modal
+                initialPosition={currentPosition} // Passes the current image and position to the modal
+                theme={theme} // Pass the current theme for consistent styling
             />
         </>
     );
@@ -2192,6 +2204,7 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
             <div className="relative">
                 <SmartImageModal
                     itemName={formData.name}
+                    theme={theme}
                     currentImage={formData.image || `https://placehold.co/400x600/5a3825/ffffff?text=${formData.name.replace(/\s/g, '+') || 'Cigar+Image'}`}
                     currentPosition={formData.imagePosition || { x: 50, y: 50 }}
                     onImageAccept={(img, pos) => setFormData(prev => ({
@@ -2347,7 +2360,7 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                             <p className="text-sm text-gray-500">No notes selected. Click the edit icon to add some!</p>
                         )}
                     </div>
-                </div>                
+                </div>
                 {/* QuantityControl Component */}
                 <div id="pnlQuantity" className="flex flex-col items-center py-4">
                     <label className={`text-sm font-medium ${theme.subtleText} mb-2`}>Quantity</label>
@@ -2521,16 +2534,10 @@ Do not include any text or markdown formatting outside of the JSON object.`;
             {isFlavorModalOpen && <FlavorNotesModal cigar={{ flavorNotes: formData.flavorNotes }} db={db} appId={appId} userId={userId} onClose={() => setIsFlavorModalOpen(false)} setSelectedNotes={handleFlavorNotesUpdate} />}
 
             <div className="relative">
-                {/* Image Placeholder / Preview */}
-
-                {/* <img
-                    src={formData.image || `https://placehold.co/400x600/5a3825/ffffff?text=${formData.name.replace(/\s/g, '+') || 'Cigar+Image'}`}
-                    alt={formData.name || "Cigar Image"}
-                    className="w-full h-64 object-cover"
-                /> */}
 
                 <SmartImageModal
                     itemName={formData.name}
+                    theme={theme}
                     currentImage={formData.image || `https://placehold.co/400x600/5a3825/ffffff?text=${formData.name.replace(/\s/g, '+') || 'Cigar+Image'}`}
                     currentPosition={formData.imagePosition || { x: 50, y: 50 }}
                     onImageAccept={(img, pos) => setFormData(prev => ({
@@ -2550,9 +2557,9 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                     <h1 className="text-3xl font-bold text-white">Edit Cigar</h1>
                 </div>
             </div>
-            
+
             {/* Cigar Name and Details */}
-            <div id="pnlCigarNameAndDetails"className="p-4 space-y-4">
+            <div id="pnlCigarNameAndDetails" className="p-4 space-y-4">
                 {/* Brand */}
                 <InputField name="brand" label="Brand" placeholder="e.g., Padrón" value={formData.brand} onChange={handleInputChange} theme={theme} />
                 {/* Name / Line */}
@@ -2931,19 +2938,13 @@ const AddHumidor = ({ navigate, db, appId, userId, theme }) => {
 
 
     return (
-        <div className="p-4 pb-24">
-            <div className="flex items-center mb-6">
-                <button onClick={() => navigate('HumidorsScreen')} className="p-2 -ml-2 mr-2">
-                    <ChevronLeft className={`w-7 h-7 ${theme.text}`} />
-                </button>
-                <h1 className={`text-3xl font-bold ${theme.text}`}>Add New Humidor</h1>
-            </div>
-
-            <div className="space-y-6">
-                {/* <InputField name="image" label="Image URL" placeholder="https://example.com/humidor.png" value={formData.image} onChange={handleInputChange} theme={theme} /> */}
-
+        <div className="pb-24">
+            <div className="relative">
                 <SmartImageModal
                     itemName={formData.name}
+                    itemCategory="humidor"
+                    itemType={formData.type}
+                    theme={theme}
                     currentImage={formData.image || `https://placehold.co/400x600/5a3825/ffffff?text=${formData.name.replace(/\s/g, '+') || 'Humidor+Image'}`}
                     currentPosition={formData.imagePosition || { x: 50, y: 50 }}
                     onImageAccept={(img, pos) => setFormData(prev => ({
@@ -2952,9 +2953,17 @@ const AddHumidor = ({ navigate, db, appId, userId, theme }) => {
                         imagePosition: pos
                     }))}
                 />
-
-
-
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
+                <div className="absolute top-4 left-4">
+                    <button onClick={() => navigate('HumidorsScreen')} className="p-2 -ml-2 mr-2 bg-black/50 rounded-full">
+                        <ChevronLeft className={`w-7 h-7 ${theme.text}`} />
+                    </button>
+                </div>
+                <div className="absolute bottom-0 p-4">
+                    <h1 className={`text-3xl font-bold ${theme.text}`}>Add New Humidor</h1>
+                </div>
+            </div>
+            <div className="p-4 space-y-6">
                 <InputField name="name" label="Humidor Name" placeholder="e.g., The Big One" value={formData.name} onChange={handleInputChange} theme={theme} />
                 <InputField name="shortDescription" label="Short Description" placeholder="e.g., Main aging unit" value={formData.shortDescription} onChange={handleInputChange} theme={theme} />
                 <TextAreaField name="longDescription" label="Long Description" placeholder="e.g., A 150-count mahogany humidor with a Spanish cedar interior..." value={formData.longDescription} onChange={handleInputChange} theme={theme} />
@@ -3000,6 +3009,8 @@ const AddHumidor = ({ navigate, db, appId, userId, theme }) => {
                         Cancel
                     </button>
                 </div>
+
+
             </div>
         </div>
     );
@@ -3052,24 +3063,54 @@ const EditHumidor = ({ navigate, db, appId, userId, humidor, goveeApiKey, goveeD
 
     return (
         <div className="p-4 pb-24">
-            <div className="flex items-center mb-6">
-                <button onClick={() => navigate('MyHumidor', { humidorId: humidor.id })} className="p-2 -ml-2 mr-2"><ChevronLeft className={`w-7 h-7 ${theme.text}`} /></button>
-                <h1 className={`text-3xl font-bold ${theme.text}`}>Edit Humidor</h1>
+            <div className="relative">
+                {/* Image */}
+                <SmartImageModal
+                    itemName={formData.name}
+                    itemCategory="humidor"
+                    itemType={formData.type}
+                    theme={theme}
+                    currentImage={formData.image || `https://placehold.co/400x600/5a3825/ffffff?text=${formData.name.replace(/\s/g, '+') || 'Humidor+Image'}`}
+                    currentPosition={formData.imagePosition || { x: 50, y: 50 }}
+                    onImageAccept={(img, pos) => setFormData(prev => ({
+                        ...prev,
+                        image: img,
+                        imagePosition: pos
+                    }))}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
+                <div className="absolute top-4 left-4">
+                    <button onClick={() => navigate('HumidorsScreen')} className="p-2 -ml-2 mr-2 bg-black/50 rounded-full">
+                        <ChevronLeft className={`w-7 h-7 ${theme.text}`} />
+                    </button>
+                </div>
+                <div className="absolute bottom-0 p-4">
+                    <h1 className={`text-3xl font-bold ${theme.text}`}>Edit  Humidor</h1>
+                </div>
             </div>
 
-            <div className="space-y-4">
-                <InputField name="image" label="Image URL" placeholder="https://example.com/humidor.png" value={formData.image} onChange={handleInputChange} theme={theme} />
-
+            <div className="p-4 space-y-6">
+                {/* Humidor Name */}
                 <InputField name="name" label="Humidor Name" placeholder="e.g., The Big One" value={formData.name} onChange={handleInputChange} theme={theme} />
+                {/* Short Description */}
                 <InputField name="shortDescription" label="Short Description" placeholder="e.g., Main aging unit" value={formData.shortDescription} onChange={handleInputChange} theme={theme} />
+                {/* Long Description */}
                 <TextAreaField name="longDescription" label="Long Description" placeholder="e.g., A 150-count mahogany humidor..." value={formData.longDescription} onChange={handleInputChange} theme={theme} />
-
-                <div className="grid grid-cols-2 gap-4">
+                
+                {/* Type of Humidor */}
+                <div>
+                    <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>Type of Humidor</label>
+                    <select name="type" value={formData.type} onChange={handleInputChange} className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} focus:outline-none focus:ring-2 ${theme.ring}`}>
+                        {humidorTypes.map(type => <option key={type} value={type}>{type}</option>)}
+                    </select>
+                </div>
+                {/* Size and location */}
+                <div id="pnlSizeAndLocation" className="grid grid-cols-2 gap-4">
                     <InputField name="size" label="Size" placeholder="e.g., 150-count" value={formData.size} onChange={handleInputChange} theme={theme} />
                     <InputField name="location" label="Location" placeholder="e.g., Office" value={formData.location} onChange={handleInputChange} theme={theme} />
                 </div>
-
-                <div className={`${theme.card} p-4 rounded-xl`}>
+                {/* Environment Tracking */}
+                <div pnl="pnlEnvironmentTracking" className={`${theme.card} p-4 rounded-xl`}>
                     <h3 className="font-bold text-xl text-amber-300 mb-4 flex items-center"><MapPin className="w-5 h-5 mr-2" /> Environment Tracking</h3>
                     <div className="space-y-4">
                         <div>
@@ -3101,8 +3142,8 @@ const EditHumidor = ({ navigate, db, appId, userId, humidor, goveeApiKey, goveeD
                         )}
                     </div>
                 </div>
-
-                <div className="pt-4 flex space-x-4">
+                {/* Save and Cancel buttons */}
+                <div pnl="pnlSaveCancelButtons" className="pt-4 flex space-x-4">
                     <button onClick={handleSave} className={`w-full ${theme.primaryBg} ${theme.text === 'text-white' ? 'text-white' : 'text-black'} font-bold py-3 rounded-lg ${theme.hoverPrimaryBg} transition-colors`}>Save Changes</button>
                     <button onClick={() => navigate('MyHumidor', { humidorId: humidor.id })} className={`w-full ${theme.button} ${theme.text} font-bold py-3 rounded-lg transition-colors`}>Cancel</button>
                 </div>
