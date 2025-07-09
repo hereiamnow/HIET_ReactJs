@@ -3824,7 +3824,10 @@ const ImportCsvModal = ({ dataType, data, db, appId, userId, onClose, humidors }
                 return;
             }
             const headers = lines[0].trim().split(',').map(h => h.replace(/"/g, ''));
-            const rows = lines.slice(1).map(line => line.trim().split(','));
+            const rows = lines.slice(1).map(line => {
+                // Split the line by commas and then remove quotes from each resulting part.
+                return line.trim().split(',').map(field => field.replace(/"/g, ''));
+            });
 
             setCsvHeaders(headers);
             setCsvRows(rows.filter(row => row.length === headers.length));
