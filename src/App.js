@@ -2934,9 +2934,6 @@ const AddHumidor = ({ navigate, db, appId, userId, theme }) => {
         setItemImage(image);
         setItemImagePosition(position);
     };
-
-
-
     return (
         <div className="pb-24">
             <div className="relative">
@@ -2953,13 +2950,13 @@ const AddHumidor = ({ navigate, db, appId, userId, theme }) => {
                         imagePosition: pos
                     }))}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
-                <div className="absolute top-4 left-4">
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent pointer-events-none"></div>
+                <div className="absolute top-4 left-4 z-10">
                     <button onClick={() => navigate('HumidorsScreen')} className="p-2 -ml-2 mr-2 bg-black/50 rounded-full">
                         <ChevronLeft className={`w-7 h-7 ${theme.text}`} />
                     </button>
                 </div>
-                <div className="absolute bottom-0 p-4">
+                <div className="absolute bottom-0 p-4 z-10 pointer-events-none">
                     <h1 className={`text-3xl font-bold ${theme.text}`}>Add New Humidor</h1>
                 </div>
             </div>
@@ -3017,6 +3014,7 @@ const AddHumidor = ({ navigate, db, appId, userId, theme }) => {
 };
 
 const EditHumidor = ({ navigate, db, appId, userId, humidor, goveeApiKey, goveeDevices, theme }) => {
+    const humidorTypes = ["Desktop Humidor", "Cabinet Humidor", "Glass Top Humidor", "Travel Humidor", "Cigar Cooler", "Walk-In Humidor", "Personalized Humidor"];
     const [formData, setFormData] = useState({
         ...humidor,
         shortDescription: humidor.shortDescription || '',
@@ -3070,7 +3068,7 @@ const EditHumidor = ({ navigate, db, appId, userId, humidor, goveeApiKey, goveeD
                     itemCategory="humidor"
                     itemType={formData.type}
                     theme={theme}
-                    currentImage={formData.image || `https://placehold.co/400x600/5a3825/ffffff?text=${formData.name.replace(/\s/g, '+') || 'Humidor+Image'}`}
+                    currentImage={formData.image || `https://placehold.co/600x400/EEE/31343C?font=playfair-display&text=${formData.name.replace(/\s/g, '+') || 'My Humidor'}`}
                     currentPosition={formData.imagePosition || { x: 50, y: 50 }}
                     onImageAccept={(img, pos) => setFormData(prev => ({
                         ...prev,
@@ -3078,13 +3076,13 @@ const EditHumidor = ({ navigate, db, appId, userId, humidor, goveeApiKey, goveeD
                         imagePosition: pos
                     }))}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
-                <div className="absolute top-4 left-4">
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent pointer-events-none"></div>
+                <div className="absolute top-4 left-4 z-10">
                     <button onClick={() => navigate('HumidorsScreen')} className="p-2 -ml-2 mr-2 bg-black/50 rounded-full">
                         <ChevronLeft className={`w-7 h-7 ${theme.text}`} />
                     </button>
                 </div>
-                <div className="absolute bottom-0 p-4">
+                <div className="absolute bottom-0 p-4 z-10 pointer-events-none">
                     <h1 className={`text-3xl font-bold ${theme.text}`}>Edit  Humidor</h1>
                 </div>
             </div>
