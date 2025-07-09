@@ -248,7 +248,7 @@ const generateAiImage = async (itemName, itemCategory, itemType) => {
         instances: [{ prompt: prompt }],
         parameters: { "sampleCount": 1 }
     };
-    const apiKey = ""; // The environment will provide the API key automatically.
+    const apiKey = process.env.REACT_APP_GOOGLE_AI_API_KEY; // The environment will provide the API key automatically.
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
 
     try {
@@ -1116,7 +1116,7 @@ const QuantityControl = ({ quantity, onChange, theme }) => (
  */
 async function callGeminiAPI(prompt, responseSchema = null) {
     let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
-    const apiKey = ""; // API key will be injected by the environment
+    const apiKey = process.env.REACT_APP_GOOGLE_AI_API_KEY; // API key will be injected by the environment
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
     const payload = { contents: chatHistory };
