@@ -3706,7 +3706,7 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
                 )}
 
                 {isSelectMode && (
-                    <div className="fixed bottom-0 left-0 right-0 bg-gray-900/80 backdrop-blur-sm p-4 z-20 border-t border-gray-700">
+                    <div className="fixed bottom-20 left-0 right-0 bg-gray-900/80 backdrop-blur-sm p-4 z-20 border-t border-gray-700">
                         <div className="max-w-md mx-auto">
                             <div className="flex justify-between items-center mb-2">
                                 <h3 className="text-lg font-bold text-white">{selectedCigarIds.length} Selected</h3>
