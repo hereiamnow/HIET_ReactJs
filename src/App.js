@@ -1,8 +1,8 @@
 // File: App.js
 // Project: Humidor Hub
 // Author: Shawn Miller (hereiamnow@gmail.com)
-// Date: July 8, 2025
-// Time: 10:27 PM CDT
+// Date: July 9, 2025
+// Time: 10:01 PM CDT
 
 // Description of Changes:
 // - Implemented the "Aged in Humidor" feature to track how long a cigar has been stored.
@@ -129,13 +129,12 @@ const allFlavorNotes = [
     'Dark Cherry', 'Roasted Nuts', 'Toasted Bread'
 ].sort(); // .sort() keeps the list alphabetical.
 
-// Flavor notes are used to describe the taste and aroma of cigars.
 const allFlavorNotesNew = [
     'Earth', 'Earthy', 'Woody', 'Spice', 'Spicy', 'Nutty', 'Sweet', 'Fruity', 'Floral', 'Herbal',
     'Leather', 'Coffee', 'Cocoa', 'Chocolate', 'Creamy', 'Pepper', 'Cedar', 'Oak',
     'Cinnamon', 'Vanilla', 'Honey', 'Caramel', 'Citrus', 'Dried Fruit', 'Hay', 'Toasted',
     'Dark Cherry', 'Roasted Nuts', 'Toasted Bread'
-].sort(); // .sort() keeps the list alphabetical.
+].sort();
 
 const strengthOptions = ['Mild', 'Mild-Medium', 'Medium', 'Medium-Full', 'Full'];
 
@@ -204,6 +203,8 @@ const roxysTips = [
     "A good cut is crucial. A dull cutter can tear the wrapper and ruin the draw. Keep your tools sharp!"
 ];
 
+
+
 // --- HELPER & UI COMPONENTS ---
 
 /**
@@ -223,8 +224,6 @@ const downloadFile = ({ data, fileName, fileType }) => {
     a.dispatchEvent(clickEvt);
     a.remove();
 };
-
-
 
 /**
  * Generates an image using the Gemini (Imagen 3) API.
@@ -281,6 +280,150 @@ const generateAiImage = async (itemName, itemCategory, itemType) => {
         return `https://placehold.co/600x400/ef4444/ffffff?text=Error`;
     }
 };
+
+// (0709250) Used for Humidar Detail Refactor
+const FilterSortModal = ({
+    isOpen,
+    onClose,
+    filters,
+    sortBy,
+    sortOrder,
+    onFilterChange,
+    onFlavorNoteToggle,
+    onSortChange,
+    onClearFilters,
+    uniqueBrands,
+    uniqueCountries,
+    availableFlavorNotes,
+    theme
+}) => {
+    if (!isOpen) return null;
+
+    const handleSortClick = (sortCriteria) => {
+        onSortChange(sortCriteria);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 flex items-end justify-center p-4 z-[100]" onClick={onClose}>
+            <div className="bg-gray-800 rounded-t-2xl p-6 w-full max-w-md flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-bold text-amber-400 flex items-center"><Filter className="w-5 h-5 mr-2" /> Filter & Sort</h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button>
+                </div>
+
+                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                    {/* Sorting Section */}
+                    <div>
+                        <h4 className="font-bold text-white text-base mb-2">Sort By</h4>
+                        <div className="flex flex-wrap gap-2">
+                            {['name', 'brand', 'rating', 'quantity', 'price', 'dateAdded'].map(criteria => (
+                                <button
+                                    key={criteria}
+                                    onClick={() => handleSortClick(criteria)}
+                                    className={`px-3 py-1.5 rounded-full text-sm font-semibold flex items-center gap-1 transition-colors ${sortBy === criteria ? 'bg-amber-500 text-white' : 'bg-gray-700 text-gray-300'}`}
+                                >
+                                    {criteria === 'dateAdded' ? 'Date Added' : criteria.charAt(0).toUpperCase() + criteria.slice(1)}
+                                    {sortBy === criteria && (sortOrder === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />)}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Filtering Section */}
+                    <div className="border-t border-gray-700 pt-4 mt-4">
+                        <h4 className="font-bold text-white text-base mb-2">Filter By</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className={`${theme.subtleText} text-sm mb-1 block`}>Brand</label>
+                                <select value={filters.brand} onChange={(e) => onFilterChange('brand', e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white">
+                                    <option value="">All Brands</option>
+                                    {uniqueBrands.map(brand => <option key={brand} value={brand}>{brand}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className={`${theme.subtleText} text-sm mb-1 block`}>Country</label>
+                                <select value={filters.country} onChange={(e) => onFilterChange('country', e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white">
+                                    <option value="">All Countries</option>
+                                    {uniqueCountries.map(country => <option key={country} value={country}>{country}</option>)}
+                                </select>
+                            </div>
+                            <div className="col-span-2">
+                                <label className={`${theme.subtleText} text-sm mb-1 block`}>Strength</label>
+                                <select value={filters.strength} onChange={(e) => onFilterChange('strength', e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white">
+                                    <option value="">All Strengths</option>
+                                    {strengthOptions.map(strength => <option key={strength} value={strength}>{strength}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                        <div className="mt-4">
+                            <label className={`${theme.subtleText} text-sm mb-1 block`}>Flavor Notes</label>
+                            <div className="flex flex-wrap gap-2">
+                                {availableFlavorNotes.map(note => (
+                                    <button key={note} onClick={() => onFlavorNoteToggle(note)} className={`text-xs font-semibold px-2.5 py-1.5 rounded-full transition-all duration-200 ${filters.flavorNotes.includes(note) ? 'bg-amber-500 text-white' : 'bg-gray-700 text-gray-300 border border-gray-600'}`}>
+                                        {note}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Modal Actions */}
+                <div className="flex gap-3 pt-4 mt-4 border-t border-gray-700">
+                    <button onClick={onClearFilters} className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors flex-grow">Clear Filters</button>
+                    <button onClick={onClose} className="bg-amber-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-amber-600 transition-colors flex-grow">Done</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+// (0709250) Used for Humidar Detail Refactor
+const HumidorActionMenu = ({ onEdit, onTakeReading, onExport, onDelete }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const menuRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [menuRef]);
+
+    const MenuItem = ({ icon: Icon, text, onClick, className = '' }) => (
+        <button
+            onClick={() => {
+                onClick();
+                setIsOpen(false);
+            }}
+            className={`w-full flex items-center gap-3 px-4 py-2 text-sm text-left hover:bg-gray-700 ${className}`}
+        >
+            <Icon className="w-5 h-5" />
+            <span>{text}</span>
+        </button>
+    );
+
+    return (
+        <div className="relative" ref={menuRef}>
+            <button onClick={() => setIsOpen(!isOpen)} className="p-2 bg-black/50 rounded-full text-white">
+                <MoreVertical className="w-6 h-6" />
+            </button>
+            {isOpen && (
+                <div className="absolute top-full right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-30 overflow-hidden">
+                    <MenuItem icon={Edit} text="Edit Humidor" onClick={onEdit} className="text-gray-200" />
+                    <MenuItem icon={FileText} text="Take Manual Reading" onClick={onTakeReading} className="text-gray-200" />
+                    <MenuItem icon={Download} text="Export Cigars" onClick={onExport} className="text-gray-200" />
+                    <div className="border-t border-gray-700 my-1"></div>
+                    <MenuItem icon={Trash2} text="Delete Humidor" onClick={onDelete} className="text-red-400 hover:bg-red-900/50" />
+                </div>
+            )}
+        </div>
+    );
+};
+
+
 
 
 // ===================================================================================
@@ -392,9 +535,6 @@ const ImagePreview = ({ image, position, onClick }) => {
     );
 };
 
-
-
-
 /**
  * A helper function to determine the color of a flavor tag based on the note.
  * This makes the UI more visually interesting and informative.
@@ -436,7 +576,6 @@ const getFlavorTagColor = (note) => {
             return 'bg-gray-700 text-gray-200 border border-gray-600';
     }
 };
-
 
 /**
  * A helper function to determine the color of the rating badge based on the score.
@@ -505,7 +644,6 @@ const calculateAge = (isoString) => {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return `${diffDays} Day${diffDays !== 1 ? 's' : ''}`;
 };
-
 
 /**
  * Gauge component for displaying humidity and temperature.
@@ -1057,7 +1195,6 @@ const ImageUploadModal = ({ isOpen, onClose, onImageAccept, itemName, initialIma
         </div>
     );
 };
-
 
 // ===================================================================================
 //  MAIN CONTROLLER COMPONENT
@@ -2042,7 +2179,7 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
                 </div>
             )}
 
-            {searchQuery === '' && !activeWrapperFilter && !activeStrengthFilter && !activeCountryFilter ? ( 
+            {searchQuery === '' && !activeWrapperFilter && !activeStrengthFilter && !activeCountryFilter ? (
                 <>
                     <div className="flex justify-between items-center mb-6 px-2">
                         <div>
@@ -3229,7 +3366,7 @@ const EditHumidor = ({ navigate, db, appId, userId, humidor, goveeApiKey, goveeD
         </div>
     );
 };
-
+// (070925) Updated MyHumidor component to include search, filter, sort, and select modes
 const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, theme }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [suggestions, setSuggestions] = useState([]);
@@ -3241,7 +3378,7 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
     const [isDeleteCigarsModalOpen, setIsDeleteCigarsModalOpen] = useState(false);
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [isManualReadingModalOpen, setIsManualReadingModalOpen] = useState(false);
-    const [showFilterSort, setShowFilterSort] = useState(false);
+    const [isFilterSortModalOpen, setIsFilterSortModalOpen] = useState(false);
     const [filters, setFilters] = useState({ brand: '', country: '', strength: '', flavorNotes: [] });
     const [sortBy, setSortBy] = useState('name');
     const [sortOrder, setSortOrder] = useState('asc');
@@ -3269,9 +3406,10 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
             switch (sortBy) {
                 case 'name': valA = a.name.toLowerCase(); valB = b.name.toLowerCase(); break;
                 case 'brand': valA = a.brand.toLowerCase(); valB = b.brand.toLowerCase(); break;
-                case 'rating': valA = a.rating; valB = b.rating; break;
+                case 'rating': valA = a.rating || 0; valB = b.rating || 0; break;
                 case 'quantity': valA = a.quantity; valB = b.quantity; break;
-                case 'price': valA = a.price; valB = b.price; break;
+                case 'price': valA = a.price || 0; valB = b.price || 0; break;
+                case 'dateAdded': valA = a.dateAdded; valB = b.dateAdded; break;
                 default: return 0;
             }
             if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
@@ -3400,6 +3538,10 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
         }
     };
 
+    const handleClearFilters = () => {
+        setFilters({ brand: '', country: '', strength: '', flavorNotes: [] });
+    };
+
     return (
         <div className="pb-24">
             {isMoveModalOpen && <MoveCigarsModal onClose={() => setIsMoveModalOpen(false)} onMove={handleMoveCigars} destinationHumidors={humidors.filter(h => h.id !== humidor.id)} theme={theme} />}
@@ -3407,14 +3549,35 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
             <DeleteCigarsModal isOpen={isDeleteCigarsModalOpen} onClose={() => setIsDeleteCigarsModalOpen(false)} onConfirm={handleConfirmDeleteCigars} count={selectedCigarIds.length} />
             {isExportModalOpen && <ExportModal data={filteredAndSortedCigars} dataType="cigar" onClose={() => setIsExportModalOpen(false)} />}
             {isManualReadingModalOpen && <ManualReadingModal isOpen={isManualReadingModalOpen} onClose={() => setIsManualReadingModalOpen(false)} onSave={handleSaveManualReading} initialTemp={humidor.temp} initialHumidity={humidor.humidity} />}
+            <FilterSortModal
+                isOpen={isFilterSortModalOpen}
+                onClose={() => setIsFilterSortModalOpen(false)}
+                filters={filters}
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                onFilterChange={handleFilterChange}
+                onFlavorNoteToggle={handleFlavorNoteToggle}
+                onSortChange={handleSortChange}
+                onClearFilters={handleClearFilters}
+                uniqueBrands={uniqueBrands}
+                uniqueCountries={uniqueCountries}
+                availableFlavorNotes={availableFlavorNotes}
+                theme={theme}
+            />
 
             <div className="relative">
                 <img src={humidor.image || `https://placehold.co/600x400/3a2d27/ffffff?text=${humidor.name.replace(/\s/g, '+')}`} alt={humidor.name} className="w-full h-64 object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
-                <div className="absolute top-4 left-4">
+                <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
                     <button onClick={() => navigate('HumidorsScreen')} className="p-2 bg-black/50 rounded-full">
                         <ChevronLeft className="w-7 h-7 text-white" />
                     </button>
+                    <HumidorActionMenu
+                        onEdit={() => navigate('EditHumidor', { humidorId: humidor.id })}
+                        onTakeReading={() => setIsManualReadingModalOpen(true)}
+                        onExport={() => setIsExportModalOpen(true)}
+                        onDelete={() => setIsDeleteHumidorModalOpen(true)}
+                    />
                 </div>
                 <div className="absolute bottom-0 p-4">
                     <h1 className="text-3xl font-bold text-white">{humidor.name}</h1>
@@ -3423,14 +3586,6 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
             </div>
 
             <div className="p-4">
-                <div className="flex justify-end items-center bg-gray-800/50 p-3 rounded-xl mb-6 gap-4">
-                    <button onClick={() => navigate('EditHumidor', { humidorId: humidor.id })} className="flex flex-col items-center gap-1 text-gray-300 hover:text-amber-400 transition-colors"><Edit className="w-5 h-5" /><span className="text-xs font-medium">Edit</span></button>
-                    <button onClick={() => navigate('AddCigar', { humidorId: humidor.id })} className="flex flex-col items-center gap-1 text-gray-300 hover:text-amber-400 transition-colors"><Plus className="w-5 h-5" /><span className="text-xs font-medium">Add Cigar</span></button>
-                    <button onClick={() => setIsManualReadingModalOpen(true)} className="flex flex-col items-center gap-1 text-gray-300 hover:text-blue-400 transition-colors"><FileText className="w-5 h-5" /><span className="text-xs font-medium">Take Reading</span></button>
-                    <button onClick={() => setIsExportModalOpen(true)} className="flex flex-col items-center gap-1 text-gray-300 hover:text-green-400 transition-colors"><Download className="w-5 h-5" /><span className="text-xs font-medium">Export</span></button>
-                    <button onClick={() => setIsDeleteHumidorModalOpen(true)} className="flex flex-col items-center gap-1 text-gray-300 hover:text-red-500 transition-colors"><Trash2 className="w-5 h-5" /><span className="text-xs font-medium">Delete</span></button>
-                </div>
-
                 <div className="flex justify-around items-center bg-gray-800/50 p-3 rounded-xl mb-6 text-center">
                     <div className="flex flex-col items-center"><Droplets className="w-5 h-5 text-blue-400 mb-1" /><p className="text-sm text-gray-400">Humidity</p><p className="font-bold text-white text-base">{humidor.humidity}%</p></div>
                     <div className="h-10 w-px bg-gray-700"></div>
@@ -3439,18 +3594,14 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
                     <div className="flex flex-col items-center"><svg className="w-5 h-5 text-green-400 mb-1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg><p className="text-sm text-gray-400">Est. Value</p><p className="font-bold text-white text-base">${humidorValue.toFixed(2)}</p></div>
                 </div>
 
-                <div className="flex items-center mb-4 gap-2">
-                    <div className="relative flex-grow">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                        <input type="text" placeholder="Search this humidor..." value={searchQuery} onChange={handleSearchChange} className="w-full bg-gray-800 border border-gray-700 rounded-full py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500" />
-                        {suggestions.length > 0 && (
-                            <div className="absolute top-full left-0 right-0 bg-gray-700 border border-gray-600 rounded-b-xl mt-1 z-20 overflow-hidden">
-                                {suggestions.map(suggestion => (<div key={suggestion} onMouseDown={() => handleSuggestionClick(suggestion)} className="w-full text-left px-4 py-3 hover:bg-gray-600 transition-colors cursor-pointer">{suggestion}</div>))}
-                            </div>
-                        )}
-                    </div>
-                    <button onClick={() => setShowFilterSort(prev => !prev)} className="p-2 rounded-full bg-gray-700 text-white hover:bg-gray-600 transition-colors flex-shrink-0"><Filter className="w-5 h-5" /></button>
-                    <button onClick={handleToggleSelectMode} className="flex items-center gap-2 bg-gray-700 text-white font-bold text-sm px-4 py-2 rounded-full hover:bg-gray-600 transition-colors flex-shrink-0">{isSelectMode ? <X className="w-4 h-4" /> : <Check className="w-4 h-4" />}{isSelectMode ? 'Cancel' : 'Select'}</button>
+                <div className="relative mb-4">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input type="text" placeholder="Search this humidor..." value={searchQuery} onChange={handleSearchChange} className="w-full bg-gray-800 border border-gray-700 rounded-full py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                    {suggestions.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 bg-gray-700 border border-gray-600 rounded-b-xl mt-1 z-20 overflow-hidden">
+                            {suggestions.map(suggestion => (<div key={suggestion} onMouseDown={() => handleSuggestionClick(suggestion)} className="w-full text-left px-4 py-3 hover:bg-gray-600 transition-colors cursor-pointer">{suggestion}</div>))}
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex justify-between items-center mb-6 px-2">
@@ -3458,28 +3609,15 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
                         <p className="text-sm text-gray-300"><span className="font-bold text-white">{filteredAndSortedCigars.length}</span> Unique</p>
                         <p className="text-xs text-gray-400"><span className="font-bold text-gray-200">{totalQuantity}</span> Total Cigars</p>
                     </div>
-                    <div className="flex bg-gray-800 border border-gray-700 rounded-full p-1">
-                        <button onClick={() => setViewMode('grid')} className={`p-2 rounded-full transition-colors duration-200 ${viewMode === 'grid' ? 'bg-amber-500 text-white' : 'text-gray-400'}`}><LayoutGrid className="w-5 h-5" /></button>
-                        <button onClick={() => setViewMode('list')} className={`p-2 rounded-full transition-colors duration-200 ${viewMode === 'list' ? 'bg-amber-500 text-white' : 'text-gray-400'}`}><List className="w-5 h-5" /></button>
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => setIsFilterSortModalOpen(true)} className="p-2 rounded-full bg-gray-700 text-white hover:bg-gray-600 transition-colors"><Filter className="w-5 h-5" /></button>
+                        <div className="flex bg-gray-800 border border-gray-700 rounded-full p-1">
+                            <button onClick={() => setViewMode('grid')} className={`p-2 rounded-full transition-colors duration-200 ${viewMode === 'grid' ? 'bg-amber-500 text-white' : 'text-gray-400'}`}><LayoutGrid className="w-5 h-5" /></button>
+                            <button onClick={() => setViewMode('list')} className={`p-2 rounded-full transition-colors duration-200 ${viewMode === 'list' ? 'bg-amber-500 text-white' : 'text-gray-400'}`}><List className="w-5 h-5" /></button>
+                        </div>
+                        <button onClick={handleToggleSelectMode} className={`p-2 rounded-full transition-colors duration-200 ${isSelectMode ? 'bg-amber-500 text-white' : 'bg-gray-700 text-gray-400'}`}><CheckSquare className="w-5 h-5" /></button>
                     </div>
                 </div>
-
-                {showFilterSort && (
-                    <div className={`${theme.card} p-4 rounded-xl mb-6 space-y-4`}>
-                        <h3 className="font-bold text-amber-300 text-lg">Filter & Sort</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div><label className={`${theme.subtleText} text-sm mb-1 block`}>Brand</label><select value={filters.brand} onChange={(e) => handleFilterChange('brand', e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white"><option value="">All Brands</option>{uniqueBrands.map(brand => <option key={brand} value={brand}>{brand}</option>)}</select></div>
-                            <div><label className={`${theme.subtleText} text-sm mb-1 block`}>Country</label><select value={filters.country} onChange={(e) => handleFilterChange('country', e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white"><option value="">All Countries</option>{uniqueCountries.map(country => <option key={country} value={country}>{country}</option>)}</select></div>
-                            <div><label className={`${theme.subtleText} text-sm mb-1 block`}>Strength</label><select value={filters.strength} onChange={(e) => handleFilterChange('strength', e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white"><option value="">All Strengths</option>{strengthOptions.map(strength => <option key={strength} value={strength}>{strength}</option>)}</select></div>
-                            <div className="col-span-2"><label className={`${theme.subtleText} text-sm mb-1 block`}>Flavor Notes</label><div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">{availableFlavorNotes.map(note => (<button key={note} onClick={() => handleFlavorNoteToggle(note)} className={`text-xs font-semibold px-2.5 py-1.5 rounded-full transition-all duration-200 ${filters.flavorNotes.includes(note) ? 'bg-amber-500 text-white' : 'bg-gray-700 text-gray-300 border border-gray-600'}`}>{note}</button>))}</div></div>
-                        </div>
-                        <div className="border-t border-gray-700 pt-4 mt-4">
-                            <h4 className="font-bold text-white text-base mb-2">Sort By</h4>
-                            <div className="flex justify-between items-center"><select value={sortBy} onChange={(e) => handleSortChange(e.target.value)} className="flex-grow bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white"><option value="name">Name</option><option value="brand">Brand</option><option value="rating">Rating</option><option value="quantity">Quantity</option><option value="price">Price</option></select><button onClick={() => setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'))} className="ml-3 p-2 rounded-full bg-gray-700 text-white hover:bg-gray-600 transition-colors">{sortOrder === 'asc' ? <ArrowUpWideNarrow className="w-5 h-5" /> : <ArrowDownWideNarrow className="w-5 h-5" />}</button></div>
-                        </div>
-                        <button onClick={() => setFilters({ brand: '', country: '', strength: '', flavorNotes: [] })} className="w-full bg-gray-600 text-white font-bold py-2 rounded-lg hover:bg-gray-500 transition-colors mt-4">Clear Filters</button>
-                    </div>
-                )}
 
                 <div className={viewMode === 'grid' ? "grid grid-cols-2 gap-4" : "flex flex-col gap-4"}>
                     {filteredAndSortedCigars.map(cigar => (viewMode === 'grid' ? <GridCigarCard key={cigar.id} cigar={cigar} navigate={navigate} isSelectMode={isSelectMode} isSelected={selectedCigarIds.includes(cigar.id)} onSelect={handleSelectCigar} /> : <ListCigarCard key={cigar.id} cigar={cigar} navigate={navigate} isSelectMode={isSelectMode} isSelected={selectedCigarIds.includes(cigar.id)} onSelect={handleSelectCigar} />))}
@@ -3489,10 +3627,32 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
                         </div>
                     )}
                 </div>
-                {isSelectMode && selectedCigarIds.length > 0 && (
-                    <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-md px-4 flex gap-2">
-                        <button onClick={() => setIsMoveModalOpen(true)} className="flex-1 flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-full hover:bg-amber-600 transition-colors shadow-lg"><Move className="w-5 h-5" />Move ({selectedCigarIds.length})</button>
-                        <button onClick={() => setIsDeleteCigarsModalOpen(true)} className="flex-1 flex items-center justify-center gap-2 bg-red-600 text-white font-bold py-3 rounded-full hover:bg-red-700 transition-colors shadow-lg"><Trash2 className="w-5 h-5" />Delete ({selectedCigarIds.length})</button>
+
+                {/* Floating Action Button for Add Cigar */}
+                {!isSelectMode && (
+                    <button
+                        onClick={() => navigate('AddCigar', { humidorId: humidor.id })}
+                        className="fixed bottom-24 right-4 bg-amber-500 text-white p-4 rounded-full shadow-lg hover:bg-amber-600 transition-colors z-20"
+                        aria-label="Add Cigar"
+                    >
+                        <Plus className="w-6 h-6" />
+                    </button>
+                )}
+
+                {isSelectMode && (
+                    <div className="fixed bottom-0 left-0 right-0 bg-gray-900/80 backdrop-blur-sm p-4 z-20 border-t border-gray-700">
+                        <div className="max-w-md mx-auto">
+                            <div className="flex justify-between items-center mb-2">
+                                <h3 className="text-lg font-bold text-white">{selectedCigarIds.length} Selected</h3>
+                                <button onClick={handleToggleSelectMode} className="text-amber-400 font-semibold">Done</button>
+                            </div>
+                            {selectedCigarIds.length > 0 && (
+                                <div className="flex gap-2">
+                                    <button onClick={() => setIsMoveModalOpen(true)} className="flex-1 flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-full hover:bg-amber-600 transition-colors shadow-lg"><Move className="w-5 h-5" />Move</button>
+                                    <button onClick={() => setIsDeleteCigarsModalOpen(true)} className="flex-1 flex items-center justify-center gap-2 bg-red-600 text-white font-bold py-3 rounded-full hover:bg-red-700 transition-colors shadow-lg"><Trash2 className="w-5 h-5" />Delete</button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>
@@ -3747,7 +3907,6 @@ const NotificationsScreen = ({ navigate, humidors }) => {
     );
 };
 
-// Reusable Collapsible Panel component
 const CollapsiblePanel = ({ title, description, children, icon: Icon, theme }) => {
     const [isCollapsed, setIsCollapsed] = useState(true);
     return (
@@ -3767,21 +3926,6 @@ const CollapsiblePanel = ({ title, description, children, icon: Icon, theme }) =
         </div>
     );
 };
-
-// Define fields for Humidor import/export
-const APP_HUMIDOR_FIELDS = [
-    { key: 'name', label: 'Humidor Name', required: true },
-    { key: 'shortDescription', label: 'Short Description', required: false },
-    { key: 'longDescription', label: 'Long Description', required: false },
-    { key: 'size', label: 'Size', required: false },
-    { key: 'location', label: 'Location', required: false },
-    { key: 'image', label: 'Image URL', required: false },
-    { key: 'type', label: 'Type', required: false },
-    { key: 'temp', label: 'Temperature', required: false, type: 'number' },
-    { key: 'humidity', label: 'Humidity', required: false, type: 'number' },
-    { key: 'goveeDeviceId', label: 'Govee Device ID', required: false },
-    { key: 'goveeDeviceModel', label: 'Govee Device Model', required: false },
-];
 
 const DataSyncScreen = ({ navigate, db, appId, userId, cigars, humidors }) => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -3820,15 +3964,15 @@ const DataSyncScreen = ({ navigate, db, appId, userId, cigars, humidors }) => {
             <div className="space-y-6">
                 <CollapsiblePanel title="Cigar Collection" description="Import or export your individual cigar data." icon={Cigarette}>
                     <div className="grid grid-cols-1 gap-4">
-                        <button onClick={() => handleOpenExportModal('cigar')} className="w-full flex items-center justify-center gap-2 bg-green-600/80 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-colors"><Download className="w-5 h-5" />Export Cigars</button>
                         <button onClick={() => handleOpenImportModal('cigar')} className="w-full flex items-center justify-center gap-2 bg-blue-600/80 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors"><UploadCloud className="w-5 h-5" />Import Cigars from CSV</button>
+                        <button onClick={() => handleOpenExportModal('cigar')} className="w-full flex items-center justify-center gap-2 bg-green-600/80 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-colors"><Download className="w-5 h-5" />Export Cigars</button>
                     </div>
                 </CollapsiblePanel>
 
                 <CollapsiblePanel title="Humidor Management" description="Transfer your humidor setup and details." icon={Box}>
                     <div className="grid grid-cols-1 gap-4">
-                        <button onClick={() => handleOpenExportModal('humidor')} className="w-full flex items-center justify-center gap-2 bg-green-600/80 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-colors"><Download className="w-5 h-5" />Export Humidors</button>
                         <button onClick={() => handleOpenImportModal('humidor')} className="w-full flex items-center justify-center gap-2 bg-blue-600/80 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors"><UploadCloud className="w-5 h-5" />Import Humidors from CSV</button>
+                        <button onClick={() => handleOpenExportModal('humidor')} className="w-full flex items-center justify-center gap-2 bg-green-600/80 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-colors"><Download className="w-5 h-5" />Export Humidors</button>
                     </div>
                 </CollapsiblePanel>
 
@@ -3841,31 +3985,6 @@ const DataSyncScreen = ({ navigate, db, appId, userId, cigars, humidors }) => {
         </div>
     );
 };
-
-// Define fields for Cigar import/export
-const APP_FIELDS = [
-    { key: 'name', label: 'Cigar Name', required: true },
-    { key: 'brand', label: 'Brand', required: true },
-    { key: 'line', label: 'Product Line', required: false },
-    { key: 'shape', label: 'Shape', required: false },
-    { key: 'isBoxPress', label: 'Is Box Pressed', required: false, type: 'boolean' },
-    { key: 'length_inches', label: 'Length (in)', required: false, type: 'number' },
-    { key: 'ring_gauge', label: 'Ring Gauge', required: false, type: 'number' },
-    { key: 'size', label: 'Size (e.g., 5.5x50)', required: false },
-    { key: 'country', label: 'Country', required: false },
-    { key: 'wrapper', label: 'Wrapper', required: false },
-    { key: 'binder', label: 'Binder', required: false },
-    { key: 'filler', label: 'Filler', required: false },
-    { key: 'strength', label: 'Strength', required: false },
-    { key: 'flavorNotes', label: 'Flavor Notes (semicolon-separated)', required: false, type: 'array' },
-    { key: 'rating', label: 'Rating (Official)', required: false, type: 'number' },
-    { key: 'userRating', label: 'My Rating', required: false, type: 'number' },
-    { key: 'price', label: 'Price', required: false, type: 'number' },
-    { key: 'quantity', label: 'Quantity', required: true, type: 'number' },
-    { key: 'image', label: 'Image URL', required: false },
-    { key: 'shortDescription', label: 'Short Description', required: false },
-    { key: 'description', label: 'Long Description', required: false }
-];
 
 /**
  * Generic ImportCsvModal component to handle both cigar and humidor imports.
@@ -4275,6 +4394,46 @@ const ProfileScreen = ({ navigate, cigars, theme }) => {
         </div>
     );
 };
+
+// Define fields for Humidor import/export
+const APP_HUMIDOR_FIELDS = [
+    { key: 'name', label: 'Humidor Name', required: true },
+    { key: 'shortDescription', label: 'Short Description', required: false },
+    { key: 'longDescription', label: 'Long Description', required: false },
+    { key: 'size', label: 'Size', required: false },
+    { key: 'location', label: 'Location', required: false },
+    { key: 'image', label: 'Image URL', required: false },
+    { key: 'type', label: 'Type', required: false },
+    { key: 'temp', label: 'Temperature', required: false, type: 'number' },
+    { key: 'humidity', label: 'Humidity', required: false, type: 'number' },
+    { key: 'goveeDeviceId', label: 'Govee Device ID', required: false },
+    { key: 'goveeDeviceModel', label: 'Govee Device Model', required: false },
+];
+
+// Define fields for Cigar import/export
+const APP_FIELDS = [
+    { key: 'name', label: 'Cigar Name', required: true },
+    { key: 'brand', label: 'Brand', required: true },
+    { key: 'line', label: 'Product Line', required: false },
+    { key: 'shape', label: 'Shape', required: false },
+    { key: 'isBoxPress', label: 'Is Box Pressed', required: false, type: 'boolean' },
+    { key: 'length_inches', label: 'Length (in)', required: false, type: 'number' },
+    { key: 'ring_gauge', label: 'Ring Gauge', required: false, type: 'number' },
+    { key: 'size', label: 'Size (e.g., 5.5x50)', required: false },
+    { key: 'country', label: 'Country', required: false },
+    { key: 'wrapper', label: 'Wrapper', required: false },
+    { key: 'binder', label: 'Binder', required: false },
+    { key: 'filler', label: 'Filler', required: false },
+    { key: 'strength', label: 'Strength', required: false },
+    { key: 'flavorNotes', label: 'Flavor Notes (semicolon-separated)', required: false, type: 'array' },
+    { key: 'rating', label: 'Rating (Official)', required: false, type: 'number' },
+    { key: 'userRating', label: 'My Rating', required: false, type: 'number' },
+    { key: 'price', label: 'Price', required: false, type: 'number' },
+    { key: 'quantity', label: 'Quantity', required: true, type: 'number' },
+    { key: 'image', label: 'Image URL', required: false },
+    { key: 'shortDescription', label: 'Short Description', required: false },
+    { key: 'description', label: 'Long Description', required: false }
+];
 
 export default function App() {
     const [navigation, setNavigation] = useState({ screen: 'Dashboard', params: {} });
