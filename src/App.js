@@ -51,7 +51,55 @@ import { db, auth, firebaseConfigExport } from './firebase';
 // useState, useEffect, and useMemo are "hooks" that let us use state and other React features in functional components.
 import React, { useState, useEffect, useMemo, useRef } from 'react'; // Import useRef for flashing effect
 // lucide-react provides a set of clean, modern icons used throughout the app.
-import { Thermometer, Droplets, Bell, Plus, Search, X, ChevronLeft, Image as ImageIcon, Star, Wind, Coffee, GlassWater, LoaderCircle, Sparkles, Box, Briefcase, LayoutGrid, List, BookOpen, Leaf, Flame, MapPin, Tag, Minus, Edit, Trash2, Upload, Link2, Settings as SettingsIcon, User, Database, Info, Download, UploadCloud, ChevronDown, Shield, FileText, LogOut, Palette, BarChart2, TrendingUp, PieChart as PieChartIcon, Move, Check, Zap, AlertTriangle, Filter, ArrowDownWideNarrow, ArrowUpWideNarrow, Cigarette, Calendar as CalendarIcon } from 'lucide-react';
+
+import {
+    ArrowUp,
+    ArrowDown,
+    MoreVertical,
+    CheckSquare,
+    AlertTriangle,
+    BarChart2,
+    Bell,
+    Box,
+    Calendar as CalendarIcon,
+    Check,
+    ChevronDown,
+    ChevronLeft,
+    Cigarette,
+    Database,
+    Download,
+    Droplets,
+    Edit,
+    FileText,
+    Filter,
+    Info,
+    LayoutGrid,
+    Leaf,
+    List,
+    LoaderCircle,
+    LogOut,
+    MapPin,
+    Minus,
+    Move,
+    Palette,
+    PieChart as PieChartIcon,
+    Plus,
+    Search,
+    Settings as SettingsIcon,
+    Sparkles,
+    Star,
+    Tag,
+    Thermometer,
+    Trash2,
+    Upload,
+    UploadCloud,
+    User,
+    Wind,
+    X,
+    Zap
+} from 'lucide-react';
+
+
 // recharts is a library for creating the charts (bar, line, pie) on the dashboard.
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -3367,6 +3415,7 @@ const EditHumidor = ({ navigate, db, appId, userId, humidor, goveeApiKey, goveeD
     );
 };
 // (070925) Updated MyHumidor component to include search, filter, sort, and select modes
+// ...existing code...
 const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, theme }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [suggestions, setSuggestions] = useState([]);
@@ -3382,6 +3431,10 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
     const [filters, setFilters] = useState({ brand: '', country: '', strength: '', flavorNotes: [] });
     const [sortBy, setSortBy] = useState('name');
     const [sortOrder, setSortOrder] = useState('asc');
+
+    const isFilterActive = useMemo(() => {
+        return filters.brand || filters.country || filters.strength || filters.flavorNotes.length > 0;
+    }, [filters]);
 
     const uniqueBrands = useMemo(() => [...new Set(cigars.filter(c => c.humidorId === humidor.id).map(c => c.brand))].sort(), [cigars, humidor.id]);
     const uniqueCountries = useMemo(() => [...new Set(cigars.filter(c => c.humidorId === humidor.id).map(c => c.country))].sort(), [cigars, humidor.id]);
@@ -3619,6 +3672,19 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
                     </div>
                 </div>
 
+                {isFilterActive && (
+                    <div className="flex justify-between items-center mb-4 bg-gray-800 p-3 rounded-lg">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm text-gray-300">Filtering by:</span>
+                            {filters.brand && <span className="text-xs font-semibold px-2 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50">{filters.brand}</span>}
+                            {filters.country && <span className="text-xs font-semibold px-2 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50">{filters.country}</span>}
+                            {filters.strength && <span className="text-xs font-semibold px-2 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50">{filters.strength}</span>}
+                            {filters.flavorNotes.map(note => <span key={note} className="text-xs font-semibold px-2 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50">{note}</span>)}
+                        </div>
+                        <button onClick={handleClearFilters} className="p-1 rounded-full hover:bg-amber-800 transition-colors text-amber-400"><X className="w-4 h-4" /></button>
+                    </div>
+                )}
+
                 <div className={viewMode === 'grid' ? "grid grid-cols-2 gap-4" : "flex flex-col gap-4"}>
                     {filteredAndSortedCigars.map(cigar => (viewMode === 'grid' ? <GridCigarCard key={cigar.id} cigar={cigar} navigate={navigate} isSelectMode={isSelectMode} isSelected={selectedCigarIds.includes(cigar.id)} onSelect={handleSelectCigar} /> : <ListCigarCard key={cigar.id} cigar={cigar} navigate={navigate} isSelectMode={isSelectMode} isSelected={selectedCigarIds.includes(cigar.id)} onSelect={handleSelectCigar} />))}
                     {filteredAndSortedCigars.length === 0 && (
@@ -3659,6 +3725,7 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
         </div>
     );
 };
+//
 
 const AlertsScreen = ({ navigate, humidors }) => {
     const [alertSettings, setAlertSettings] = useState(
