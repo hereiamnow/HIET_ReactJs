@@ -540,10 +540,11 @@ const Gauge = ({ value, maxValue, label, unit, icon: Icon }) => {
  */
 const StatCard = ({ title, value, icon: Icon, theme }) => (
     <div className={`${theme.card} p-4 rounded-xl flex items-center space-x-4`}>
-        <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>
-            {/* Conditionally render icon if provided */}
-            {Icon && <Icon className={`w-6 h-6 ${theme.primary}`} />}
-        </div>
+        {Icon && (
+            <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>
+                <Icon className={`w-6 h-6 ${theme.primary}`} />
+            </div>
+        )}
         <div>
             <p className={`${theme.subtleText} text-sm`}>{title}</p>
             <p className={`${theme.text} font-bold text-lg`}>{value}</p>
@@ -999,39 +1000,38 @@ const ImageUploadModal = ({ isOpen, onClose, onImageAccept, itemName, initialIma
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75" onClick={onClose}>
-            <div className="w-11/12 max-w-2xl rounded-lg bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-                <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-4">
-                    <h2 className="text-2xl font-semibold">Choose an Image</h2>
-                    <button onClick={onClose} className="text-3xl text-slate-500 hover:text-slate-800">&times;</button>
-                </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4" onClick={onClose}>
+            <div className={`w-full max-w-md rounded-lg ${theme.card} p-6 shadow-xl border-none`} onClick={(e) => e.stopPropagation()}>
+                <div className={`mb-4 flex items-center justify-between border-b ${theme.borderColor} pb-4`}>
+                    <h2 className={`text-2xl font-semibold ${theme.text}`}>Choose an Image</h2>
+                    <button onClick={onClose} className={`text-3xl ${theme.subtleText} hover:${theme.text}`}>&times;</button>                </div>
 
                 <div>
-                    <div className="mb-6 flex h-64 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 p-2 overflow-hidden">
-                        {isGenerating && <div className="text-slate-500">Generating your image...</div>}
+                    <div className={`mb-6 flex h-64 items-center justify-center rounded-lg border ${theme.borderColor} ${theme.inputBg} p-2 overflow-hidden`}>
+                        {isGenerating && <div className={`${theme.subtleText}`}>Generating your image...</div>}
                         {preview && !isGenerating && <DraggableImage src={preview} position={modalPosition} onPositionChange={setModalPosition} />}
-                        {!preview && !isGenerating && <div className="text-slate-400 text-center">Image preview will appear here</div>}
+                        {!preview && !isGenerating && <div className={`${theme.subtleText} text-center`}>Image preview will appear here</div>}
                     </div>
 
                     <div>
-                        <div className="mb-6 flex space-x-2 border-b border-slate-200">
-                            <button onClick={() => setActiveTab('url')} className={`px-4 py-2 text-sm font-medium ${activeTab === 'url' ? 'border-b-2 border-slate-700 text-slate-800' : 'text-slate-500'}`}>Paste URL</button>
-                            <button onClick={() => setActiveTab('upload')} className={`px-4 py-2 text-sm font-medium ${activeTab === 'upload' ? 'border-b-2 border-slate-700 text-slate-800' : 'text-slate-500'}`}>Upload</button>
-                            <button onClick={() => setActiveTab('ai')} className={`px-4 py-2 text-sm font-medium ${activeTab === 'ai' ? 'border-b-2 border-purple-700 text-purple-800' : 'text-slate-500'}`}>✨ Generate with AI</button>
+                        <div className={`mb-6 flex space-x-2 border-b ${theme.borderColor}`}>
+                            <button onClick={() => setActiveTab('url')} className={`px-4 py-2 text-sm font-medium ${activeTab === 'url' ? `border-b-2 ${theme.primary} ${theme.text}` : `${theme.subtleText}`}`}>Paste URL</button>
+                            <button onClick={() => setActiveTab('upload')} className={`px-4 py-2 text-sm font-medium ${activeTab === 'upload' ? `border-b-2 ${theme.primary} ${theme.text}` : `${theme.subtleText}`}`}>Upload</button>
+                            <button onClick={() => setActiveTab('ai')} className={`px-4 py-2 text-sm font-medium ${activeTab === 'ai' ? 'border-b-2 border-purple-500 text-purple-300' : `${theme.subtleText}`}`}>✨ Generate with AI</button>
                         </div>
 
                         <div className="mb-4">
                             {activeTab === 'url' && (
                                 <div className="flex space-x-2">
-                                    <input type="text" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://example.com/image.png" className="flex-grow rounded-md border border-slate-300 p-2 focus:border-slate-500 focus:ring-slate-500" />
-                                    <button onClick={() => { setPreview(imageUrl); setModalPosition({ x: 50, y: 50 }); }} className="rounded-md bg-slate-600 px-4 py-2 text-white hover:bg-slate-700">Preview</button>
+                                    <input type="text" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://example.com/image.png" className={`flex-grow rounded-md border ${theme.borderColor} p-2 ${theme.inputBg} ${theme.text} focus:border-amber-500 focus:ring-amber-500`} />
+                                    <button onClick={() => { setPreview(imageUrl); setModalPosition({ x: 50, y: 50 }); }} className={`rounded-md ${theme.button} px-4 py-2 ${theme.text}`}>Preview</button>
                                 </div>
                             )}
                             {activeTab === 'upload' && (
                                 <div>
-                                    <button onClick={() => fileInputRef.current.click()} className="rounded-md bg-slate-600 px-4 py-2 text-white hover:bg-slate-700">Choose File from Device</button>
+                                    <button onClick={() => fileInputRef.current.click()} className={`rounded-md ${theme.button} px-4 py-2 ${theme.text}`}>Choose File from Device</button>
                                     <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
-                                    <p className="mt-2 text-xs text-slate-500">For larger files, pasting a URL is recommended for better performance.</p>
+                                    <p className={`mt-2 text-xs ${theme.subtleText}`}>For larger files, pasting a URL is recommended for better performance.</p>
                                 </div>
                             )}
                             {activeTab === 'ai' && (
@@ -1041,14 +1041,14 @@ const ImageUploadModal = ({ isOpen, onClose, onImageAccept, itemName, initialIma
                                             <><svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Generating...</>
                                         ) : `✨ Generate Image for "${itemName || 'Item'}"`}
                                     </button>
-                                    <p className="mt-2 text-xs text-slate-500">Uses generative AI to create a unique image based on the item's name.</p>
+                                    <p className={`mt-2 text-xs ${theme.subtleText}`}>Uses generative AI to create a unique image based on the item's name.</p>
                                 </div>
                             )}
                         </div>
                     </div>
                 </div>
 
-                <div className="mt-6 flex justify-end border-t border-slate-200 pt-4">
+                <div className={`mt-6 flex justify-end border-t ${theme.borderColor} pt-4`}>
                     <button onClick={handleSave} disabled={!preview || isGenerating} className="rounded-md bg-green-600 px-6 py-2 text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-slate-400">
                         Accept Image
                     </button>
@@ -1057,6 +1057,7 @@ const ImageUploadModal = ({ isOpen, onClose, onImageAccept, itemName, initialIma
         </div>
     );
 };
+
 
 // ===================================================================================
 //  MAIN CONTROLLER COMPONENT
@@ -1110,16 +1111,27 @@ const QuantityControl = ({ quantity, onChange, theme }) => (
     </div>
 );
 
-
 /**
  * Asynchronous function to make a POST request to the Gemini API.
+ * @param {string} prompt - The text prompt to send to the Gemini API.
+ * @param {object|null} responseSchema - An optional schema to tell the API to return a structured JSON object.
+ * @returns {Promise<string|object>} A promise that resolves to the text response from the API, or a parsed JSON object if a schema was provided.
  */
 async function callGeminiAPI(prompt, responseSchema = null) {
+    // Prepare the conversation history for the API. It starts with the user's prompt.
     let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
-    const apiKey = process.env.REACT_APP_GOOGLE_AI_API_KEY; // API key will be injected by the environment
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
+    // Retrieve the API key from environment variables for security. This prevents hardcoding sensitive keys in the source code.
+    const apiKey = process.env.REACT_APP_GOOGLE_AI_API_KEY; // API key will be injected by the environment
+
+    // Construct the full URL for the specific Gemini API model endpoint.
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+    // Create the main payload (the data we send) for the API request.
     const payload = { contents: chatHistory };
+
+    // If a `responseSchema` is provided, it means we want a structured JSON response.
+    // This block adds the necessary configuration to the payload to enforce the JSON output format.
     if (responseSchema) {
         payload.generationConfig = {
             responseMimeType: "application/json",
@@ -1127,41 +1139,72 @@ async function callGeminiAPI(prompt, responseSchema = null) {
         };
     }
 
+    // Use a try...catch block to handle potential network errors (e.g., user is offline) during the API call.
     try {
+        // Make the actual network request to the Gemini API using the 'fetch' function.
+        // It's a POST request, and we send the payload as a JSON string.
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
 
+        // Check if the API call was successful. `response.ok` is true for statuses like 200.
         if (!response.ok) {
+            // If the response is not okay (e.g., 400 or 500 error), we parse the error details and log them.
             const errorBody = await response.json();
             console.error("Gemini API HTTP Error:", response.status, errorBody);
+            // Return a user-friendly error message.
             return `API Error: Something went wrong (${response.status}).`;
         }
 
+        // If the call was successful, parse the JSON data from the response body.
         const result = await response.json();
 
+        // Navigate through the nested structure of the API response to find the generated text.
         if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
-            const textResult = result.candidates[0].content.parts[0].text;
+            let textResult = result.candidates[0].content.parts[0].text;
+
+            // If we were expecting a JSON object (because a schema was sent)...
             if (responseSchema) {
                 try {
+                    // First, try to parse the entire text as JSON. This is the ideal case.
                     return JSON.parse(textResult);
                 } catch (jsonError) {
+                    // If direct parsing fails, it might be because the API wrapped the JSON in a markdown code block (e.g., ```json{...}```).
+                    // This regex looks for that pattern and extracts the JSON content from between the backticks.
+                    const jsonMatch = textResult.match(/```(json)?\s*([\s\S]*?)\s*```/);
+                    if (jsonMatch && jsonMatch[2]) {
+                        try {
+                            // If a match is found, try to parse the extracted content.
+                            return JSON.parse(jsonMatch[2]);
+                        } catch (nestedJsonError) {
+                            // If even this fails, log the error and the text that failed to parse.
+                            console.error("Failed to parse extracted JSON from Gemini API:", nestedJsonError, "Extracted text:", jsonMatch[2]);
+                            return `Failed to parse structured response: ${nestedJsonError.message}. Raw: ${textResult.substring(0, 100)}...`;
+                        }
+                    }
+                    // If no markdown block is found, log the original parsing error and the raw text.
                     console.error("Failed to parse JSON from Gemini API:", jsonError, "Raw text:", textResult);
                     return `Failed to parse structured response: ${jsonError.message}. Raw: ${textResult.substring(0, 100)}...`;
                 }
             }
+            // If no schema was provided, just return the plain text response.
             return textResult;
         } else {
+            // Handle cases where the API call was successful but returned no content.
             console.error("Gemini API response was empty or unexpected:", result);
             return "The API returned an empty or unexpected response.";
         }
     } catch (error) {
+        // This catches any network-level errors (e.g., failed to fetch).
         console.error("Error calling Gemini API:", error);
         return `An unexpected error occurred: ${error.message}.`;
     }
 }
+
+/**
+ * Simulates
 
 /**
  * Simulates fetching a list of Govee devices.
@@ -1363,9 +1406,7 @@ const ChartCard = ({ title, children, action }) => (
     </div>
 );
 
-const BrowseByWrapperPanel = ({ cigars, navigate, theme }) => {
-    const [isCollapsed, setIsCollapsed] = useState(true);
-
+const BrowseByWrapperPanel = ({ cigars, navigate, theme, isCollapsed, onToggle }) => {
     // Calculate unique wrapper types and their counts
     const wrapperData = useMemo(() => {
         const counts = cigars.reduce((acc, cigar) => {
@@ -1381,7 +1422,7 @@ const BrowseByWrapperPanel = ({ cigars, navigate, theme }) => {
 
     return (
         <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
-            <button onClick={() => setIsCollapsed(!isCollapsed)} className="w-full p-4 flex justify-between items-center">
+            <button onClick={onToggle} className="w-full p-4 flex justify-between items-center">
                 <h3 className="font-bold text-amber-300 text-lg flex items-center"><Leaf className="w-5 h-5 mr-2" /> Browse by Wrapper</h3>
                 <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
             </button>
@@ -1407,9 +1448,7 @@ const BrowseByWrapperPanel = ({ cigars, navigate, theme }) => {
     );
 };
 
-const BrowseByStrengthPanel = ({ cigars, navigate, theme }) => {
-    const [isCollapsed, setIsCollapsed] = useState(true); // Defaults to collapsed
-
+const BrowseByStrengthPanel = ({ cigars, navigate, theme, isCollapsed, onToggle }) => {
     const strengthCategories = useMemo(() => [
         { label: 'Mellow Cigars', filterValue: 'Mild' },
         { label: 'Mellow to Medium Cigars', filterValue: 'Mild-Medium' },
@@ -1423,9 +1462,15 @@ const BrowseByStrengthPanel = ({ cigars, navigate, theme }) => {
         const counts = strengthCategories.map(category => {
             let quantity = 0;
             if (category.filterValue === 'Flavored') {
-                quantity = cigars.reduce((sum, cigar) => sum + (cigar.flavorNotes && cigar.flavorNotes.length > 0 ? cigar.quantity : 0), 0);
+                // Sum quantities of all cigars that have at least one flavor note
+                quantity = cigars
+                    .filter(cigar => cigar.flavorNotes && cigar.flavorNotes.length > 0)
+                    .reduce((sum, cigar) => sum + cigar.quantity, 0);
             } else {
-                quantity = cigars.reduce((sum, cigar) => sum + (cigar.strength === category.filterValue ? cigar.quantity : 0), 0);
+                // Sum quantities for a specific strength
+                quantity = cigars
+                    .filter(cigar => cigar.strength === category.filterValue)
+                    .reduce((sum, cigar) => sum + cigar.quantity, 0);
             }
             return { label: category.label, quantity, filterValue: category.filterValue };
         });
@@ -1434,7 +1479,7 @@ const BrowseByStrengthPanel = ({ cigars, navigate, theme }) => {
 
     return (
         <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
-            <button onClick={() => setIsCollapsed(!isCollapsed)} className="w-full p-4 flex justify-between items-center">
+            <button onClick={onToggle} className="w-full p-4 flex justify-between items-center">
                 <h3 className="font-bold text-amber-300 text-lg flex items-center"><Cigarette className="w-5 h-5 mr-2" /> Browse by Profile</h3>
                 <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
             </button>
@@ -1460,9 +1505,7 @@ const BrowseByStrengthPanel = ({ cigars, navigate, theme }) => {
     );
 };
 
-const BrowseByCountryPanel = ({ cigars, navigate, theme }) => {
-    const [isCollapsed, setIsCollapsed] = useState(true); // Defaults to collapsed
-
+const BrowseByCountryPanel = ({ cigars, navigate, theme, isCollapsed, onToggle }) => {
     const countryCategories = useMemo(() => [
         { label: 'Dominican Cigars', filterValue: 'Dominican Republic' },
         { label: 'Nicaraguan Cigars', filterValue: 'Nicaragua' },
@@ -1480,7 +1523,6 @@ const BrowseByCountryPanel = ({ cigars, navigate, theme }) => {
             if (matchedCategory) {
                 acc[matchedCategory.label] = (acc[matchedCategory.label] || 0) + cigar.quantity;
             } else {
-                // If country not explicitly listed, add to 'Other Countries'
                 acc['Other Countries'] = (acc['Other Countries'] || 0) + cigar.quantity;
             }
             return acc;
@@ -1500,7 +1542,7 @@ const BrowseByCountryPanel = ({ cigars, navigate, theme }) => {
 
     return (
         <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
-            <button onClick={() => setIsCollapsed(!isCollapsed)} className="w-full p-4 flex justify-between items-center">
+            <button onClick={onToggle} className="w-full p-4 flex justify-between items-center">
                 <h3 className="font-bold text-amber-300 text-lg flex items-center"><MapPin className="w-5 h-5 mr-2" /> Browse by Country of Origin</h3>
                 <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
             </button>
@@ -1550,14 +1592,13 @@ const LiveEnvironmentPanel = ({ humidors, theme }) => {
     );
 };
 
-const InventoryAnalysisPanel = ({ cigars, theme }) => {
-    const [isCollapsed, setIsCollapsed] = useState(true);
+const InventoryAnalysisPanel = ({ cigars, theme, isCollapsed, onToggle }) => {
     const [chartViews, setChartViews] = useState({ brands: 'bar', countries: 'bar', strength: 'bar' });
 
     const { topBrandsData, topCountriesData, strengthDistributionData } = useMemo(() => {
         const processChartData = (data, key) => {
             const groupedData = data.reduce((acc, cigar) => {
-                const groupKey = cigar[key] || 'N/A';
+                const groupKey = cigar[key] || 'Unknown';
                 acc[groupKey] = (acc[groupKey] || 0) + cigar.quantity;
                 return acc;
             }, {});
@@ -1587,9 +1628,23 @@ const InventoryAnalysisPanel = ({ cigars, theme }) => {
 
     const PIE_COLORS = ['#f59e0b', '#3b82f6', '#84cc16', '#ef4444', '#a855f7'];
 
+    // Custom label renderer for Pie Charts
+    const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name, ...props }) => {
+        const RADIAN = Math.PI / 180;
+        const radius = outerRadius + 15; // Position label outside the pie
+        const x = cx + radius * Math.cos(-midAngle * RADIAN);
+        const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+        return (
+            <text {...props} x={x} y={y} fill="#d1d5db" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={12}>
+                {`${name} (${(percent * 100).toFixed(0)}%)`}
+            </text>
+        );
+    };
+
     return (
         <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
-            <button onClick={() => setIsCollapsed(!isCollapsed)} className="w-full p-4 flex justify-between items-center">
+            <button onClick={onToggle} className="w-full p-4 flex justify-between items-center">
                 <h3 className="font-bold text-amber-300 text-lg flex items-center"><BarChart2 className="w-5 h-5 mr-2" /> Inventory Analysis</h3>
                 <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
             </button>
@@ -1610,7 +1665,7 @@ const InventoryAnalysisPanel = ({ cigars, theme }) => {
                         ) : (
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
-                                    <Pie data={topBrandsData} dataKey="quantity" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                                    <Pie data={topBrandsData} dataKey="quantity" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={true} label={renderCustomizedLabel}>
                                         {topBrandsData.map((entry, index) => <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />)}
                                     </Pie>
                                     <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }} />
@@ -1634,11 +1689,10 @@ const InventoryAnalysisPanel = ({ cigars, theme }) => {
                         ) : (
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
-                                    <Pie data={topCountriesData} dataKey="quantity" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                                    <Pie data={topCountriesData} dataKey="quantity" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={true} label={renderCustomizedLabel}>
                                         {topCountriesData.map((entry, index) => <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />)}
                                     </Pie>
-                                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }} />
-                                </PieChart>
+                                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }} />                                </PieChart>
                             </ResponsiveContainer>
                         )}
                     </ChartCard>
@@ -1658,11 +1712,10 @@ const InventoryAnalysisPanel = ({ cigars, theme }) => {
                         ) : (
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
-                                    <Pie data={strengthDistributionData} dataKey="quantity" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                                    <Pie data={strengthDistributionData} dataKey="quantity" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={true} label={renderCustomizedLabel}>
                                         {strengthDistributionData.map((entry, index) => <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />)}
                                     </Pie>
-                                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }} />
-                                </PieChart>
+                                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }} />                                </PieChart>
                             </ResponsiveContainer>
                         )}
                     </ChartCard>
@@ -1682,9 +1735,8 @@ const MyCollectionStatsCards = ({ totalCigars, totalValue, humidors, theme }) =>
     );
 };
 
-const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showStrengthPanel, showCountryPanel, showLiveEnvironment, showInventoryAnalysis }) => {
+const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showStrengthPanel, showCountryPanel, showLiveEnvironment, showInventoryAnalysis, panelStates, setPanelStates }) => {
     const [roxyTip, setRoxyTip] = useState('');
-    const [isRoxyOpen, setIsRoxyOpen] = useState(true);
     const [modalState, setModalState] = useState({ isOpen: false, content: '', isLoading: false });
 
     useEffect(() => {
@@ -1713,6 +1765,11 @@ const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showSt
         setModalState({ isOpen: true, content: result, isLoading: false });
     };
 
+    // Generic toggle handler for all panels
+    const handlePanelToggle = (panelName) => {
+        setPanelStates(prev => ({ ...prev, [panelName]: !prev[panelName] }));
+    };
+
     // Determine if humidors are present
     const hasHumidors = humidors && humidors.length > 0;
     // Determine if cigars are present
@@ -1724,12 +1781,14 @@ const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showSt
             <h1 className={`text-3xl font-bold ${theme.text} mb-2`}>Dashboard</h1>
             <p className={`${theme.subtleText} mb-6`}>Your collection's live overview.</p>
 
-            <MyCollectionStatsCards
-                totalCigars={totalCigars}
-                totalValue={totalValue}
-                humidors={humidors}
-                theme={theme}
-            />
+            {hasHumidors && (
+                <MyCollectionStatsCards
+                    totalCigars={totalCigars}
+                    totalValue={totalValue}
+                    humidors={humidors}
+                    theme={theme}
+                />
+            )}
 
             {/* New: Roxy's Tips panel when no humidors are present */}
             {!hasHumidors && (
@@ -1764,11 +1823,11 @@ const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showSt
                 {/* Existing Roxy's Corner panel */}
                 {/* TODO Refactor into a component named "RoxysCorner" */}
                 <div className="bg-amber-900/20 border border-amber-800 rounded-xl overflow-hidden">
-                    <button onClick={() => setIsRoxyOpen(!isRoxyOpen)} className="w-full p-4 flex justify-between items-center">
+                    <button onClick={() => handlePanelToggle('roxy')} className="w-full p-4 flex justify-between items-center">
                         <h3 className="font-bold text-amber-300 text-lg flex items-center"><Wind className="w-5 h-5 mr-2" /> Roxy's Corner</h3>
-                        <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isRoxyOpen ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${!panelStates.roxy ? 'rotate-180' : ''}`} />
                     </button>
-                    {isRoxyOpen && (
+                    {!panelStates.roxy && (
                         <div className="px-4 pb-4">
                             {/* New: Friendly message when humidors exist but no cigars */}
                             {hasHumidors && !hasCigars ? (
@@ -1807,15 +1866,15 @@ const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showSt
                 </div>
 
                 {/* Conditionally render LiveEnvironmentPanel if there are humidors and it's enabled in settings */}
-                {hasHumidors && showLiveEnvironment && <LiveEnvironmentPanel humidors={humidors} theme={theme} />}
+                {hasHumidors && showLiveEnvironment && <LiveEnvironmentPanel humidors={humidors} theme={theme} isCollapsed={panelStates.liveEnvironment} onToggle={() => handlePanelToggle('liveEnvironment')} />}
                 {/* Conditionally render InventoryAnalysisPanel if there are cigars and it's enabled in settings */}
-                {hasCigars && showInventoryAnalysis && <InventoryAnalysisPanel cigars={cigars} theme={theme} />}
+                {hasCigars && showInventoryAnalysis && <InventoryAnalysisPanel cigars={cigars} theme={theme} isCollapsed={panelStates.inventoryAnalysis} onToggle={() => handlePanelToggle('inventoryAnalysis')} />}
                 {/* Conditionally render BrowseByWrapperPanel if there are cigars and it's enabled in settings */}
-                {hasCigars && showWrapperPanel && <BrowseByWrapperPanel cigars={cigars} navigate={navigate} theme={theme} />}
+                {hasCigars && showWrapperPanel && <BrowseByWrapperPanel cigars={cigars} navigate={navigate} theme={theme} isCollapsed={panelStates.wrapper} onToggle={() => handlePanelToggle('wrapper')} />}
                 {/* Conditionally render BrowseByStrengthPanel if there are cigars and it's enabled in settings */}
-                {hasCigars && showStrengthPanel && <BrowseByStrengthPanel cigars={cigars} navigate={navigate} theme={theme} />}
+                {hasCigars && showStrengthPanel && <BrowseByStrengthPanel cigars={cigars} navigate={navigate} theme={theme} isCollapsed={panelStates.strength} onToggle={() => handlePanelToggle('strength')} />}
                 {/* Conditionally render BrowseByCountryPanel if there are cigars and it's enabled in settings */}
-                {hasCigars && showCountryPanel && <BrowseByCountryPanel cigars={cigars} navigate={navigate} theme={theme} />}
+                {hasCigars && showCountryPanel && <BrowseByCountryPanel cigars={cigars} navigate={navigate} theme={theme} isCollapsed={panelStates.country} onToggle={() => handlePanelToggle('country')} />}
             </div>
         </div>
     );
@@ -1826,12 +1885,24 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
     const [suggestions, setSuggestions] = useState([]);
     const [activeWrapperFilter, setActiveWrapperFilter] = useState(preFilterWrapper || '');
     const [activeStrengthFilter, setActiveStrengthFilter] = useState(preFilterStrength || '');
-    // NEW: State for active country filter - July 5, 2025 - 2:00:00 AM CDT
     const [activeCountryFilter, setActiveCountryFilter] = useState(preFilterCountry || '');
 
     const DollarSignIcon = (props) => (
         <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
     );
+
+    // New function to handle clearing filters.
+    // It navigates to the Dashboard if a pre-filter was active.
+    const handleClearFilter = () => {
+        if (preFilterWrapper || preFilterStrength || preFilterCountry) {
+            navigate('Dashboard');
+        } else {
+            // Clear local filters if they were not set via props
+            setActiveWrapperFilter('');
+            setActiveStrengthFilter('');
+            setActiveCountryFilter('');
+        }
+    };
 
     // Effect to update activeWrapperFilter when preFilterWrapper prop changes
     useEffect(() => {
@@ -1953,26 +2024,25 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
             {activeWrapperFilter && (
                 <div className="flex justify-between items-center mb-4">
                     <span>Filtering by: <span className="font-bold">{activeWrapperFilter} Wrapper</span></span>
-                    <button onClick={() => setActiveWrapperFilter('')} className="p-1 rounded-full hover:bg-amber-800 transition-colors"><X className="w-4 h-4" /></button>
+                    <button onClick={handleClearFilter} className="p-1 rounded-full hover:bg-amber-800 transition-colors"><X className="w-4 h-4" /></button>
                 </div>
             )}
 
             {activeStrengthFilter && (
                 <div className="flex justify-between items-center mb-4">
                     <span>Filtering by: <span className="font-bold">{activeStrengthFilter === 'Flavored' ? 'Flavored Cigars' : `${activeStrengthFilter} Strength`}</span></span>
-                    <button onClick={() => setActiveStrengthFilter('')} className="p-1 rounded-full hover:bg-amber-800 transition-colors"><X className="w-4 h-4" /></button>
+                    <button onClick={handleClearFilter} className="p-1 rounded-full hover:bg-amber-800 transition-colors"><X className="w-4 h-4" /></button>
                 </div>
             )}
 
-            {/* NEW: Display active country filter - July 5, 2025 - 2:00:00 AM CDT */}
             {activeCountryFilter && (
                 <div className="flex justify-between items-center mb-4">
                     <span>Filtering by: <span className="font-bold">{activeCountryFilter === 'Other' ? 'Other Countries' : `${activeCountryFilter}`}</span></span>
-                    <button onClick={() => setActiveCountryFilter('')} className="p-1 rounded-full hover:bg-amber-800 transition-colors"><X className="w-4 h-4" /></button>
+                    <button onClick={handleClearFilter} className="p-1 rounded-full hover:bg-amber-800 transition-colors"><X className="w-4 h-4" /></button>
                 </div>
             )}
 
-            {searchQuery === '' && !activeWrapperFilter && !activeStrengthFilter && !activeCountryFilter ? ( // July 5, 2025 - 2:00:00 AM CDT: Conditionally render humidor list or filtered cigars
+            {searchQuery === '' && !activeWrapperFilter && !activeStrengthFilter && !activeCountryFilter ? ( 
                 <>
                     <div className="flex justify-between items-center mb-6 px-2">
                         <div>
@@ -2162,8 +2232,8 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                 image: { type: "STRING" },
                 rating: { type: "NUMBER" },
                 price: { type: "NUMBER" },
-                length_inches: { type: "NUMBER" }, // Added to schema
-                ring_gauge: { type: "NUMBER" }     // Added to schema
+                length_inches: { type: "NUMBER" },
+                ring_gauge: { type: "NUMBER" }
             },
             required: ["brand", "shape", "size", "country", "wrapper", "binder", "filler", "strength", "flavorNotes", "shortDescription", "description", "image", "rating", "price", "length_inches", "ring_gauge"]
         };
@@ -2178,9 +2248,9 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                 price: Number(result.price) || 0,
                 image: result.image || '',
                 shortDescription: result.shortDescription || '',
-                description: result.description || '',                flavorNotes: Array.isArray(result.flavorNotes) ? result.flavorNotes : [],
-                length_inches: result.length_inches || '', // Ensure it's set
-                ring_gauge: result.ring_gauge || ''       // Ensure it's set
+                description: result.description || '', flavorNotes: Array.isArray(result.flavorNotes) ? result.flavorNotes : [],
+                length_inches: result.length_inches || '',
+                ring_gauge: result.ring_gauge || ''
             }));
         } else {
             console.error("Gemini API response was not a valid object:", result);
@@ -2433,8 +2503,8 @@ const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
         const { id, ...dataToSave } = formData;
         dataToSave.flavorNotes = Array.isArray(dataToSave.flavorNotes) ? dataToSave.flavorNotes : [];
         dataToSave.dateAdded = new Date(formData.dateAdded).toISOString();
-        dataToSave.length_inches = Number(formData.length_inches) || 0; // Ensure number type
-        dataToSave.ring_gauge = Number(formData.ring_gauge) || 0;     // Ensure number type
+        dataToSave.length_inches = Number(formData.length_inches) || 0;
+        dataToSave.ring_gauge = Number(formData.ring_gauge) || 0;
         await updateDoc(cigarRef, dataToSave);
         navigate('CigarDetail', { cigarId: cigar.id });
     };
@@ -2442,7 +2512,7 @@ const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
     const handleAutofill = async () => {
         if (!formData.name) {
             setModalState({ isOpen: true, content: "Please enter a cigar name to auto-fill.", isLoading: false });
-            setTimeout(() => setModalState({ isOpen: false, content: '', isLoading: false }), 3000); // Disappear after 3 seconds
+            setTimeout(() => setModalState({ isOpen: false, content: '', isLoading: false }), 20000); // Disappear after 20 seconds
             return;
         }
         setIsAutofilling(true);
@@ -2501,7 +2571,7 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                 return updatedData;
             });
             setModalState({ isOpen: true, content: 'Woof! Roxy found some details for you. Looks good!', isLoading: false });
-            setTimeout(() => setModalState({ isOpen: false, content: '', isLoading: false }), 3000); // Disappear after 3 seconds
+            setTimeout(() => setModalState({ isOpen: false, content: '', isLoading: false }), 5000); // Disappear after 5 seconds
         } else {
             console.error("Gemini API response was not a valid object:", result);
             setModalState({ isOpen: true, content: `Ruff! Roxy couldn't fetch details. Try a different name or fill manually. Error: ${result}`, isLoading: false });
@@ -2550,7 +2620,7 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                     }))}
                 />
 
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent pointer-events-none"></div>
                 <div className="absolute top-4 left-4">
                     <button onClick={() => navigate('CigarDetail', { cigarId: cigar.id })} className="p-2 -ml-2 mr-2 bg-black/50 rounded-full">
                         <ChevronLeft className="w-7 h-7 text-white" />
@@ -2710,8 +2780,8 @@ const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
     const [isFlavorModalOpen, setIsFlavorModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-    const [isRoxyOpen, setIsRoxyOpen] = useState(true); // State for Roxy's Corner panel
-    const [showSmokeConfirmation, setShowSmokeConfirmation] = useState(false); // State for smoke confirmation message
+    const [isRoxyOpen, setIsRoxyOpen] = useState(false);
+    const [showSmokeConfirmation, setShowSmokeConfirmation] = useState(false);
 
     const handleSmokeCigar = async () => {
         if (cigar.quantity > 0) {
@@ -2793,14 +2863,9 @@ Provide a brief, encouraging, and slightly personalized note about this cigar's 
                 <img src={cigar.image || `https://placehold.co/400x600/5a3825/ffffff?text=${cigar.brand.replace(/\s/g, '+')}`} alt={cigar.name} className="w-full h-64 object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
 
-                {/* Toolbar moved to top */}
+
                 <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
                     <button onClick={() => navigate('MyHumidor', { humidorId: cigar.humidorId })} className="p-2 bg-black/50 rounded-full text-white"><ChevronLeft className="w-7 h-7" /></button>
-                    <div className="flex items-center gap-2 bg-black/50 p-2 rounded-full">
-                        <button onClick={() => setIsExportModalOpen(true)} className="text-white hover:text-green-400 transition-colors"><Download className="w-5 h-5" /></button>
-                        <button onClick={() => navigate('EditCigar', { cigarId: cigar.id })} className="text-white hover:text-amber-400 transition-colors"><Edit className="w-5 h-5" /></button>
-                        <button onClick={() => setIsDeleteModalOpen(true)} className="text-white hover:text-red-500 transition-colors"><Trash2 className="w-5 h-5" /></button>
-                    </div>
                 </div>
 
                 {/* Rating Badge and Title moved to bottom */}
@@ -2827,13 +2892,25 @@ Provide a brief, encouraging, and slightly personalized note about this cigar's 
 
                 {/* Updated Cigar Profile Panel */}
                 <div className="bg-gray-800/50 p-4 rounded-xl space-y-4">
-                    <h3 className="font-bold text-amber-300 text-lg">Cigar Profile</h3>
+
+                    <div className="flex justify-between items-center">
+                        {/* Panel Title */}
+                        <h3 className="font-bold text-amber-300 text-lg">Cigar Profile</h3>
+
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => setIsExportModalOpen(true)} className="p-2 text-white hover:text-green-400 transition-colors"><Download className="w-5 h-5" /></button>
+                            <button onClick={() => setIsDeleteModalOpen(true)} className="p-2 text-white hover:text-red-500 transition-colors"><Trash2 className="w-5 h-5" /></button>
+                            <button onClick={() => navigate('EditCigar', { cigarId: cigar.id })} className="p-2 text-white hover:text-amber-400 transition-colors"><Edit className="w-5 h-5" /></button>
+                        </div>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                        {/* Short Description moved to top */}
-                        <div className="col-span-2">
-                            <p className="text-xs text-gray-400">Short Description</p>
+                        {/* Short Description */}
+                        <div className="col-span-2">                            <p className="text-xs text-gray-400">Short Description</p>
                             <p className="font-light text-white text-sm break-words">{cigar.shortDescription || 'No short description provided.'}</p>
                         </div>
+
                         <DetailItem label="Shape" value={cigar.shape} />
                         {/* Updated Size display to combine length_inches and ring_gauge */}
                         <DetailItem label="Size" value={cigar.length_inches && cigar.ring_gauge ? `${cigar.length_inches} x ${cigar.ring_gauge}` : cigar.size} />
@@ -3097,7 +3174,7 @@ const EditHumidor = ({ navigate, db, appId, userId, humidor, goveeApiKey, goveeD
                 <InputField name="shortDescription" label="Short Description" placeholder="e.g., Main aging unit" value={formData.shortDescription} onChange={handleInputChange} theme={theme} />
                 {/* Long Description */}
                 <TextAreaField name="longDescription" label="Long Description" placeholder="e.g., A 150-count mahogany humidor..." value={formData.longDescription} onChange={handleInputChange} theme={theme} />
-                
+
                 {/* Type of Humidor */}
                 <div>
                     <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>Type of Humidor</label>
@@ -3733,12 +3810,11 @@ const DataSyncScreen = ({ navigate, db, appId, userId, cigars, humidors }) => {
 
     return (
         <div className="p-4 pb-24">
-            {isImportModalOpen && <ImportCsvModal dataType={modalDataType} data={modalDataType === 'cigar' ? cigars : humidors} db={db} appId={appId} userId={userId} onClose={() => setIsImportModalOpen(false)} humidors={humidors} />}
+            {isImportModalOpen && <ImportCsvModal dataType={modalDataType} data={modalDataType === 'cigar' ? cigars : humidors} db={db} appId={appId} userId={userId} onClose={() => setIsImportModalOpen(false)} humidors={humidors} navigate={navigate} />}
             {isExportModalOpen && <ExportModal dataType={modalDataType} data={modalDataType === 'cigar' ? cigars : humidors} onClose={() => setIsExportModalOpen(false)} />}
 
             <div className="flex items-center mb-6">
-                <button onClick={() => navigate('Settings')} className="p-2 -ml-2 mr-2"><ChevronLeft className="w-7 h-7 text-white" /></button>
-                <h1 className="text-3xl font-bold text-white">Import & Export</h1>
+                <button onClick={() => navigate('Settings')} className="p-2 -ml-2 mr-2"><ChevronLeft className="w-7 h-7 text-white" /></button>                <h1 className="text-3xl font-bold text-white">Import & Export</h1>
             </div>
 
             <div className="space-y-6">
@@ -3794,7 +3870,7 @@ const APP_FIELDS = [
 /**
  * Generic ImportCsvModal component to handle both cigar and humidor imports.
  */
-const ImportCsvModal = ({ dataType, data, db, appId, userId, onClose, humidors }) => {
+const ImportCsvModal = ({ dataType, data, db, appId, userId, onClose, humidors, navigate }) => {
     const [step, setStep] = useState('selectFile');
     const [selectedHumidor, setSelectedHumidor] = useState(humidors[0]?.id || '');
     const [csvHeaders, setCsvHeaders] = useState([]);
@@ -4008,7 +4084,18 @@ const ImportCsvModal = ({ dataType, data, db, appId, userId, onClose, humidors }
                             <h3 className="text-xl font-bold text-green-400 flex items-center"><Check className="w-6 h-6 mr-2" /> Import Complete</h3>
                         </div>
                         <p className="text-center text-gray-300 mb-6">Successfully imported {importedCount} {dataType === 'cigar' ? 'cigars' : 'humidors'}.</p>
-                        <button onClick={onClose} className="w-full bg-amber-500 text-white font-bold py-3 rounded-lg hover:bg-amber-600 transition-colors">Done</button>
+                        <button
+                            onClick={() => {
+                                if (dataType === 'cigar' && selectedHumidor) {
+                                    navigate('MyHumidor', { humidorId: selectedHumidor });
+                                } else {
+                                    onClose();
+                                }
+                            }}
+                            className="w-full bg-amber-500 text-white font-bold py-3 rounded-lg hover:bg-amber-600 transition-colors"
+                        >
+                            Finish
+                        </button>
                     </>
                 );
             default: return null;
@@ -4189,7 +4276,6 @@ const ProfileScreen = ({ navigate, cigars, theme }) => {
     );
 };
 
-// --- MAIN APP COMPONENT ---
 export default function App() {
     const [navigation, setNavigation] = useState({ screen: 'Dashboard', params: {} });
     const [cigars, setCigars] = useState([]);
@@ -4207,6 +4293,16 @@ export default function App() {
         showCountryPanel: true,
         showLiveEnvironment: true,
         showInventoryAnalysis: true,
+    });
+
+    // New state to manage the open/closed status of dashboard panels
+    const [dashboardPanelStates, setDashboardPanelStates] = useState({
+        roxy: true,
+        liveEnvironment: true,
+        inventoryAnalysis: true,
+        wrapper: true,
+        strength: true,
+        country: true,
     });
 
     // Gemini TODO:Firebase state
@@ -4338,8 +4434,19 @@ export default function App() {
         // A `switch` statement is used to select the correct component.
         switch (screen) {
             case 'Dashboard':
-                // Pass humidors and cigars count to Dashboard for conditional rendering of panels
-                return <Dashboard navigate={navigate} cigars={cigars} humidors={humidors} theme={theme} {...dashboardPanelVisibility} />;
+                return <Dashboard
+                    navigate={navigate}
+                    cigars={cigars}
+                    humidors={humidors}
+                    theme={theme}
+                    showWrapperPanel={dashboardPanelVisibility.showWrapperPanel}
+                    showStrengthPanel={dashboardPanelVisibility.showStrengthPanel}
+                    showCountryPanel={dashboardPanelVisibility.showCountryPanel}
+                    showLiveEnvironment={dashboardPanelVisibility.showLiveEnvironment}
+                    showInventoryAnalysis={dashboardPanelVisibility.showInventoryAnalysis}
+                    panelStates={dashboardPanelStates}
+                    setPanelStates={setDashboardPanelStates}
+                />;
             case 'HumidorsScreen':
                 return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} db={db} appId={appId} userId={userId} theme={theme} {...params} />;
             case 'MyHumidor':
@@ -4375,7 +4482,19 @@ export default function App() {
             case 'Profile':
                 return <ProfileScreen navigate={navigate} cigars={cigars} theme={theme} />;
             default:
-                return <Dashboard navigate={navigate} cigars={cigars} humidors={humidors} theme={theme} {...dashboardPanelVisibility} />;
+                return <Dashboard
+                    navigate={navigate}
+                    cigars={cigars}
+                    humidors={humidors}
+                    theme={theme}
+                    showWrapperPanel={dashboardPanelVisibility.showWrapperPanel}
+                    showStrengthPanel={dashboardPanelVisibility.showStrengthPanel}
+                    showCountryPanel={dashboardPanelVisibility.showCountryPanel}
+                    showLiveEnvironment={dashboardPanelVisibility.showLiveEnvironment}
+                    showInventoryAnalysis={dashboardPanelVisibility.showInventoryAnalysis}
+                    panelStates={dashboardPanelStates}
+                    setPanelStates={setDashboardPanelStates}
+                />;
         }
     };
 
