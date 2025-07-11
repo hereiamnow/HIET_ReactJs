@@ -112,6 +112,18 @@ import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, 
 // First, parse the JSON string from the environment variable
 const firebaseConfig = JSON.parse(process.env.REACT_APP_FIREBASE_CONFIG);
 
+// Connect to emulators if running locally
+if (window.location.hostname === 'localhost') {
+    console.log("Local environment detected, connecting to emulators.");
+    try {
+        connectFirestoreEmulator(db, 'localhost', 8080);
+        connectAuthEmulator(auth, "http://localhost:9099");
+        console.log("Successfully connected to Firestore and Auth emulators.");
+    } catch (error) {
+        console.error("Error connecting to emulators:", error);
+    }
+}
+
 const initialAuthToken = typeof window !== "undefined" && window.initialAuthToken ? window.initialAuthToken : null;
 
 const themes = {
