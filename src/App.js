@@ -1484,7 +1484,7 @@ const ListCigarCard = ({ cigar, navigate, isSelectMode, isSelected, onSelect }) 
     );
 };
 
-const InputField = ({ name, label, placeholder, type = 'text', value, onChange, theme, className = '', inputRef }) => (
+const InputField = ({ name, label, placeholder, type = 'text', value, onChange, onBlur, theme, className = '', inputRef }) => (
     <div>
         <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>{label}</label>
         <input
@@ -1493,13 +1493,14 @@ const InputField = ({ name, label, placeholder, type = 'text', value, onChange, 
             placeholder={placeholder}
             value={value || ''}
             onChange={onChange}
+            onBlur={onBlur}
             ref={inputRef} // Apply ref here
             className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} placeholder-gray-500 focus:outline-none focus:ring-2 ${theme.ring} ${className}`}
         />
     </div>
 );
 
-const TextAreaField = ({ name, label, placeholder, value, onChange, theme }) => (
+const TextAreaField = ({ name, label, placeholder, value, onChange, theme, className = '' }) => (
     <div>
         <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>{label}</label>
         <textarea
@@ -1508,12 +1509,12 @@ const TextAreaField = ({ name, label, placeholder, value, onChange, theme }) => 
             value={value || ''}
             onChange={onChange}
             rows="3"
-            className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} placeholder-gray-500 focus:outline-none focus:ring-2 ${theme.ring}`}
+            className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} placeholder-gray-500 focus:outline-none focus:ring-2 ${theme.ring} ${className}`}
         />
     </div>
 );
 
-const AutoCompleteInputField = ({ name, label, placeholder, value, onChange, suggestions, theme }) => {
+const AutoCompleteInputField = ({ name, label, placeholder, value, onChange, suggestions, theme, className = '', inputRef }) => {
     const [filteredSuggestions, setFilteredSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -1564,7 +1565,8 @@ const AutoCompleteInputField = ({ name, label, placeholder, value, onChange, sug
                     }
                 }}
                 onBlur={handleBlur}
-                className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} placeholder-gray-500 focus:outline-none focus:ring-2 ${theme.ring}`}
+                ref={inputRef}
+                className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} placeholder-gray-500 focus:outline-none focus:ring-2 ${theme.ring} ${className}`}
             />
             {showSuggestions && filteredSuggestions.length > 0 && (
                 <div className={`absolute z-10 w-full ${theme.card} border ${theme.borderColor} rounded-lg mt-1 max-h-48 overflow-y-auto shadow-lg`}>
@@ -2376,6 +2378,14 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
         setStrengthSuggestions([]);
     };
 
+    const handlePriceBlur = (e) => {
+        const { name, value } = e.target;
+        if (name === 'price' && value) {
+            const formattedPrice = Number(value).toFixed(2);
+            setFormData(prev => ({ ...prev, price: formattedPrice }));
+        }
+    };
+
     const handleQuantityChange = (newQuantity) => {
         if (newQuantity >= 0) {
             setFormData(prev => ({ ...prev, quantity: newQuantity }));
@@ -2430,24 +2440,45 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
             required: ["brand", "shape", "size", "country", "wrapper", "binder", "filler", "strength", "flavorNotes", "shortDescription", "description", "image", "rating", "price", "length_inches", "ring_gauge"]
         };
 
+        // Call the Gemini API with the prompt and response schema
         const result = await callGeminiAPI(prompt, responseSchema);
 
-        if (typeof result === 'object' && result !== null && !result.error) {
-            // Smart merge: only update if the existing field is empty/falsy
-            setFormData(prev => {
-                const updatedData = { ...prev };
-                for (const key in result) {
-                    if (Object.prototype.hasOwnProperty.call(result, key)) {
-                        // Only update if the form field is empty or it's an empty array
-                        if (!updatedData[key] || (Array.isArray(updatedData[key]) && updatedData[key].length === 0)) {
-                            updatedData[key] = result[key];
-                        }
-                    }
+        if (typeof result === 'object' && result !== null) {
+            const updatedFields = [];
+            const currentFormData = { ...formData }; // Get a snapshot of the current state
+
+            // Determine which fields will be updated
+            for (const key in result) {
+                const hasExistingValue = currentFormData[key] && (!Array.isArray(currentFormData[key]) || currentFormData[key].length > 0);
+                const hasNewValue = result[key] && (!Array.isArray(result[key]) || result[key].length > 0);
+
+                if (!hasExistingValue && hasNewValue) {
+                    updatedFields.push(key);
                 }
-                return updatedData;
-            });
-            setModalState({ isOpen: true, content: 'Woof! Roxy found some details for you. Looks good!', isLoading: false });
-            setTimeout(() => setModalState({ isOpen: false, content: '', isLoading: false }), 3000); // Disappear after 3 seconds
+            }
+
+            if (updatedFields.length > 0) {
+                // Apply the updates to the form state
+                setFormData(prevData => {
+                    const updatedData = { ...prevData };
+                    updatedFields.forEach(key => {
+                        updatedData[key] = result[key];
+                    });
+                    return updatedData;
+                });
+
+                // Create a user-friendly list of changes for the modal
+                const changesList = updatedFields
+                    .map(field => `- ${field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`)
+                    .join('\n');
+                const modalContent = `Woof! Roxy found some details for you and updated the following:\n\n${changesList}`;
+                setModalState({ isOpen: true, content: modalContent, isLoading: false });
+                setTimeout(() => setModalState({ isOpen: false, content: '', isLoading: false }), 8000); // Show for 8 seconds
+            } else {
+                // If no fields were updated, show a different message
+                setModalState({ isOpen: true, content: "Ruff! Roxy looked, but all your details seem to be filled in already. Good job!", isLoading: false });
+                setTimeout(() => setModalState({ isOpen: false, content: '', isLoading: false }), 5000); // Disappear after 5 seconds
+            }
         } else {
             console.error("Gemini API response was not a valid object:", result);
             setModalState({ isOpen: true, content: `Ruff! Roxy couldn't fetch details. Try a different name or fill manually. Error: ${result}`, isLoading: false });
@@ -2650,6 +2681,7 @@ const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
     const [isFlavorModalOpen, setIsFlavorModalOpen] = useState(false);
     const [isAutofilling, setIsAutofilling] = useState(false);
     const [modalState, setModalState] = useState({ isOpen: false, content: '', isLoading: false });
+    const [flashingFields, setFlashingFields] = useState({});
 
     // Refs for flashing effect
     const lengthInputRef = useRef(null);
@@ -2684,6 +2716,14 @@ const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
         }
     };
 
+    const handlePriceBlur = (e) => {
+        const { name, value } = e.target;
+        if (name === 'price' && value) {
+            const formattedPrice = Number(value).toFixed(2);
+            setFormData(prev => ({ ...prev, price: formattedPrice }));
+        }
+    };
+
     const handleQuantityChange = (newQuantity) => {
         if (newQuantity >= 0) {
             setFormData(prev => ({ ...prev, quantity: newQuantity }));
@@ -2709,10 +2749,12 @@ const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
     const handleAutofill = async () => {
         if (!formData.name) {
             setModalState({ isOpen: true, content: "Please enter a cigar name to auto-fill.", isLoading: false });
-            setTimeout(() => setModalState({ isOpen: false, content: '', isLoading: false }), 20000); // Disappear after 20 seconds
+            setTimeout(() => setModalState({ isOpen: false, content: '', isLoading: false }), 3000);
             return;
         }
         setIsAutofilling(true);
+        setModalState({ isOpen: true, content: "Roxy is on the hunt for details...", isLoading: true });
+
         const prompt = `You are a cigar database. A user is editing an existing cigar record and wants to fill in any missing details.
 
 Here is the existing data for the cigar:
@@ -2757,18 +2799,31 @@ Do not include any text or markdown formatting outside of the JSON object.`;
         const result = await callGeminiAPI(prompt, responseSchema);
 
         if (typeof result === 'object' && result !== null) {
-            setFormData(prevData => {
-                const updatedData = { ...prevData };
-                for (const key in result) {
-                    // Smart merge: only update if the existing field is empty/falsy
-                    if (!updatedData[key] || (Array.isArray(updatedData[key]) && updatedData[key].length === 0)) {
-                        updatedData[key] = result[key];
-                    }
+            const updatedFields = {};
+            for (const key in result) {
+                const existingValue = formData[key];
+                const newValue = result[key];
+                if ((!existingValue || (Array.isArray(existingValue) && existingValue.length === 0)) && (newValue && (!Array.isArray(newValue) || newValue.length > 0))) {
+                    updatedFields[key] = newValue;
                 }
-                return updatedData;
-            });
-            setModalState({ isOpen: true, content: 'Woof! Roxy found some details for you. Looks good!', isLoading: false });
-            setTimeout(() => setModalState({ isOpen: false, content: '', isLoading: false }), 5000); // Disappear after 5 seconds
+            }
+
+            if (Object.keys(updatedFields).length > 0) {
+                setFormData(prevData => ({ ...prevData, ...updatedFields }));
+
+                const flashState = {};
+                Object.keys(updatedFields).forEach(key => {
+                    flashState[key] = true;
+                });
+                setFlashingFields(flashState);
+                setTimeout(() => setFlashingFields({}), 1500); // Clear flashing after 1.5 seconds
+
+                setModalState({ isOpen: true, content: 'Woof! Roxy found some details for you. Looks good!', isLoading: false });
+                setTimeout(() => setModalState({ isOpen: false, content: '', isLoading: false }), 3000); // Disappear after 3 seconds
+            } else {
+                setModalState({ isOpen: true, content: "Ruff! Roxy looked, but all your details seem to be filled in already. Good job!", isLoading: false });
+                setTimeout(() => setModalState({ isOpen: false, content: '', isLoading: false }), 3000);
+            }
         } else {
             console.error("Gemini API response was not a valid object:", result);
             setModalState({ isOpen: true, content: `Ruff! Roxy couldn't fetch details. Try a different name or fill manually. Error: ${result}`, isLoading: false });
@@ -2785,26 +2840,12 @@ Do not include any text or markdown formatting outside of the JSON object.`;
         setFormData(prev => ({ ...prev, flavorNotes: newNotes }));
     };
 
-    // State in the parent form to hold the item's name, image URL, and image position.
-    // This will be passed to the SmartImageModal.
-    const [itemName, setItemName] = useState('Arturo Fuente Hemingway');
-    const [itemImage, setItemImage] = useState('');
-    const [itemImagePosition, setItemImagePosition] = useState({ x: 50, y: 50 });
-
-    // This function is passed to the SmartImageModal and called when the user clicks "Accept Image".
-    // It updates the main form's state with the new image and its position.
-    const handleImageAccept = (image, position) => {
-        setItemImage(image);
-        setItemImagePosition(position);
-    };
-
     return (
         <div className="pb-24">
             {modalState.isOpen && <GeminiModal title="Auto-fill Status" content={modalState.content} isLoading={modalState.isLoading} onClose={closeModal} />}
             {isFlavorModalOpen && <FlavorNotesModal cigar={{ flavorNotes: formData.flavorNotes }} db={db} appId={appId} userId={userId} onClose={() => setIsFlavorModalOpen(false)} setSelectedNotes={handleFlavorNotesUpdate} />}
 
             <div className="relative">
-
                 <SmartImageModal
                     itemName={formData.name}
                     theme={theme}
@@ -2816,7 +2857,6 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                         imagePosition: pos
                     }))}
                 />
-
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent pointer-events-none"></div>
                 <div className="absolute top-4 left-4">
                     <button onClick={() => navigate('CigarDetail', { cigarId: cigar.id })} className="p-2 -ml-2 mr-2 bg-black/50 rounded-full">
@@ -2831,18 +2871,18 @@ Do not include any text or markdown formatting outside of the JSON object.`;
             {/* Cigar Name and Details */}
             <div id="pnlCigarNameAndDetails" className="p-4 space-y-4">
                 {/* Brand */}
-                <InputField name="brand" label="Brand" placeholder="e.g., Padrón" value={formData.brand} onChange={handleInputChange} theme={theme} />
+                <InputField name="brand" label="Brand" placeholder="e.g., Padrón" value={formData.brand} onChange={handleInputChange} theme={theme} className={flashingFields.brand ? 'ring-2 ring-amber-400 animate-pulse' : ''} />
                 {/* Name / Line */}
-                <InputField name="name" label="Name / Line" placeholder="e.g., 1964 Anniversary" value={formData.name} onChange={handleInputChange} theme={theme} />
+                <InputField name="name" label="Name / Line" placeholder="e.g., 1964 Anniversary" value={formData.name} onChange={handleInputChange} theme={theme} className={flashingFields.name ? 'ring-2 ring-amber-400 animate-pulse' : ''} />
                 {/* Auto-fill Button */}
                 <button onClick={handleAutofill} disabled={isAutofilling} className="w-full flex items-center justify-center gap-2 bg-purple-600/20 border border-purple-500 text-purple-300 font-bold py-2 rounded-lg hover:bg-purple-600/30 transition-colors disabled:opacity-50">
-                    {isAutofilling ? <LoaderCircle className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                    {isAutofilling ? <LoaderCircle className="w-5 h-5 animate-pulse" /> : <Sparkles className="w-5 h-5" />}
                     {isAutofilling ? 'Thinking...' : '✨ Auto-fill Details'}
                 </button>
                 {/* Short Description */}
-                <InputField name="shortDescription" label="Short Description" placeholder="Brief overview of the cigar..." value={formData.shortDescription} onChange={handleInputChange} theme={theme} />
+                <InputField name="shortDescription" label="Short Description" placeholder="Brief overview of the cigar..." value={formData.shortDescription} onChange={handleInputChange} theme={theme} className={flashingFields.shortDescription ? 'ring-2 ring-amber-400 animate-pulse' : ''} />
                 {/* Description */}
-                <TextAreaField name="description" label="Description" placeholder="Notes on this cigar..." value={formData.description} onChange={handleInputChange} theme={theme} />
+                <TextAreaField name="description" label="Description" placeholder="Notes on this cigar..." value={formData.description} onChange={handleInputChange} theme={theme} className={flashingFields.description ? 'ring-2 ring-amber-400 animate-pulse' : ''} />
                 {/* Shape and Size */}
                 <div id="pnlShapeAndSize" className="grid grid-cols-2 gap-3">
                     <AutoCompleteInputField
@@ -2854,8 +2894,9 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                         onChange={handleInputChange}
                         suggestions={cigarShapes}
                         theme={theme}
+                        className={flashingFields.shape ? 'ring-2 ring-amber-400 animate-pulse' : ''}
                     />
-                    <InputField name="size" label="Size" placeholder="e.g., 5.5x50" value={formData.size} onChange={handleInputChange} theme={theme} />
+                    <InputField name="size" label="Size" placeholder="e.g., 5.5x50" value={formData.size} onChange={handleInputChange} theme={theme} className={flashingFields.size ? 'ring-2 ring-amber-400 animate-pulse' : ''} />
                 </div>
                 {/* Length and Ring Gauge */}
                 <div id="pnlLengthAndRing" className="grid grid-cols-2 gap-3">
@@ -2867,7 +2908,7 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                         value={formData.length_inches}
                         onChange={handleInputChange}
                         theme={theme}
-                        className={isLengthFlashing ? 'ring-2 ring-amber-400 animate-pulse' : ''}
+                        className={`${isLengthFlashing ? 'ring-2 ring-amber-400 animate-pulse' : ''} ${flashingFields.length_inches ? 'ring-2 ring-amber-400 animate-pulse' : ''}`}
                         inputRef={lengthInputRef}
                         suggestions={cigarLengths}
                     />
@@ -2879,7 +2920,7 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                         value={formData.ring_gauge}
                         onChange={handleInputChange}
                         theme={theme}
-                        className={isGaugeFlashing ? 'ring-2 ring-amber-400 animate-pulse' : ''}
+                        className={`${isGaugeFlashing ? 'ring-2 ring-amber-400 animate-pulse' : ''} ${flashingFields.ring_gauge ? 'ring-2 ring-amber-400 animate-pulse' : ''}`}
                         inputRef={gaugeInputRef}
                         suggestions={cigarRingGauges}
                     />
@@ -2894,6 +2935,7 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                         onChange={handleInputChange}
                         suggestions={cigarWrapperColors}
                         theme={theme}
+                        className={flashingFields.wrapper ? 'ring-2 ring-amber-400 animate-pulse' : ''}
                     />
                     <AutoCompleteInputField
                         name="binder"
@@ -2903,6 +2945,7 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                         onChange={handleInputChange}
                         suggestions={cigarBinderTypes}
                         theme={theme}
+                        className={flashingFields.binder ? 'ring-2 ring-amber-400 animate-pulse' : ''}
                     />
                 </div>
                 {/* Filler and Country */}
@@ -2915,6 +2958,7 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                         onChange={handleInputChange}
                         suggestions={cigarFillerTypes}
                         theme={theme}
+                        className={flashingFields.filler ? 'ring-2 ring-amber-400 animate-pulse' : ''}
                     />
                     <AutoCompleteInputField
                         name="country"
@@ -2924,23 +2968,24 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                         onChange={handleInputChange}
                         suggestions={cigarCountryOfOrigin}
                         theme={theme}
+                        className={flashingFields.country ? 'ring-2 ring-amber-400 animate-pulse' : ''}
                     />
                 </div>
                 {/* Profile and Price */}
                 <div id="pnlProfileAndPrice" className="grid grid-cols-2 gap-3">
                     <div className="relative">
-                        <InputField name="strength" label="Strength" placeholder="e.g., Full" value={formData.strength} onChange={handleInputChange} theme={theme} />
+                        <InputField name="strength" label="Strength" placeholder="e.g., Full" value={formData.strength} onChange={handleInputChange} theme={theme} className={flashingFields.strength ? 'ring-2 ring-amber-400 animate-pulse' : ''} />
                         {strengthSuggestions.length > 0 && (
                             <div className="absolute top-full left-0 right-0 bg-gray-700 border border-gray-600 rounded-b-xl mt-1 z-20 overflow-hidden">
                                 {strengthSuggestions.map(suggestion => (<div key={suggestion} onMouseDown={() => handleSuggestionClick(suggestion)} className="w-full text-left px-4 py-3 hover:bg-gray-600 transition-colors cursor-pointer">{suggestion}</div>))}
                             </div>
                         )}
                     </div>
-                    <InputField name="price" label="Price Paid" placeholder="e.g., 15.50" type="number" value={formData.price} onChange={handleInputChange} theme={theme} />
+                    <InputField name="price" label="Price Paid" placeholder="e.g., 15.50" type="number" value={formData.price} onChange={handleInputChange} onBlur={handlePriceBlur} theme={theme} className={flashingFields.price ? 'ring-2 ring-amber-400 animate-pulse' : ''} />
                 </div>
                 {/* Rating and Date Added */}
                 <div id="pnlRatingAndDate" className="grid grid-cols-2 gap-3">
-                    <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} onChange={handleInputChange} theme={theme} />
+                    <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} onChange={handleInputChange} theme={theme} className={flashingFields.rating ? 'ring-2 ring-amber-400 animate-pulse' : ''} />
                     <InputField name="dateAdded" label="Date Added" type="date" value={formData.dateAdded} onChange={handleInputChange} theme={theme} />
                 </div>
                 {/* Flavor Notes */}
@@ -2971,6 +3016,10 @@ Do not include any text or markdown formatting outside of the JSON object.`;
         </div>
     );
 };
+
+
+
+
 
 const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
     const [modalState, setModalState] = useState({ isOpen: false, type: null, content: '', isLoading: false });
@@ -3116,6 +3165,7 @@ Provide a brief, encouraging, and slightly personalized note about this cigar's 
                         <DetailItem label="Wrapper" value={cigar.wrapper} />
                         <DetailItem label="Binder" value={cigar.binder} />
                         <DetailItem label="Filler" value={cigar.filler} />
+                        {/* <DetailItem label="Price Paid" value={cigar.price ? `$${Number(cigar.price).toFixed(2)}` : 'N/A'} /> */}
                         <DetailItem label="Date Added" value={formatDate(cigar.dateAdded)} />
                         <DetailItem label="Time in Humidor" value={calculateAge(cigar.dateAdded)} />
                     </div>
