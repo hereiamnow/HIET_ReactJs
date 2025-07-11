@@ -1,14 +1,13 @@
 {
 	"version": "2.0.0",
 	"tasks": [
-		// Build and Start
 		{
 			"label": "npm: build",
 			"type": "npm",
 			"script": "build",
 			"group": "build",
 			"problemMatcher": [],
-			"detail": "react-scripts build"
+			"detail": "Builds the React app for production."
 		},
 		{
 			"label": "npm: start",
@@ -16,24 +15,34 @@
 			"script": "start",
 			"group": "build",
 			"problemMatcher": [],
-			"detail": "react-scripts start"
+			"detail": "Starts the development server, allowing you to preview your changes live."
 		},
-		// Unit Test
 		{
 			"label": "npm: test",
 			"type": "npm",
 			"script": "test",
 			"group": "test",
 			"problemMatcher": [],
-			"detail": "react-scripts test"
+			"detail": "Runs the tests using react-scripts."
 		},
-		// Start Firebase Emulators
 		{
 			"label": "Start Firebase Emulators",
 			"type": "shell",
 			"command": "firebase emulators:start",
 			"group": "build",
-			"problemMatcher": []
-		}
+			"problemMatcher": [],
+			"detail": "Starts the Firebase emulators for local development."
+		},
+        {
+            "label": "Deploy to Firebase",
+            "type": "npm",
+            "script": "deploy",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "detail": "Builds the React app and deploys it to Firebase Hosting."
+        }
 	]
 }
