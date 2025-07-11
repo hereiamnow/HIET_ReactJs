@@ -109,6 +109,9 @@ import { initializeApp } from "firebase/app";
 import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, writeBatch, connectFirestoreEmulator } from "firebase/firestore";
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, connectAuthEmulator } from "firebase/auth";
 
+// First, parse the JSON string from the environment variable
+const firebaseConfig = JSON.parse(process.env.REACT_APP_FIREBASE_CONFIG);
+
 const initialAuthToken = typeof window !== "undefined" && window.initialAuthToken ? window.initialAuthToken : null;
 
 const themes = {
@@ -295,14 +298,18 @@ const generateAiImage = async (itemName, itemCategory, itemType) => {
         instances: [{ prompt: prompt }],
         parameters: { "sampleCount": 1 }
     };
-    const apiKey = process.env.REACT_APP_GOOGLE_AI_API_KEY; // The environment will provide the API key automatically.
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+    const apiKey = firebaseConfig.apiKey; // The environment will provide the API key automatically.
+    const projectId = firebaseConfig.projectId; // Get Project ID from environment variables
+    const apiUrl = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/imagen-3.0-generate-002:predict`;
 
     try {
         // We use a try/catch block to handle potential network errors.
         const response = await fetch(apiUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}` // Use Bearer token for authentication
+            },
             body: JSON.stringify(payload)
         });
 
@@ -1307,7 +1314,7 @@ async function callGeminiAPI(prompt, responseSchema = null) {
     let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
 
     // Retrieve the API key from environment variables for security. This prevents hardcoding sensitive keys in the source code.
-    const apiKey = process.env.REACT_APP_GOOGLE_AI_API_KEY; // API key will be injected by the environment
+    const apiKey = firebaseConfig.apiKey; // API key will be injected by the environment
 
     // Construct the full URL for the specific Gemini API model endpoint.
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
@@ -2425,21 +2432,26 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
 
         const result = await callGeminiAPI(prompt, responseSchema);
 
-        if (typeof result === 'object' && result !== null) {
-            setFormData(prevData => ({
-                ...prevData,
-                ...result,
-                rating: Number(result.rating) || 0,
-                price: Number(result.price) || 0,
-                image: result.image || '',
-                shortDescription: result.shortDescription || '',
-                description: result.description || '', flavorNotes: Array.isArray(result.flavorNotes) ? result.flavorNotes : [],
-                length_inches: result.length_inches || '',
-                ring_gauge: result.ring_gauge || ''
-            }));
+        if (typeof result === 'object' && result !== null && !result.error) {
+            // Smart merge: only update if the existing field is empty/falsy
+            setFormData(prev => {
+                const updatedData = { ...prev };
+                for (const key in result) {
+                    if (Object.prototype.hasOwnProperty.call(result, key)) {
+                        // Only update if the form field is empty or it's an empty array
+                        if (!updatedData[key] || (Array.isArray(updatedData[key]) && updatedData[key].length === 0)) {
+                            updatedData[key] = result[key];
+                        }
+                    }
+                }
+                return updatedData;
+            });
+            setModalState({ isOpen: true, content: 'Woof! Roxy found some details for you. Looks good!', isLoading: false });
+            setTimeout(() => setModalState({ isOpen: false, content: '', isLoading: false }), 3000); // Disappear after 3 seconds
         } else {
             console.error("Gemini API response was not a valid object:", result);
-            setModalState({ isOpen: true, content: `Failed to parse auto-fill data. Please try a different name or fill manually. Error: ${result}`, isLoading: false });
+            setModalState({ isOpen: true, content: `Ruff! Roxy couldn't fetch details. Try a different name or fill manually. Error: ${result}`, isLoading: false });
+            setTimeout(() => setModalState({ isOpen: false, content: '', isLoading: false }), 5000); // Disappear after 5 seconds
         }
 
         setIsAutofilling(false);
