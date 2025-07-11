@@ -5,32 +5,7 @@
 // Time: 10:01 PM CDT
 
 // Description of Changes:
-// - Implemented the "Aged in Humidor" feature to track how long a cigar has been stored.
-// - Added a `dateAdded` field that is automatically set when a cigar is added and reset when it's moved.
-// - The `CigarDetail` page now displays the date added and the total time in the humidor.
-// - The `EditCigar` screen now includes a field to manually set or correct the `dateAdded`.
-// - Enhanced "Roxy's Corner" on the Cigar Detail page with a new "Aging Potential" analysis feature.
-// - Simplified the `CigarDetail` action bar by removing the quantity stepper and making "Smoke This" a full-width button.
-// - Added image placeholder at the top of Add and Edit Cigar Screens, matching the size of the cigar detail image.
-// - Implemented CSV import/export functionality for Humidors.
-// - Redesigned the Data & Sync screen with collapsible sections for better organization.
-// - Made ImportCsvModal and ExportModal generic to handle both Cigars and Humidors.
-// - CigarDetail: Added short description label to top of profile panel with wrapping text.
-// - CigarDetail: Replaced interactive Flavor Notes control with a static display of notes.
-// - CigarDetail: Added a Roxy-type confirmation message when "Smoke This" button is clicked.
-// - EditCigar: Made Auto-fill Status confirmation message more Roxy-like and disappear after 3 seconds.
-// - EditCigar: Made the Quantity control more prominent and turn red when the value is "0".
-// - Dashboard: Conditionally display a new "Roxy's Tips" panel when no humidors are present, instructing the user to add a humidor and cigars.
-// - Dashboard: Conditionally display a friendly message within "Roxy's Corner" when humidors are present but no cigars, encouraging the user to add or move cigars.
-// - Dashboard: All data-dependent panels and buttons (e.g., Inventory Analysis, Browse by panels, Ask Roxy for Summary button) now only display if relevant data (humidors or cigars) is present, in addition to their settings-based visibility.
-// - Dashboard: Created a reusable `MyCollectionStatsCards` component from the existing stats cards.
-// - Dashboard: Removed icons from `StatCards` within the `MyCollectionStatsCards` component.
-// - Dashboard: Moved the `MyCollectionStatsCards` component above the "Roxy's Tips" panel.
-// - Add/Edit Cigar: Connected 'Length' to `length_inches` and 'Gauge' to `ring_gauge`.
-// - Add/Edit Cigar: Implemented auto-update and flashing for `length_inches` and `ring_gauge` when a 'Shape' is selected.
-// - Edit Cigar: Increased the size of the Quantity digit control.
-// - Cigar Detail: Updated the 'Size' label in the Cigar Profile panel to show 'length_inches x ring_gauge'.
-// - Add Cigar: Replaced the simple Quantity input field with the interactive `QuantityControl` component.
+// - Add changes here...
 
 // Next Suggestions:
 // - Implement drag-and-drop reordering for the dashboard panels on desktop.
@@ -52,77 +27,15 @@ import { db, auth, firebaseConfigExport } from './firebase';
 import React, { useState, useEffect, useMemo, useRef } from 'react'; // Import useRef for flashing effect
 // lucide-react provides a set of clean, modern icons used throughout the app.
 
-import {
-    ArrowUp,
-    ArrowDown,
-    MoreVertical,
-    CheckSquare,
-    AlertTriangle,
-    BarChart2,
-    Bell,
-    Box,
-    Calendar as CalendarIcon,
-    Check,
-    ChevronDown,
-    ChevronLeft,
-    Cigarette,
-    Database,
-    Download,
-    Droplets,
-    Edit,
-    FileText,
-    Filter,
-    Info,
-    LayoutGrid,
-    Leaf,
-    List,
-    LoaderCircle,
-    LogOut,
-    MapPin,
-    Minus,
-    Move,
-    Palette,
-    PieChart as PieChartIcon,
-    Plus,
-    Search,
-    Settings as SettingsIcon,
-    Sparkles,
-    Star,
-    Tag,
-    Thermometer,
-    Trash2,
-    Upload,
-    UploadCloud,
-    User,
-    Wind,
-    X,
-    Zap
-} from 'lucide-react';
-
+import { ArrowUp, ArrowDown, MoreVertical, CheckSquare, AlertTriangle, BarChart2, Bell, Box, Calendar as CalendarIcon, Check, ChevronDown, ChevronLeft, Cigarette, Database, Download, Droplets, Edit, FileText, Filter, Info, LayoutGrid, Leaf, List, LoaderCircle, LogOut, MapPin, Minus, Move, Palette, PieChart as PieChartIcon, Plus, Search, Settings as SettingsIcon, Sparkles, Star, Tag, Thermometer, Trash2, Upload, UploadCloud, User, Wind, X, Zap } from 'lucide-react';
 
 // recharts is a library for creating the charts (bar, line, pie) on the dashboard.
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-
 
 // Import Firebase libraries for database and authentication
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, writeBatch, connectFirestoreEmulator } from "firebase/firestore";
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, connectAuthEmulator } from "firebase/auth";
-
-// First, parse the JSON string from the environment variable
-const firebaseConfig = JSON.parse(process.env.REACT_APP_FIREBASE_CONFIG);
-
-// Connect to emulators if running locally
-if (window.location.hostname === 'localhost') {
-    console.log("Local environment detected, connecting to emulators.");
-    try {
-        connectFirestoreEmulator(db, 'localhost', 8080);
-        connectAuthEmulator(auth, "http://localhost:9099");
-        console.log("Successfully connected to Firestore and Auth emulators.");
-    } catch (error) {
-        console.error("Error connecting to emulators:", error);
-    }
-}
 
 const initialAuthToken = typeof window !== "undefined" && window.initialAuthToken ? window.initialAuthToken : null;
 
@@ -192,42 +105,35 @@ const allFlavorNotes = [
     'Dark Cherry', 'Roasted Nuts', 'Toasted Bread'
 ].sort(); // .sort() keeps the list alphabetical.
 
-const allFlavorNotesNew = [
-    'Earth', 'Earthy', 'Woody', 'Spice', 'Spicy', 'Nutty', 'Sweet', 'Fruity', 'Floral', 'Herbal',
-    'Leather', 'Coffee', 'Cocoa', 'Chocolate', 'Creamy', 'Pepper', 'Cedar', 'Oak',
-    'Cinnamon', 'Vanilla', 'Honey', 'Caramel', 'Citrus', 'Dried Fruit', 'Hay', 'Toasted',
-    'Dark Cherry', 'Roasted Nuts', 'Toasted Bread'
-].sort();
-
 const strengthOptions = ['Mild', 'Mild-Medium', 'Medium', 'Medium-Full', 'Full'];
 
 const cigarShapes = [
     'Parejo', 'Corona', 'Robusto', 'Toro', 'Churchill', 'Double Corona', 'Lonsdale',
     'Panetela', 'Lancero', 'Grand Corona', 'Presidente', 'Figurado', 'Belicoso',
     'Torpedo', 'Piramide', 'Perfecto', 'Diadema', 'Culebra', 'Double Robusto'
-].sort();
+].sort();// .sort() keeps the list alphabetical.
 
-const cigarRingGauges = [30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58].sort();
+const cigarRingGauges = [30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58].sort();// .sort() keeps the list alphabetical.
 
-const cigarLengths = [3, 3.5, 4, 4.5, 5, 5.25, 5.5, 5.75, 6, 6.25, 6.5, 6.75, 7, 7.5, 8].sort();
+const cigarLengths = [3, 3.5, 4, 4.5, 5, 5.25, 5.5, 5.75, 6, 6.25, 6.5, 6.75, 7, 7.5, 8].sort();// .sort() keeps the list alphabetical.
 
 const cigarWrapperColors = [
     'Natural', 'Maduro', 'Connecticut', 'Habano', 'Sumatra', 'Candela', 'Oscuro',
     'Colorado', 'Criollo', 'Cameroon', 'San Andres', 'Mexican', 'Brazilian',
     'Pennsylvania', 'Nicaraguan', 'Dominican', 'Honduran'
-].sort();
+].sort();// .sort() keeps the list alphabetical.
 
 const cigarBinderTypes = [
     'Natural', 'Maduro', 'Connecticut', 'Habano', 'Sumatra', 'Candela', 'Oscuro',
     'Colorado', 'Criollo', 'Cameroon', 'San Andres', 'Mexican', 'Brazilian',
     'Pennsylvania', 'Nicaraguan', 'Dominican', 'Honduran'
-].sort();
+].sort();// .sort() keeps the list alphabetical.
 
 const cigarFillerTypes = [
     'Natural', 'Maduro', 'Connecticut', 'Habano', 'Sumatra', 'Candela', 'Oscuro',
     'Colorado', 'Criollo', 'Cameroon', 'San Andres', 'Mexican', 'Brazilian',
     'Pennsylvania', 'Nicaraguan', 'Dominican', 'Honduran'
-].sort();
+].sort();// .sort() keeps the list alphabetical.
 
 const cigarCountryOfOrigin = [
     'Cuba', 'Dominican Republic', 'Nicaragua', 'Honduras', 'Mexico', 'Brazil',
@@ -235,6 +141,8 @@ const cigarCountryOfOrigin = [
     'Philippines', 'India', 'El Salvador', 'Ecuador', 'Guatemala', 'Nicaragua'
 ].sort();
 
+// Common cigar dimensions for various vitolas.
+// This is used to fill the cigar length and ring gauge fields in the form when the user selects a vitola.
 const commonCigarDimensions = {
     'Corona': { length_inches: 5.5, ring_gauge: 42 },
     'Robusto': { length_inches: 5, ring_gauge: 50 },
@@ -255,6 +163,7 @@ const commonCigarDimensions = {
     'Presidente': { length_inches: 8, ring_gauge: 52 }
 };
 
+// RoxysTips is an array of tips and trivia about cigars, provided by Roxy.
 const roxysTips = [
     "Did you know? A steady 70% humidity is perfect for aging most cigars. Don't let it fluctuate!",
     "Remember to rotate your cigars every few months to ensure they age evenly. It's like a little cigar ballet!",
@@ -265,8 +174,6 @@ const roxysTips = [
     "Don't inhale cigar smoke! The rich flavors are meant to be savored in your mouth, much like a fine wine.",
     "A good cut is crucial. A dull cutter can tear the wrapper and ruin the draw. Keep your tools sharp!"
 ];
-
-
 
 // --- HELPER & UI COMPONENTS ---
 
@@ -310,8 +217,10 @@ const generateAiImage = async (itemName, itemCategory, itemType) => {
         instances: [{ prompt: prompt }],
         parameters: { "sampleCount": 1 }
     };
-    const apiKey = firebaseConfig.apiKey; // The environment will provide the API key automatically.
-    const projectId = firebaseConfig.projectId; // Get Project ID from environment variables
+
+    const apiKey = firebaseConfigExport.apiKey;
+    const projectId = firebaseConfigExport.projectId;
+
     const apiUrl = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/imagen-3.0-generate-002:predict`;
 
     try {
@@ -348,7 +257,7 @@ const generateAiImage = async (itemName, itemCategory, itemType) => {
     }
 };
 
-// (0709250) Used for Humidar Detail Refactor
+// (0709250) FilterSortModal - Used for Humidar Detail Refactor
 const FilterSortModal = ({
     isOpen,
     onClose,
@@ -371,7 +280,8 @@ const FilterSortModal = ({
     };
 
     return (
-        <div className="fixed inset-0 bg-black/60 flex items-end justify-center p-4 z-[100]" onClick={onClose}>
+        // Change z-[100] to z-[200] here:
+        <div className="fixed inset-0 bg-black/60 flex items-end justify-center p-4 z-[200]" onClick={onClose}>
             <div className="bg-gray-800 rounded-t-2xl p-6 w-full max-w-md flex flex-col" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-bold text-amber-400 flex items-center"><Filter className="w-5 h-5 mr-2" /> Filter & Sort</h3>
@@ -444,6 +354,7 @@ const FilterSortModal = ({
         </div>
     );
 };
+
 // (0709250) Used for Humidar Detail Refactor
 const HumidorActionMenu = ({ onEdit, onTakeReading, onExport, onDelete }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -489,9 +400,6 @@ const HumidorActionMenu = ({ onEdit, onTakeReading, onExport, onDelete }) => {
         </div>
     );
 };
-
-
-
 
 // ===================================================================================
 //  REUSABLE & CHILD COMPONENTS
@@ -1166,12 +1074,18 @@ const ImageUploadModal = ({ isOpen, onClose, onImageAccept, itemName, initialIma
         if (isOpen) {
             setPreview(initialImage || '');
             setModalPosition(initialPosition || { x: 50, y: 50 });
+            setImageUrl(initialImage || ''); // <-- Set the URL field to the current image
         }
     }, [isOpen, initialImage, initialPosition]);
 
+    // When switching to the "Paste URL" tab, update the imageUrl field to match the current image.
+    useEffect(() => {
+        if (activeTab === 'url') {
+            setImageUrl(preview || initialImage || '');
+        }
+    }, [activeTab, preview, initialImage]);
+
     if (!isOpen) return null; // Don't render the modal if it's not open.
-
-
 
     const handleFileChange = (event) => {
         const file = event.target.files[0];
@@ -1209,7 +1123,8 @@ const ImageUploadModal = ({ isOpen, onClose, onImageAccept, itemName, initialIma
             <div className={`w-full max-w-md rounded-lg ${theme.card} p-6 shadow-xl border-none`} onClick={(e) => e.stopPropagation()}>
                 <div className={`mb-4 flex items-center justify-between border-b ${theme.borderColor} pb-4`}>
                     <h2 className={`text-2xl font-semibold ${theme.text}`}>Choose an Image</h2>
-                    <button onClick={onClose} className={`text-3xl ${theme.subtleText} hover:${theme.text}`}>&times;</button>                </div>
+                    <button onClick={onClose} className={`text-3xl ${theme.subtleText} hover:${theme.text}`}>&times;</button>
+                </div>
 
                 <div>
                     <div className={`mb-6 flex h-64 items-center justify-center rounded-lg border ${theme.borderColor} ${theme.inputBg} p-2 overflow-hidden`}>
@@ -1221,15 +1136,16 @@ const ImageUploadModal = ({ isOpen, onClose, onImageAccept, itemName, initialIma
                     <div>
                         <div className={`mb-6 flex space-x-2 border-b ${theme.borderColor}`}>
                             <button onClick={() => setActiveTab('url')} className={`px-4 py-2 text-sm font-medium ${activeTab === 'url' ? `border-b-2 ${theme.primary} ${theme.text}` : `${theme.subtleText}`}`}>Paste URL</button>
-                            <button onClick={() => setActiveTab('upload')} className={`px-4 py-2 text-sm font-medium ${activeTab === 'upload' ? `border-b-2 ${theme.primary} ${theme.text}` : `${theme.subtleText}`}`}>Upload</button>
-                            <button onClick={() => setActiveTab('ai')} className={`px-4 py-2 text-sm font-medium ${activeTab === 'ai' ? 'border-b-2 border-purple-500 text-purple-300' : `${theme.subtleText}`}`}>✨ Generate with AI</button>
+                            <button onClick={() => setActiveTab('upload')} className={`px-4 py-2 text-sm font-medium ${activeTab === 'upload' ? `border-b-2 ${theme.primary} ${theme.text}` : `${theme.subtleText}`}`}>Upload Image</button>
+                            <button onClick={() => setActiveTab('ai')} className={`px-4 py-2 text-sm font-medium ${activeTab === 'ai' ? 'border-b-2 border-purple-500 text-purple-300' : `${theme.subtleText}`}`}>Generate with AI</button>
                         </div>
 
                         <div className="mb-4">
                             {activeTab === 'url' && (
-                                <div className="flex space-x-2">
+                                <div>
                                     <input type="text" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://example.com/image.png" className={`flex-grow rounded-md border ${theme.borderColor} p-2 ${theme.inputBg} ${theme.text} focus:border-amber-500 focus:ring-amber-500`} />
                                     <button onClick={() => { setPreview(imageUrl); setModalPosition({ x: 50, y: 50 }); }} className={`rounded-md ${theme.button} px-4 py-2 ${theme.text}`}>Preview</button>
+                                    <p className={`mt-2 text-xs ${theme.subtleText}`}>Here is a subtle description</p>
                                 </div>
                             )}
                             {activeTab === 'upload' && (
@@ -1244,7 +1160,7 @@ const ImageUploadModal = ({ isOpen, onClose, onImageAccept, itemName, initialIma
                                     <button onClick={handleAiGenerate} disabled={isGenerating} className="rounded-md bg-purple-600 px-4 py-2 text-white transition-colors hover:bg-purple-700 disabled:cursor-wait disabled:bg-purple-400 flex items-center justify-center">
                                         {isGenerating ? (
                                             <><svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Generating...</>
-                                        ) : `✨ Generate Image for "${itemName || 'Item'}"`}
+                                        ) : `Generate Image for "${itemName || 'Item'}"`}
                                     </button>
                                     <p className={`mt-2 text-xs ${theme.subtleText}`}>Uses generative AI to create a unique image based on the item's name.</p>
                                 </div>
@@ -1326,7 +1242,7 @@ async function callGeminiAPI(prompt, responseSchema = null) {
     let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
 
     // Retrieve the API key from environment variables for security. This prevents hardcoding sensitive keys in the source code.
-    const apiKey = firebaseConfig.apiKey; // API key will be injected by the environment
+    const apiKey = firebaseConfigExport.apiKey;
 
     // Construct the full URL for the specific Gemini API model endpoint.
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
@@ -1407,8 +1323,6 @@ async function callGeminiAPI(prompt, responseSchema = null) {
     }
 }
 
-/**
- * Simulates
 
 /**
  * Simulates fetching a list of Govee devices.
@@ -2330,6 +2244,788 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
     );
 };
 
+const AddHumidor = ({ navigate, db, appId, userId, theme }) => {
+    const humidorTypes = ["Desktop Humidor", "Cabinet Humidor", "Glass Top Humidor", "Travel Humidor", "Cigar Cooler", "Walk-In Humidor", "Personalized Humidor"];
+    const [formData, setFormData] = useState({
+        name: '',
+        shortDescription: '',
+        longDescription: '',
+        size: '',
+        location: '',
+        image: '',
+        type: humidorTypes[0],
+        temp: 70,
+        humidity: 70,
+    });
+    const [trackEnvironment, setTrackEnvironment] = useState(false);
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSave = async () => {
+        //        if (!db) {
+        //            alert(`Database not initialized.`);
+        //            return;
+        //        }
+        try {
+            const newHumidorData = {
+                ...formData,
+                image: formData.image || `https://placehold.co/600x400/3a2d27/ffffff?text=${formData.name.replace(/\s/g, '+') || 'New+Humidor'}`,
+                goveeDeviceId: null,
+                goveeDeviceModel: null,
+                humidity: trackEnvironment ? Number(formData.humidity) : 70,
+                temp: trackEnvironment ? Number(formData.temp) : 68,
+            };
+            const humidorsCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'humidors');
+            await addDoc(humidorsCollectionRef, newHumidorData);
+            navigate('HumidorsScreen');
+        } catch (error) {
+            alert(`Failed to save humidor: ${error.message}`);
+        }
+    };
+
+    // State in the parent form to hold the item's name, image URL, and image position.
+    // This will be passed to the SmartImageModal.
+    const [itemName, setItemName] = useState('Arturo Fuente Hemingway');
+    const [itemImage, setItemImage] = useState('');
+    const [itemImagePosition, setItemImagePosition] = useState({ x: 50, y: 50 });
+
+    // This function is passed to the SmartImageModal and called when the user clicks "Accept Image".
+    // It updates the main form's state with the new image and its position.
+    const handleImageAccept = (image, position) => {
+        setItemImage(image);
+        setItemImagePosition(position);
+    };
+    return (
+        <div className="pb-24">
+            <div className="relative">
+                <SmartImageModal
+                    itemName={formData.name}
+                    itemCategory="humidor"
+                    itemType={formData.type}
+                    theme={theme}
+                    currentImage={formData.image || `https://placehold.co/400x600/5a3825/ffffff?text=${formData.name.replace(/\s/g, '+') || 'Humidor+Image'}`}
+                    currentPosition={formData.imagePosition || { x: 50, y: 50 }}
+                    onImageAccept={(img, pos) => setFormData(prev => ({
+                        ...prev,
+                        image: img,
+                        imagePosition: pos
+                    }))}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent pointer-events-none"></div>
+                <div className="absolute top-4 left-4 z-10">
+                    <button onClick={() => navigate('HumidorsScreen')} className="p-2 -ml-2 mr-2 bg-black/50 rounded-full">
+                        <ChevronLeft className={`w-7 h-7 ${theme.text}`} />
+                    </button>
+                </div>
+                <div className="absolute bottom-0 p-4 z-10 pointer-events-none">
+                    <h1 className={`text-3xl font-bold ${theme.text}`}>Add New Humidor</h1>
+                </div>
+            </div>
+            <div className="p-4 space-y-6">
+                <InputField name="name" label="Humidor Name" placeholder="e.g., The Big One" value={formData.name} onChange={handleInputChange} theme={theme} />
+                <InputField name="shortDescription" label="Short Description" placeholder="e.g., Main aging unit" value={formData.shortDescription} onChange={handleInputChange} theme={theme} />
+                <TextAreaField name="longDescription" label="Long Description" placeholder="e.g., A 150-count mahogany humidor with a Spanish cedar interior..." value={formData.longDescription} onChange={handleInputChange} theme={theme} />
+
+                <div>
+                    <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>Type of Humidor</label>
+                    <select name="type" value={formData.type} onChange={handleInputChange} className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} focus:outline-none focus:ring-2 ${theme.ring}`}>
+                        {humidorTypes.map(type => <option key={type} value={type}>{type}</option>)}
+                    </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <InputField name="size" label="Size" placeholder="e.g., 150-count" value={formData.size} onChange={handleInputChange} theme={theme} />
+                    <InputField name="location" label="Location" placeholder="e.g., Office" value={formData.location} onChange={handleInputChange} theme={theme} />
+                </div>
+
+                <div className={`${theme.card} p-4 rounded-xl`}>
+                    <div className="flex justify-between items-center">
+                        <h3 className="font-bold text-lg text-amber-300 flex items-center"><Thermometer className="w-5 h-5 mr-2" /> Environment Tracking</h3>
+                        <button onClick={() => setTrackEnvironment(!trackEnvironment)} className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${trackEnvironment ? 'bg-amber-500' : 'bg-gray-600'}`}>
+                            <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${trackEnvironment ? 'translate-x-6' : 'translate-x-1'}`} />
+                        </button>
+                    </div>
+                    {trackEnvironment && (
+                        <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-700">
+                            <InputField name="temp" label="Temperature (°F)" type="number" value={formData.temp} onChange={handleInputChange} theme={theme} />
+                            <InputField name="humidity" label="Humidity (%)" type="number" value={formData.humidity} onChange={handleInputChange} theme={theme} />
+                        </div>
+                    )}
+                </div>
+
+                <div className="pt-4 flex space-x-4">
+                    <button
+                        onClick={handleSave}
+                        className={`w-full ${theme.primaryBg} ${theme.text === 'text-white' ? 'text-white' : 'text-black'} font-bold py-3 rounded-lg ${theme.hoverPrimaryBg} transition-colors`}
+                    >
+                        Save Humidor
+                    </button>
+                    <button
+                        onClick={() => navigate('HumidorsScreen')}
+                        className={`w-full ${theme.button} ${theme.text} font-bold py-3 rounded-lg transition-colors`}
+                    >
+                        Cancel
+                    </button>
+                </div>
+
+
+            </div>
+        </div>
+    );
+};
+
+const EditHumidor = ({ navigate, db, appId, userId, humidor, goveeApiKey, goveeDevices, theme }) => {
+    const humidorTypes = ["Desktop Humidor", "Cabinet Humidor", "Glass Top Humidor", "Travel Humidor", "Cigar Cooler", "Walk-In Humidor", "Personalized Humidor"];
+    const [formData, setFormData] = useState({
+        ...humidor,
+        shortDescription: humidor.shortDescription || '',
+        longDescription: humidor.longDescription || humidor.description || '', // Migrate old description
+        trackingMethod: humidor.goveeDeviceId ? 'govee' : 'manual'
+    });
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleGoveeDeviceChange = (e) => {
+        const selectedDeviceId = e.target.value;
+        const selectedDevice = goveeDevices.find(d => d.device === selectedDeviceId);
+        setFormData(prev => ({ ...prev, goveeDeviceId: selectedDevice?.device || null, goveeDeviceModel: selectedDevice?.model || null }));
+    };
+
+    const handleSave = async () => {
+        const humidorRef = doc(db, 'artifacts', appId, 'users', userId, 'humidors', humidor.id);
+        const { id, description, ...dataToSave } = formData; // Exclude id and old description field
+        const updatedHumidor = {
+            ...dataToSave,
+            goveeDeviceId: formData.trackingMethod === 'manual' ? null : formData.goveeDeviceId,
+            goveeDeviceModel: formData.trackingMethod === 'manual' ? null : formData.goveeDeviceModel,
+            image: formData.image || `https://placehold.co/600x400/3a2d27/ffffff?text=${formData.name.replace(/\s/g, '+') || 'Humidor'}`,
+        };
+        await updateDoc(humidorRef, updatedHumidor);
+        navigate('MyHumidor', { humidorId: humidor.id });
+    };
+
+    // State in the parent form to hold the item's name, image URL, and image position.
+    // This will be passed to the SmartImageModal.
+    const [itemName, setItemName] = useState('Arturo Fuente Hemingway');
+    const [itemImage, setItemImage] = useState('');
+    const [itemImagePosition, setItemImagePosition] = useState({ x: 50, y: 50 });
+
+    // This function is passed to the SmartImageModal and called when the user clicks "Accept Image".
+    // It updates the main form's state with the new image and its position.
+    const handleImageAccept = (image, position) => {
+        setItemImage(image);
+        setItemImagePosition(position);
+    };
+
+    return (
+        <div className="p-4 pb-24">
+            <div className="relative">
+                {/* Image */}
+                <SmartImageModal
+                    itemName={formData.name}
+                    itemCategory="humidor"
+                    itemType={formData.type}
+                    theme={theme}
+                    currentImage={formData.image || `https://placehold.co/600x400/EEE/31343C?font=playfair-display&text=${formData.name.replace(/\s/g, '+') || 'My Humidor'}`}
+                    currentPosition={formData.imagePosition || { x: 50, y: 50 }}
+                    onImageAccept={(img, pos) => setFormData(prev => ({
+                        ...prev,
+                        image: img,
+                        imagePosition: pos
+                    }))}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent pointer-events-none"></div>
+                <div className="absolute top-4 left-4 z-10">
+                    <button onClick={() => navigate('HumidorsScreen')} className="p-2 -ml-2 mr-2 bg-black/50 rounded-full">
+                        <ChevronLeft className={`w-7 h-7 ${theme.text}`} />
+                    </button>
+                </div>
+                <div className="absolute bottom-0 p-4 z-10 pointer-events-none">
+                    <h1 className={`text-3xl font-bold ${theme.text}`}>Edit  Humidor</h1>
+                </div>
+            </div>
+
+            <div className="p-4 space-y-6">
+                {/* Humidor Name */}
+                <InputField name="name" label="Humidor Name" placeholder="e.g., The Big One" value={formData.name} onChange={handleInputChange} theme={theme} />
+                {/* Short Description */}
+                <InputField name="shortDescription" label="Short Description" placeholder="e.g., Main aging unit" value={formData.shortDescription} onChange={handleInputChange} theme={theme} />
+                {/* Long Description */}
+                <TextAreaField name="longDescription" label="Long Description" placeholder="e.g., A 150-count mahogany humidor..." value={formData.longDescription} onChange={handleInputChange} theme={theme} />
+
+                {/* Type of Humidor */}
+                <div>
+                    <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>Type of Humidor</label>
+                    <select name="type" value={formData.type} onChange={handleInputChange} className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} focus:outline-none focus:ring-2 ${theme.ring}`}>
+                        {humidorTypes.map(type => <option key={type} value={type}>{type}</option>)}
+                    </select>
+                </div>
+                {/* Size and location */}
+                <div id="pnlSizeAndLocation" className="grid grid-cols-2 gap-4">
+                    <InputField name="size" label="Size" placeholder="e.g., 150-count" value={formData.size} onChange={handleInputChange} theme={theme} />
+                    <InputField name="location" label="Location" placeholder="e.g., Office" value={formData.location} onChange={handleInputChange} theme={theme} />
+                </div>
+                {/* Environment Tracking */}
+                <div pnl="pnlEnvironmentTracking" className={`${theme.card} p-4 rounded-xl`}>
+                    <h3 className="font-bold text-xl text-amber-300 mb-4 flex items-center"><MapPin className="w-5 h-5 mr-2" /> Environment Tracking</h3>
+                    <div className="space-y-4">
+                        <div>
+                            <label className={`text-sm font-medium ${theme.subtleText} mb-2 block`}>Tracking Method</label>
+                            <div className="flex space-x-4">
+                                <label className="inline-flex items-center"><input type="radio" name="trackingMethod" value="manual" checked={formData.trackingMethod === 'manual'} onChange={handleInputChange} className="form-radio text-amber-500 h-4 w-4" /><span className={`ml-2 ${theme.text}`}>Manual Input</span></label>
+                                <label className="inline-flex items-center"><input type="radio" name="trackingMethod" value="govee" checked={formData.trackingMethod === 'govee'} onChange={handleInputChange} className="form-radio text-amber-500 h-4 w-4" /><span className={`ml-2 ${theme.text}`}>Govee Sensor</span></label>
+                            </div>
+                        </div>
+                        {formData.trackingMethod === 'manual' ? (
+                            <div className="grid grid-cols-2 gap-4">
+                                <InputField name="temp" label="Temperature (°F)" placeholder="e.g., 68" type="number" value={formData.temp} onChange={handleInputChange} theme={theme} />
+                                <InputField name="humidity" label="Humidity (%)" placeholder="e.g., 70" type="number" value={formData.humidity} onChange={handleInputChange} theme={theme} />
+                            </div>
+                        ) : (
+                            <div>
+                                <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>Govee Sensor</label>
+                                <select value={formData.goveeDeviceId || ''} onChange={handleGoveeDeviceChange} disabled={!goveeApiKey || goveeDevices.length === 0} className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} disabled:bg-gray-800 disabled:cursor-not-allowed`}>
+                                    <option value="">{!goveeApiKey ? "Connect Govee first" : (goveeDevices.length === 0 ? "No sensors found" : "Select a sensor")}</option>
+                                    {goveeDevices.map(device => (<option key={device.device} value={device.device}>{device.deviceName} ({device.model})</option>))}
+                                </select>
+                                {!goveeApiKey && (<p className="text-xs text-red-300 mt-1">Please connect your Govee API key in Integrations settings.</p>)}
+                                {goveeApiKey && goveeDevices.length === 0 && (<p className="text-xs text-yellow-300 mt-1">No Govee sensors found. Check your key and Govee app.</p>)}
+                                <div className="grid grid-cols-2 gap-4 mt-4">
+                                    <InputField name="temp" label="Current Temp (°F)" value={humidor.temp} type="number" onChange={() => { }} theme={theme} disabled={true} />
+                                    <InputField name="humidity" label="Current Humidity (%)" value={humidor.humidity} type="number" onChange={() => { }} theme={theme} disabled={true} />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+                {/* Save and Cancel buttons */}
+                <div pnl="pnlSaveCancelButtons" className="pt-4 flex space-x-4">
+                    <button onClick={handleSave} className={`w-full ${theme.primaryBg} ${theme.text === 'text-white' ? 'text-white' : 'text-black'} font-bold py-3 rounded-lg ${theme.hoverPrimaryBg} transition-colors`}>Save Changes</button>
+                    <button onClick={() => navigate('MyHumidor', { humidorId: humidor.id })} className={`w-full ${theme.button} ${theme.text} font-bold py-3 rounded-lg transition-colors`}>Cancel</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, theme }) => {
+    const [searchQuery, setSearchQuery] = useState('');
+    const [suggestions, setSuggestions] = useState([]);
+    const [viewMode, setViewMode] = useState('list');
+    const [isSelectMode, setIsSelectMode] = useState(false);
+    const [selectedCigarIds, setSelectedCigarIds] = useState([]);
+    const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
+    const [isDeleteHumidorModalOpen, setIsDeleteHumidorModalOpen] = useState(false);
+    const [isDeleteCigarsModalOpen, setIsDeleteCigarsModalOpen] = useState(false);
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+    const [isManualReadingModalOpen, setIsManualReadingModalOpen] = useState(false);
+    const [isFilterSortModalOpen, setIsFilterSortModalOpen] = useState(false);
+    const [filters, setFilters] = useState({ brand: '', country: '', strength: '', flavorNotes: [] });
+    const [sortBy, setSortBy] = useState('name');
+    const [sortOrder, setSortOrder] = useState('asc');
+
+    const isFilterActive = useMemo(() => {
+        return filters.brand || filters.country || filters.strength || filters.flavorNotes.length > 0;
+    }, [filters]);
+
+    const uniqueBrands = useMemo(() => [...new Set(cigars.filter(c => c.humidorId === humidor.id).map(c => c.brand))].sort(), [cigars, humidor.id]);
+    const uniqueCountries = useMemo(() => [...new Set(cigars.filter(c => c.humidorId === humidor.id).map(c => c.country))].sort(), [cigars, humidor.id]);
+    const availableFlavorNotes = useMemo(() => [...new Set(cigars.filter(c => c.humidorId === humidor.id).flatMap(c => c.flavorNotes))].sort(), [cigars, humidor.id]);
+
+    const filteredAndSortedCigars = useMemo(() => {
+        let currentCigars = cigars.filter(c => c.humidorId === humidor.id);
+
+        if (searchQuery) {
+            currentCigars = currentCigars.filter(cigar => cigar.name.toLowerCase().includes(searchQuery.toLowerCase()) || cigar.brand.toLowerCase().includes(searchQuery.toLowerCase()));
+        }
+
+        if (filters.brand) currentCigars = currentCigars.filter(cigar => cigar.brand === filters.brand);
+        if (filters.country) currentCigars = currentCigars.filter(cigar => cigar.country === filters.country);
+        if (filters.strength) currentCigars = currentCigars.filter(cigar => cigar.strength === filters.strength);
+        if (filters.flavorNotes.length > 0) {
+            currentCigars = currentCigars.filter(cigar => filters.flavorNotes.every(note => cigar.flavorNotes.includes(note)));
+        }
+
+        currentCigars.sort((a, b) => {
+            let valA, valB;
+            switch (sortBy) {
+                case 'name': valA = a.name.toLowerCase(); valB = b.name.toLowerCase(); break;
+                case 'brand': valA = a.brand.toLowerCase(); valB = b.brand.toLowerCase(); break;
+                case 'rating': valA = a.rating || 0; valB = b.rating || 0; break;
+                case 'quantity': valA = a.quantity; valB = b.quantity; break;
+                case 'price': valA = a.price || 0; valB = b.price || 0; break;
+                case 'dateAdded': valA = a.dateAdded; valB = b.dateAdded; break;
+                default: return 0;
+            }
+            if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+            if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        return currentCigars;
+    }, [cigars, humidor.id, searchQuery, filters, sortBy, sortOrder]);
+
+    const totalQuantity = filteredAndSortedCigars.reduce((sum, c) => sum + c.quantity, 0);
+    const humidorValue = filteredAndSortedCigars.reduce((sum, c) => sum + (c.quantity * (c.price || 0)), 0);
+
+    const handleSearchChange = (e) => {
+        const query = e.target.value;
+        setSearchQuery(query);
+        if (query.length > 1) {
+            const allSuggestions = cigars.filter(c => c.humidorId === humidor.id).map(c => c.brand).concat(cigars.filter(c => c.humidorId === humidor.id).map(c => c.name)).filter(name => name.toLowerCase().includes(query.toLowerCase()));
+            setSuggestions([...new Set(allSuggestions)].slice(0, 5));
+        } else {
+            setSuggestions([]);
+        }
+    };
+
+    const handleSuggestionClick = (suggestion) => {
+        setSearchQuery(suggestion);
+        setSuggestions([]);
+    };
+
+    const handleToggleSelectMode = () => {
+        setIsSelectMode(!isSelectMode);
+        setSelectedCigarIds([]);
+    };
+
+    const handleSelectCigar = (cigarId) => {
+        setSelectedCigarIds(prev => prev.includes(cigarId) ? prev.filter(id => id !== cigarId) : [...prev, cigarId]);
+    };
+
+    // Function to handle the Move Cigars action
+    const handleMoveCigars = async (destinationHumidorId) => {
+        // Get a new write batch
+        const batch = writeBatch(db);
+        // Iterate over each selected cigar ID
+        selectedCigarIds.forEach(cigarId => {
+            // Correctly reference the cigar document using the cigarId from the loop
+            const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigarId);
+            // Update the humidorId and reset the dateAdded for the moved cigar
+            batch.update(cigarRef, { humidorId: destinationHumidorId, dateAdded: new Date().toISOString() });
+        });
+        // Commit the batch update
+        await batch.commit();
+        // Reset state and navigate to the destination humidor
+        setIsMoveModalOpen(false);
+        setIsSelectMode(false);
+        setSelectedCigarIds([]);
+        navigate('MyHumidor', { humidorId: destinationHumidorId });
+    };
+
+    const handleConfirmDeleteHumidor = async ({ action, destinationHumidorId }) => {
+        const batch = writeBatch(db);
+        const cigarsToDelete = cigars.filter(c => c.humidorId === humidor.id);
+
+        switch (action) {
+            case 'move':
+                cigarsToDelete.forEach(cigar => {
+                    const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
+                    batch.update(cigarRef, { humidorId: destinationHumidorId });
+                });
+                break;
+            case 'export':
+            case 'deleteAll':
+                cigarsToDelete.forEach(cigar => {
+                    const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
+                    batch.delete(cigarRef);
+                });
+                break;
+            default: break;
+        }
+
+        const humidorRef = doc(db, 'artifacts', appId, 'users', userId, 'humidors', humidor.id);
+        batch.delete(humidorRef);
+
+        await batch.commit();
+        setIsDeleteHumidorModalOpen(false);
+        navigate('HumidorsScreen');
+    };
+
+
+    // Function to handle the confirmation of deleting selected cigars
+    const handleConfirmDeleteCigars = async () => {
+        // Get a new write batch
+        const batch = writeBatch(db);
+        // Iterate over each selected cigar ID
+        selectedCigarIds.forEach(cigarId => {
+            // Correctly reference the cigar document using the cigarId from the loop
+            const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigarId);
+            // Delete the document
+            batch.delete(cigarRef);
+        });
+        // Commit the batch deletion
+        await batch.commit();
+        // Reset the state
+        setIsDeleteCigarsModalOpen(false);
+        setIsSelectMode(false);
+        setSelectedCigarIds([]);
+    };
+
+    const handleSaveManualReading = async (newTemp, newHumidity) => {
+        const humidorRef = doc(db, 'artifacts', appId, 'users', userId, 'humidors', humidor.id);
+        await updateDoc(humidorRef, { temp: newTemp, humidity: newHumidity });
+        setIsManualReadingModalOpen(false);
+    };
+
+    const handleFilterChange = (filterName, value) => setFilters(prev => ({ ...prev, [filterName]: value }));
+
+    const handleFlavorNoteToggle = (note) => {
+        setFilters(prev => ({ ...prev, flavorNotes: prev.flavorNotes.includes(note) ? prev.flavorNotes.filter(n => n !== note) : [...prev.flavorNotes, note] }));
+    };
+
+    const handleSortChange = (sortCriteria) => {
+        if (sortBy === sortCriteria) {
+            setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'));
+        } else {
+            setSortBy(sortCriteria);
+            setSortOrder('asc');
+        }
+    };
+
+    const handleClearFilters = () => {
+        setFilters({ brand: '', country: '', strength: '', flavorNotes: [] });
+    };
+
+    return (
+        <div className="bg-gray-900 min-h-screen pb-24">
+            {isManualReadingModalOpen && <ManualReadingModal humidor={humidor} onClose={() => setIsManualReadingModalOpen(false)} onSave={handleSaveManualReading} theme={theme} />}
+            {isMoveModalOpen && <MoveCigarsModal onClose={() => setIsMoveModalOpen(false)} onMove={handleMoveCigars} destinationHumidors={humidors.filter(h => h.id !== humidor.id)} theme={theme} />}
+            <DeleteHumidorModal isOpen={isDeleteHumidorModalOpen} onClose={() => setIsDeleteHumidorModalOpen(false)} onConfirm={handleConfirmDeleteHumidor} humidor={humidor} cigarsInHumidor={filteredAndSortedCigars} otherHumidors={humidors.filter(h => h.id !== humidor.id)} />
+            <DeleteCigarsModal isOpen={isDeleteCigarsModalOpen} onClose={() => setIsDeleteCigarsModalOpen(false)} onConfirm={handleConfirmDeleteCigars} count={selectedCigarIds.length} />
+            {isExportModalOpen && <ExportModal data={filteredAndSortedCigars} dataType="cigar" onClose={() => setIsExportModalOpen(false)} />}
+
+            <div className="relative">
+                {/* ...main MyHumidor content... */}
+                <img src={humidor.image || `https://placehold.co/600x400/3a2d27/ffffff?text=${humidor.name.replace(/\s/g, '+')}`} alt={humidor.name} className="w-full h-64 object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
+                <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
+                    <button onClick={() => navigate('HumidorsScreen')} className="p-2 bg-black/50 rounded-full">
+                        <ChevronLeft className="w-7 h-7 text-white" />
+                    </button>
+                    <HumidorActionMenu
+                        onEdit={() => navigate('EditHumidor', { humidorId: humidor.id })}
+                        onTakeReading={() => setIsManualReadingModalOpen(true)}
+                        onExport={() => setIsExportModalOpen(true)}
+                        onDelete={() => setIsDeleteHumidorModalOpen(true)}
+                    />
+                </div>
+                <div className="absolute bottom-0 p-4">
+                    <h1 className="text-3xl font-bold text-white">{humidor.name}</h1>
+                    <p className="text-sm text-gray-300">{humidor.shortDescription || humidor.description}</p>
+                </div>
+            </div> {/* End main MyHumidor content */}
+
+            <div className="p-4">
+                <div className="flex justify-around items-center bg-gray-800/50 p-3 rounded-xl mb-6 text-center">
+                    <div className="flex flex-col items-center"><Droplets className="w-5 h-5 text-blue-400 mb-1" /><p className="text-sm text-gray-400">Humidity</p><p className="font-bold text-white text-base">{humidor.humidity}%</p></div>
+                    <div className="h-10 w-px bg-gray-700"></div>
+                    <div className="flex flex-col items-center"><Thermometer className="w-5 h-5 text-red-400 mb-1" /><p className="text-sm text-gray-400">Temperature</p><p className="font-bold text-white text-base">{humidor.temp}°F</p></div>
+                    <div className="h-10 w-px bg-gray-700"></div>
+                    <div className="flex flex-col items-center"><svg className="w-5 h-5 text-green-400 mb-1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg><p className="text-sm text-gray-400">Est. Value</p><p className="font-bold text-white text-base">${humidorValue.toFixed(2)}</p></div>
+                </div>
+
+                <div className="relative mb-4">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input type="text" placeholder="Search this humidor..." value={searchQuery} onChange={handleSearchChange} className="w-full bg-gray-800 border border-gray-700 rounded-full py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                    {suggestions.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 bg-gray-700 border border-gray-600 rounded-b-xl mt-1 z-20 overflow-hidden">
+                            {suggestions.map(suggestion => (<div key={suggestion} onMouseDown={() => handleSuggestionClick(suggestion)} className="w-full text-left px-4 py-3 hover:bg-gray-600 transition-colors cursor-pointer">{suggestion}</div>))}
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex justify-between items-center mb-6 px-2">
+                    <div>
+                        <p className="text-sm text-gray-300"><span className="font-bold text-white">{filteredAndSortedCigars.length}</span> Unique</p>
+                        <p className="text-xs text-gray-400"><span className="font-bold text-gray-200">{totalQuantity}</span> Total Cigars</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => setIsFilterSortModalOpen(true)} className="p-2 rounded-full bg-gray-700 text-white hover:bg-gray-600 transition-colors"><Filter className="w-5 h-5" /></button>
+                        <div className="flex bg-gray-800 border border-gray-700 rounded-full p-1">
+                            <button onClick={() => setViewMode('grid')} className={`p-2 rounded-full transition-colors duration-200 ${viewMode === 'grid' ? 'bg-amber-500 text-white' : 'text-gray-400'}`}><LayoutGrid className="w-5 h-5" /></button>
+                            <button onClick={() => setViewMode('list')} className={`p-2 rounded-full transition-colors duration-200 ${viewMode === 'list' ? 'bg-amber-500 text-white' : 'text-gray-400'}`}><List className="w-5 h-5" /></button>
+                        </div>
+                        <button onClick={handleToggleSelectMode} className={`p-2 rounded-full transition-colors duration-200 ${isSelectMode ? 'bg-amber-500 text-white' : 'bg-gray-700 text-gray-400'}`}><CheckSquare className="w-5 h-5" /></button>
+                    </div>
+                </div>
+
+                {isFilterActive && (
+                    <div className="flex justify-between items-center mb-4 bg-gray-800 p-3 rounded-lg">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm text-gray-300">Filtering by:</span>
+                            {filters.brand && <span className="text-xs font-semibold px-2 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50">{filters.brand}</span>}
+                            {filters.country && <span className="text-xs font-semibold px-2 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50">{filters.country}</span>}
+                            {filters.strength && <span className="text-xs font-semibold px-2 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50">{filters.strength}</span>}
+                            {filters.flavorNotes.map(note => <span key={note} className="text-xs font-semibold px-2 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50">{note}</span>)}
+                        </div>
+                        <button onClick={handleClearFilters} className="p-1 rounded-full hover:bg-amber-800 transition-colors text-amber-400"><X className="w-4 h-4" /></button>
+                    </div>
+                )}
+
+                <div className={viewMode === 'grid' ? "grid grid-cols-2 gap-4" : "flex flex-col gap-4"}>
+                    {filteredAndSortedCigars.map(cigar => (viewMode === 'grid' ? <GridCigarCard key={cigar.id} cigar={cigar} navigate={navigate} isSelectMode={isSelectMode} isSelected={selectedCigarIds.includes(cigar.id)} onSelect={handleSelectCigar} /> : <ListCigarCard key={cigar.id} cigar={cigar} navigate={navigate} isSelectMode={isSelectMode} isSelected={selectedCigarIds.includes(cigar.id)} onSelect={handleSelectCigar} />))}
+                    {filteredAndSortedCigars.length === 0 && (
+                        <div className="col-span-full text-center py-10">
+                            <p className="text-gray-400">No cigars match your search.</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Floating Action Button for Add Cigar */}
+                {!isSelectMode && (
+                    <button
+                        onClick={() => navigate('AddCigar', { humidorId: humidor.id })}
+                        className="fixed bottom-24 right-4 bg-amber-500 text-white p-4 rounded-full shadow-lg hover:bg-amber-600 transition-colors z-20"
+                        aria-label="Add Cigar"
+                    >
+                        <Plus className="w-6 h-6" />
+                    </button>
+                )}
+
+                {isSelectMode && (
+                    <div className="fixed bottom-20 left-0 right-0 bg-gray-900/80 backdrop-blur-sm p-4 z-20 border-t border-gray-700">
+                        <div className="max-w-md mx-auto">
+                            <div className="flex justify-between items-center mb-2">
+                                <h3 className="text-lg font-bold text-white">{selectedCigarIds.length} Selected</h3>
+                                <button onClick={handleToggleSelectMode} className="text-amber-400 font-semibold">Done</button>
+                            </div>
+                            {selectedCigarIds.length > 0 && (
+                                <div className="flex gap-2">
+                                    <button onClick={() => setIsMoveModalOpen(true)} className="flex-1 flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-full hover:bg-amber-600 transition-colors shadow-lg"><Move className="w-5 h-5" />Move</button>
+                                    <button onClick={() => setIsDeleteCigarsModalOpen(true)} className="flex-1 flex items-center justify-center gap-2 bg-red-600 text-white font-bold py-3 rounded-full hover:bg-red-700 transition-colors shadow-lg"><Trash2 className="w-5 h-5" />Delete</button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Place FilterSortModal here, outside the main content */}
+            {isFilterSortModalOpen && (
+                <FilterSortModal
+                    isOpen={isFilterSortModalOpen}
+                    onClose={() => setIsFilterSortModalOpen(false)}
+                    filters={filters}
+                    sortBy={sortBy}
+                    sortOrder={sortOrder}
+                    onFilterChange={handleFilterChange}
+                    onFlavorNoteToggle={handleFlavorNoteToggle}
+                    onSortChange={handleSortChange}
+                    onClearFilters={handleClearFilters}
+                    uniqueBrands={uniqueBrands}
+                    uniqueCountries={uniqueCountries}
+                    availableFlavorNotes={availableFlavorNotes}
+                    theme={theme}
+                />
+            )}
+
+        </div>
+    );
+};
+
+const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
+    const [modalState, setModalState] = useState({ isOpen: false, type: null, content: '', isLoading: false });
+    const [isFlavorModalOpen, setIsFlavorModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+    const [isRoxyOpen, setIsRoxyOpen] = useState(false);
+    const [showSmokeConfirmation, setShowSmokeConfirmation] = useState(false);
+
+    const handleSmokeCigar = async () => {
+        if (cigar.quantity > 0) {
+            const newQuantity = cigar.quantity - 1;
+            const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
+            await updateDoc(cigarRef, { quantity: newQuantity });
+            setShowSmokeConfirmation(true); // Show confirmation message
+            setTimeout(() => setShowSmokeConfirmation(false), 3000); // Hide after 3 seconds
+        }
+    };
+
+    const handleDeleteCigar = async () => {
+        const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
+        await deleteDoc(cigarRef);
+        navigate('MyHumidor', { humidorId: cigar.humidorId });
+    };
+
+    const handleSuggestPairings = async () => {
+        setModalState({ isOpen: true, type: 'pairings', content: '', isLoading: true });
+        const prompt = `You are a world-class sommelier and cigar expert. Given the following cigar:\n- Brand: ${cigar.brand}\n- Name: ${cigar.name}\n- Strength: ${cigar.strength}\n- Wrapper: ${cigar.wrapper}\n\nSuggest three diverse drink pairings (e.g., a spirit, a coffee, a non-alcoholic beverage). For each, provide a one-sentence explanation for why it works well. Format the response clearly with headings for each pairing.`;
+        const result = await callGeminiAPI(prompt);
+        setModalState({ isOpen: true, type: 'pairings', content: result, isLoading: false });
+    };
+
+    const handleGenerateNote = async () => {
+        setModalState({ isOpen: true, type: 'notes', content: '', isLoading: true });
+        const prompt = `You are a seasoned cigar aficionado with a poetic command of language. Based on this cigar's profile:\n- Brand: ${cigar.brand}\n- Name: ${cigar.name}\n- Strength: ${cigar.strength}\n- Wrapper: ${cigar.wrapper}\n\nGenerate a short, evocative tasting note (2-3 sentences) that a user could use as inspiration for their own review. Focus on potential flavors and the overall experience.`;
+        const result = await callGeminiAPI(prompt);
+        setModalState({ isOpen: true, type: 'notes', content: result, isLoading: false });
+    };
+
+    const handleFindSimilar = async () => {
+        setModalState({ isOpen: true, type: 'similar', content: '', isLoading: true });
+        const prompt = `You are a cigar expert. A user likes the '${cigar.brand} ${cigar.name}'. Based on its profile (Strength: ${cigar.strength}, Wrapper: ${cigar.wrapper}, Filler: ${cigar.filler}, Origin: ${cigar.country}, Flavors: ${cigar.flavorNotes.join(', ')}), suggest 3 other cigars that they might also enjoy. For each suggestion, provide the Brand and Name, and a 1-sentence reason why it's a good recommendation. Format as a list.`;
+        const result = await callGeminiAPI(prompt);
+        setModalState({ isOpen: true, type: 'similar', content: result, isLoading: false });
+    };
+
+    const handleAgingPotential = async () => {
+        setModalState({ isOpen: true, type: 'aging', content: '', isLoading: true });
+        const timeInHumidor = calculateAge(cigar.dateAdded);
+        const prompt = `You are a master tobacconist and cigar aging expert named Roxy. A user is asking about the aging potential of their cigar.
+
+Cigar Details:
+- Name: ${cigar.brand} ${cigar.name}
+- Wrapper: ${cigar.wrapper}
+- Strength: ${cigar.strength}
+- Time already aged: ${timeInHumidor}
+
+Provide a brief, encouraging, and slightly personalized note about this cigar's aging potential. Mention when it might be at its peak for smoking. Keep it to 2-3 sentences and maintain your persona as a friendly, knowledgeable dog.`;
+        const result = await callGeminiAPI(prompt);
+        setModalState({ isOpen: true, type: 'aging', content: result, isLoading: false });
+    };
+
+    const closeModal = () => setModalState({ isOpen: false, type: null, content: '', isLoading: false });
+
+    const RatingBadge = ({ rating }) => {
+        if (!rating || rating === 0) return null;
+        return (
+            <div
+                className={`flex flex-col items-center justify-center w-16 h-16 rounded-full border-2 aspect-square ${getRatingColor(rating)} bg-gray-900/50 backdrop-blur-sm`}
+                style={{ aspectRatio: '1 / 1' }} // Ensures a perfect circle in all browsers
+            >
+                <span className="text-2xl font-bold text-white">{rating}</span>
+                <span className="text-xs text-white/80 -mt-1">RATED</span>
+            </div>
+        );
+    };
+
+    const DetailItem = ({ label, value }) => (
+        <div><p className="text-xs text-gray-400">{label}</p><p className="font-bold text-white text-sm">{value || 'N/A'}</p></div>
+    );
+
+    return (
+        <div className="pb-24">
+            {modalState.isOpen && <GeminiModal title={modalState.type === 'pairings' ? "Pairing Suggestions" : modalState.type === 'notes' ? "Tasting Note Idea" : modalState.type === 'aging' ? "Aging Potential" : "Similar Smokes"} content={modalState.content} isLoading={modalState.isLoading} onClose={closeModal} />}
+            {isFlavorModalOpen && <FlavorNotesModal cigar={cigar} db={db} appId={appId} userId={userId} onClose={() => setIsFlavorModalOpen(false)} />}
+            <DeleteCigarsModal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} onConfirm={handleDeleteCigar} count={1} />
+            {isExportModalOpen && <ExportModal data={[cigar]} dataType="cigar" onClose={() => setIsExportModalOpen(false)} />}
+
+            <div className="relative">
+                <img src={cigar.image || `https://placehold.co/400x600/5a3825/ffffff?text=${cigar.brand.replace(/\s/g, '+')}`} alt={cigar.name} className="w-full h-64 object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
+
+
+                <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
+                    <button onClick={() => navigate('MyHumidor', { humidorId: cigar.humidorId })} className="p-2 bg-black/50 rounded-full text-white"><ChevronLeft className="w-7 h-7" /></button>
+                </div>
+
+                {/* Rating Badge and Title moved to bottom */}
+                <div className="absolute bottom-0 p-4 w-full flex justify-between items-end">
+                    <div>
+                        <p className="text-gray-300 text-sm font-semibold uppercase">{cigar.brand}</p>
+                        <h1 className="text-3xl font-bold text-white">{cigar.name}</h1>
+                    </div>
+                    <RatingBadge rating={cigar.rating} />
+                </div>
+            </div>
+
+            <div className="p-4 space-y-6">
+                {/* Simplified Action Bar */}
+                <button onClick={handleSmokeCigar} disabled={cigar.quantity === 0} className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-lg hover:bg-amber-600 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">
+                    <Cigarette className="w-5 h-5" /> Smoke This ({cigar.quantity} in stock)
+                </button>
+                {showSmokeConfirmation && (
+                    <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
+                        <Check className="w-5 h-5" />
+                        <span>Enjoy your smoke!</span>
+                    </div>
+                )}
+
+                {/* Updated Cigar Profile Panel */}
+                <div className="bg-gray-800/50 p-4 rounded-xl space-y-4">
+
+                    <div className="flex justify-between items-center">
+                        {/* Panel Title */}
+                        <h3 className="font-bold text-amber-300 text-lg">Cigar Profile</h3>
+
+                        {/* Action Buttons */}
+                        <div id="action-buttons" className="flex items-center gap-2">
+                            <button onClick={() => setIsDeleteModalOpen(true)} className="p-2 text-white hover:text-red-500 transition-colors">
+                                <Trash2 className="w-5 h-5" />
+                            </button>
+                            <button onClick={() => setIsExportModalOpen(true)} className="p-2 text-white hover:text-green-400 transition-colors">
+                                <UploadCloud className="w-5 h-5" />
+                            </button>
+                            <button onClick={() => navigate('EditCigar', { cigarId: cigar.id })} className="p-2 text-white hover:text-amber-400 transition-colors">
+                                <Edit className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                        {/* Short Description */}
+                        <div className="col-span-2">                            <p className="text-xs text-gray-400">Short Description</p>
+                            <p className="font-light text-white text-sm break-words">{cigar.shortDescription || 'No short description provided.'}</p>
+                        </div>
+
+                        <DetailItem label="Shape" value={cigar.shape} />
+                        {/* Updated Size display to combine length_inches and ring_gauge */}
+                        <DetailItem label="Size" value={cigar.length_inches && cigar.ring_gauge ? `${cigar.length_inches} x ${cigar.ring_gauge}` : cigar.size} />
+                        <DetailItem label="Origin" value={cigar.country} />
+                        <DetailItem label="Strength" value={cigar.strength} />
+                        <DetailItem label="Wrapper" value={cigar.wrapper} />
+                        <DetailItem label="Binder" value={cigar.binder} />
+                        <DetailItem label="Filler" value={cigar.filler} />
+                        <DetailItem label="My Rating" value={cigar.userRating || 'N/A'} />
+                        {/* <DetailItem label="Price Paid" value={cigar.price ? `$${Number(cigar.price).toFixed(2)}` : 'N/A'} /> */}
+                        <DetailItem label="Date Added" value={formatDate(cigar.dateAdded)} />
+                        <DetailItem label="Time in Humidor" value={calculateAge(cigar.dateAdded)} />
+                    </div>
+
+                    <div className="border-t border-gray-700 pt-4">
+                        <p className="text-xs text-gray-400">Description</p>
+                        <p className="font-light text-white text-sm">{cigar.description || 'No description provided.'}</p>
+                    </div>
+
+                    <div className="border-t border-gray-700 pt-4">
+                        <h4 className="font-bold text-white flex items-center mb-3"><Tag className="w-4 h-4 mr-2 text-amber-400" /> Flavor Notes</h4>
+                        <div className="flex flex-wrap gap-2">
+                            {cigar.flavorNotes && cigar.flavorNotes.length > 0 ?
+                                cigar.flavorNotes.map(note => (<span key={note} className={`text-xs font-semibold px-3 py-1 rounded-full ${getFlavorTagColor(note)}`}>{note}</span>))
+                                : <p className="text-sm text-gray-500">No flavor notes added.</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                {/* Roxy's Corner Collapsible Panel */}
+                <div className="bg-amber-900/20 border border-amber-800 rounded-xl overflow-hidden">
+                    <button onClick={() => setIsRoxyOpen(!isRoxyOpen)} className="w-full p-4 flex justify-between items-center">
+                        <h3 className="font-bold text-amber-300 text-lg flex items-center"><Wind className="w-5 h-5 mr-2" /> Roxy's Corner</h3>
+                        <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isRoxyOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {isRoxyOpen && (
+                        <div className="px-4 pb-4 space-y-4">
+                            <p className="text-amber-200 text-sm pt-2">Let Roxy help you get the most out of your smoke. What would you like to know?</p>
+                            <button onClick={handleSuggestPairings} className="w-full flex items-center justify-center bg-amber-500/20 border border-amber-500 text-amber-300 font-bold py-3 rounded-lg hover:bg-amber-500/30 transition-colors"><Sparkles className="w-5 h-5 mr-2" /> Suggest Pairings</button>
+                            <button onClick={handleGenerateNote} className="w-full flex items-center justify-center bg-sky-500/20 border border-sky-500 text-sky-300 font-bold py-3 rounded-lg hover:bg-sky-500/30 transition-colors"><Sparkles className="w-5 h-5 mr-2" /> Generate Note Idea</button>
+                            <button onClick={handleFindSimilar} className="w-full flex items-center justify-center bg-green-500/20 border border-green-500 text-green-300 font-bold py-3 rounded-lg hover:bg-green-500/30 transition-colors"><Sparkles className="w-5 h-5 mr-2" /> Find Similar Smokes</button>
+                            <button onClick={handleAgingPotential} className="w-full flex items-center justify-center bg-purple-500/20 border border-purple-500 text-purple-300 font-bold py-3 rounded-lg hover:bg-purple-500/30 transition-colors"><CalendarIcon className="w-5 h-5 mr-2" /> Aging Potential</button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
     // Initialize formData with new fields length_inches and ring_gauge
     const [formData, setFormData] = useState({ brand: '', name: '', shape: '', size: '', wrapper: '', binder: '', filler: '', country: '', strength: '', price: '', rating: '', quantity: 1, image: '', shortDescription: '', description: '', flavorNotes: [], dateAdded: new Date().toISOString().split('T')[0], length_inches: '', ring_gauge: '' });
@@ -2657,6 +3353,18 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                 <div id="pnlRatingAndDate" className="grid grid-cols-2 gap-3">
                     <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} onChange={handleInputChange} theme={theme} />
                     <InputField name="dateAdded" Tooltip="Date Added to Humidor" label="Date Added" type="date" value={formData.dateAdded} onChange={handleInputChange} theme={theme} />
+                </div>
+                {/* User Rating */}
+                <div id="pnlUserRating" className="grid grid-cols-2 gap-3">
+                    <InputField
+                        name="userRating"
+                        label="User Rating"
+                        placeholder="e.g., 90"
+                        type="number"
+                        value={formData.userRating}
+                        onChange={handleInputChange}
+                        theme={theme}
+                    />
                 </div>
                 {/* Flavor Notes */}
                 <div id="pnlFlavorNotes" className="bg-gray-800/50 p-4 rounded-md">
@@ -2997,9 +3705,39 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                 </div>
                 {/* Rating and Date Added */}
                 <div id="pnlRatingAndDate" className="grid grid-cols-2 gap-3">
-                    <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} onChange={handleInputChange} theme={theme} className={flashingFields.rating ? 'ring-2 ring-amber-400 animate-pulse' : ''} />
-                    <InputField name="dateAdded" label="Date Added" type="date" value={formData.dateAdded} onChange={handleInputChange} theme={theme} />
+                    <InputField
+                        name="rating"
+                        label="Rating"
+                        placeholder="e.g., 94"
+                        type="number"
+                        value={formData.rating}
+                        onChange={handleInputChange}
+                        theme={theme}
+                        className={flashingFields.rating ? 'ring-2 ring-amber-400 animate-pulse' : ''}
+                    />
+                    <InputField
+                        name="dateAdded"
+                        label="Date Added"
+                        type="date"
+                        value={formData.dateAdded}
+                        onChange={handleInputChange}
+                        theme={theme}
+                    />
                 </div>
+                {/* User Rating */}
+                <div id="pnlRatingAndDate" className="grid grid-cols-2 gap-3">
+                    <InputField
+                        name="userRating"
+                        label="User Rating"
+                        placeholder="e.g., 90"
+                        type="number"
+                        value={formData.userRating}
+                        onChange={handleInputChange}
+                        theme={theme}
+                        className={flashingFields.userRating ? 'ring-2 ring-amber-400 animate-pulse' : ''}
+                    />
+                </div>
+
                 {/* Flavor Notes */}
                 <div id="pnlFlavorNotes" className="bg-gray-800/50 p-4 rounded-md">
                     <div className="flex justify-between items-center mb-3">
@@ -3029,763 +3767,6 @@ Do not include any text or markdown formatting outside of the JSON object.`;
     );
 };
 
-
-
-
-
-const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
-    const [modalState, setModalState] = useState({ isOpen: false, type: null, content: '', isLoading: false });
-    const [isFlavorModalOpen, setIsFlavorModalOpen] = useState(false);
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-    const [isRoxyOpen, setIsRoxyOpen] = useState(false);
-    const [showSmokeConfirmation, setShowSmokeConfirmation] = useState(false);
-
-    const handleSmokeCigar = async () => {
-        if (cigar.quantity > 0) {
-            const newQuantity = cigar.quantity - 1;
-            const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
-            await updateDoc(cigarRef, { quantity: newQuantity });
-            setShowSmokeConfirmation(true); // Show confirmation message
-            setTimeout(() => setShowSmokeConfirmation(false), 3000); // Hide after 3 seconds
-        }
-    };
-
-    const handleDeleteCigar = async () => {
-        const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
-        await deleteDoc(cigarRef);
-        navigate('MyHumidor', { humidorId: cigar.humidorId });
-    };
-
-    const handleSuggestPairings = async () => {
-        setModalState({ isOpen: true, type: 'pairings', content: '', isLoading: true });
-        const prompt = `You are a world-class sommelier and cigar expert. Given the following cigar:\n- Brand: ${cigar.brand}\n- Name: ${cigar.name}\n- Strength: ${cigar.strength}\n- Wrapper: ${cigar.wrapper}\n\nSuggest three diverse drink pairings (e.g., a spirit, a coffee, a non-alcoholic beverage). For each, provide a one-sentence explanation for why it works well. Format the response clearly with headings for each pairing.`;
-        const result = await callGeminiAPI(prompt);
-        setModalState({ isOpen: true, type: 'pairings', content: result, isLoading: false });
-    };
-
-    const handleGenerateNote = async () => {
-        setModalState({ isOpen: true, type: 'notes', content: '', isLoading: true });
-        const prompt = `You are a seasoned cigar aficionado with a poetic command of language. Based on this cigar's profile:\n- Brand: ${cigar.brand}\n- Name: ${cigar.name}\n- Strength: ${cigar.strength}\n- Wrapper: ${cigar.wrapper}\n\nGenerate a short, evocative tasting note (2-3 sentences) that a user could use as inspiration for their own review. Focus on potential flavors and the overall experience.`;
-        const result = await callGeminiAPI(prompt);
-        setModalState({ isOpen: true, type: 'notes', content: result, isLoading: false });
-    };
-
-    const handleFindSimilar = async () => {
-        setModalState({ isOpen: true, type: 'similar', content: '', isLoading: true });
-        const prompt = `You are a cigar expert. A user likes the '${cigar.brand} ${cigar.name}'. Based on its profile (Strength: ${cigar.strength}, Wrapper: ${cigar.wrapper}, Filler: ${cigar.filler}, Origin: ${cigar.country}, Flavors: ${cigar.flavorNotes.join(', ')}), suggest 3 other cigars that they might also enjoy. For each suggestion, provide the Brand and Name, and a 1-sentence reason why it's a good recommendation. Format as a list.`;
-        const result = await callGeminiAPI(prompt);
-        setModalState({ isOpen: true, type: 'similar', content: result, isLoading: false });
-    };
-
-    const handleAgingPotential = async () => {
-        setModalState({ isOpen: true, type: 'aging', content: '', isLoading: true });
-        const timeInHumidor = calculateAge(cigar.dateAdded);
-        const prompt = `You are a master tobacconist and cigar aging expert named Roxy. A user is asking about the aging potential of their cigar.
-
-Cigar Details:
-- Name: ${cigar.brand} ${cigar.name}
-- Wrapper: ${cigar.wrapper}
-- Strength: ${cigar.strength}
-- Time already aged: ${timeInHumidor}
-
-Provide a brief, encouraging, and slightly personalized note about this cigar's aging potential. Mention when it might be at its peak for smoking. Keep it to 2-3 sentences and maintain your persona as a friendly, knowledgeable dog.`;
-        const result = await callGeminiAPI(prompt);
-        setModalState({ isOpen: true, type: 'aging', content: result, isLoading: false });
-    };
-
-    const closeModal = () => setModalState({ isOpen: false, type: null, content: '', isLoading: false });
-
-    const RatingBadge = ({ rating }) => {
-        if (!rating || rating === 0) return null;
-        return (
-            <div className={`flex flex-col items-center justify-center w-16 h-16 rounded-full border-2 ${getRatingColor(rating)} bg-gray-900/50 backdrop-blur-sm`}>
-                <span className="text-2xl font-bold text-white">{rating}</span>
-                <span className="text-xs text-white/80 -mt-1">RATED</span>
-            </div>
-        );
-    };
-
-    const DetailItem = ({ label, value }) => (
-        <div><p className="text-xs text-gray-400">{label}</p><p className="font-bold text-white text-sm">{value || 'N/A'}</p></div>
-    );
-
-    return (
-        <div className="pb-24">
-            {modalState.isOpen && <GeminiModal title={modalState.type === 'pairings' ? "Pairing Suggestions" : modalState.type === 'notes' ? "Tasting Note Idea" : modalState.type === 'aging' ? "Aging Potential" : "Similar Smokes"} content={modalState.content} isLoading={modalState.isLoading} onClose={closeModal} />}
-            {isFlavorModalOpen && <FlavorNotesModal cigar={cigar} db={db} appId={appId} userId={userId} onClose={() => setIsFlavorModalOpen(false)} />}
-            <DeleteCigarsModal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} onConfirm={handleDeleteCigar} count={1} />
-            {isExportModalOpen && <ExportModal data={[cigar]} dataType="cigar" onClose={() => setIsExportModalOpen(false)} />}
-
-            <div className="relative">
-                <img src={cigar.image || `https://placehold.co/400x600/5a3825/ffffff?text=${cigar.brand.replace(/\s/g, '+')}`} alt={cigar.name} className="w-full h-64 object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
-
-
-                <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
-                    <button onClick={() => navigate('MyHumidor', { humidorId: cigar.humidorId })} className="p-2 bg-black/50 rounded-full text-white"><ChevronLeft className="w-7 h-7" /></button>
-                </div>
-
-                {/* Rating Badge and Title moved to bottom */}
-                <div className="absolute bottom-0 p-4 w-full flex justify-between items-end">
-                    <div>
-                        <p className="text-gray-300 text-sm font-semibold uppercase">{cigar.brand}</p>
-                        <h1 className="text-3xl font-bold text-white">{cigar.name}</h1>
-                    </div>
-                    <RatingBadge rating={cigar.rating} />
-                </div>
-            </div>
-
-            <div className="p-4 space-y-6">
-                {/* Simplified Action Bar */}
-                <button onClick={handleSmokeCigar} disabled={cigar.quantity === 0} className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-lg hover:bg-amber-600 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">
-                    <Cigarette className="w-5 h-5" /> Smoke This ({cigar.quantity} in stock)
-                </button>
-                {showSmokeConfirmation && (
-                    <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
-                        <Check className="w-5 h-5" />
-                        <span>Enjoy your smoke!</span>
-                    </div>
-                )}
-
-                {/* Updated Cigar Profile Panel */}
-                <div className="bg-gray-800/50 p-4 rounded-xl space-y-4">
-
-                    <div className="flex justify-between items-center">
-                        {/* Panel Title */}
-                        <h3 className="font-bold text-amber-300 text-lg">Cigar Profile</h3>
-
-                        {/* Action Buttons */}
-                        <div className="flex items-center gap-2">
-                            <button onClick={() => setIsExportModalOpen(true)} className="p-2 text-white hover:text-green-400 transition-colors"><Download className="w-5 h-5" /></button>
-                            <button onClick={() => setIsDeleteModalOpen(true)} className="p-2 text-white hover:text-red-500 transition-colors"><Trash2 className="w-5 h-5" /></button>
-                            <button onClick={() => navigate('EditCigar', { cigarId: cigar.id })} className="p-2 text-white hover:text-amber-400 transition-colors"><Edit className="w-5 h-5" /></button>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                        {/* Short Description */}
-                        <div className="col-span-2">                            <p className="text-xs text-gray-400">Short Description</p>
-                            <p className="font-light text-white text-sm break-words">{cigar.shortDescription || 'No short description provided.'}</p>
-                        </div>
-
-                        <DetailItem label="Shape" value={cigar.shape} />
-                        {/* Updated Size display to combine length_inches and ring_gauge */}
-                        <DetailItem label="Size" value={cigar.length_inches && cigar.ring_gauge ? `${cigar.length_inches} x ${cigar.ring_gauge}` : cigar.size} />
-                        <DetailItem label="Origin" value={cigar.country} />
-                        <DetailItem label="Strength" value={cigar.strength} />
-                        <DetailItem label="Wrapper" value={cigar.wrapper} />
-                        <DetailItem label="Binder" value={cigar.binder} />
-                        <DetailItem label="Filler" value={cigar.filler} />
-                        <DetailItem label="My Rating" value={cigar.userRating || 'N/A'} />
-                        {/* <DetailItem label="Price Paid" value={cigar.price ? `$${Number(cigar.price).toFixed(2)}` : 'N/A'} /> */}
-                        <DetailItem label="Date Added" value={formatDate(cigar.dateAdded)} />
-                        <DetailItem label="Time in Humidor" value={calculateAge(cigar.dateAdded)} />
-                    </div>
-
-                    <div className="border-t border-gray-700 pt-4">
-                        <p className="text-xs text-gray-400">Description</p>
-                        <p className="font-light text-white text-sm">{cigar.description || 'No description provided.'}</p>
-                    </div>
-
-                    <div className="border-t border-gray-700 pt-4">
-                        <h4 className="font-bold text-white flex items-center mb-3"><Tag className="w-4 h-4 mr-2 text-amber-400" /> Flavor Notes</h4>
-                        <div className="flex flex-wrap gap-2">
-                            {cigar.flavorNotes && cigar.flavorNotes.length > 0 ?
-                                cigar.flavorNotes.map(note => (<span key={note} className={`text-xs font-semibold px-3 py-1 rounded-full ${getFlavorTagColor(note)}`}>{note}</span>))
-                                : <p className="text-sm text-gray-500">No flavor notes added.</p>
-                            }
-                        </div>
-                    </div>
-                </div>
-
-                {/* Roxy's Corner Collapsible Panel */}
-                <div className="bg-amber-900/20 border border-amber-800 rounded-xl overflow-hidden">
-                    <button onClick={() => setIsRoxyOpen(!isRoxyOpen)} className="w-full p-4 flex justify-between items-center">
-                        <h3 className="font-bold text-amber-300 text-lg flex items-center"><Wind className="w-5 h-5 mr-2" /> Roxy's Corner</h3>
-                        <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isRoxyOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    {isRoxyOpen && (
-                        <div className="px-4 pb-4 space-y-4">
-                            <p className="text-amber-200 text-sm pt-2">Let Roxy help you get the most out of your smoke. What would you like to know?</p>
-                            <button onClick={handleSuggestPairings} className="w-full flex items-center justify-center bg-amber-500/20 border border-amber-500 text-amber-300 font-bold py-3 rounded-lg hover:bg-amber-500/30 transition-colors"><Sparkles className="w-5 h-5 mr-2" /> Suggest Pairings</button>
-                            <button onClick={handleGenerateNote} className="w-full flex items-center justify-center bg-sky-500/20 border border-sky-500 text-sky-300 font-bold py-3 rounded-lg hover:bg-sky-500/30 transition-colors"><Sparkles className="w-5 h-5 mr-2" /> Generate Note Idea</button>
-                            <button onClick={handleFindSimilar} className="w-full flex items-center justify-center bg-green-500/20 border border-green-500 text-green-300 font-bold py-3 rounded-lg hover:bg-green-500/30 transition-colors"><Sparkles className="w-5 h-5 mr-2" /> Find Similar Smokes</button>
-                            <button onClick={handleAgingPotential} className="w-full flex items-center justify-center bg-purple-500/20 border border-purple-500 text-purple-300 font-bold py-3 rounded-lg hover:bg-purple-500/30 transition-colors"><CalendarIcon className="w-5 h-5 mr-2" /> Aging Potential</button>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const AddHumidor = ({ navigate, db, appId, userId, theme }) => {
-    const humidorTypes = ["Desktop Humidor", "Cabinet Humidor", "Glass Top Humidor", "Travel Humidor", "Cigar Cooler", "Walk-In Humidor", "Personalized Humidor"];
-    const [formData, setFormData] = useState({
-        name: '',
-        shortDescription: '',
-        longDescription: '',
-        size: '',
-        location: '',
-        image: '',
-        type: humidorTypes[0],
-        temp: 70,
-        humidity: 70,
-    });
-    const [trackEnvironment, setTrackEnvironment] = useState(false);
-
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleSave = async () => {
-        //        if (!db) {
-        //            alert(`Database not initialized.`);
-        //            return;
-        //        }
-        try {
-            const newHumidorData = {
-                ...formData,
-                image: formData.image || `https://placehold.co/600x400/3a2d27/ffffff?text=${formData.name.replace(/\s/g, '+') || 'New+Humidor'}`,
-                goveeDeviceId: null,
-                goveeDeviceModel: null,
-                humidity: trackEnvironment ? Number(formData.humidity) : 70,
-                temp: trackEnvironment ? Number(formData.temp) : 68,
-            };
-            const humidorsCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'humidors');
-            await addDoc(humidorsCollectionRef, newHumidorData);
-            navigate('HumidorsScreen');
-        } catch (error) {
-            alert(`Failed to save humidor: ${error.message}`);
-        }
-    };
-
-    // State in the parent form to hold the item's name, image URL, and image position.
-    // This will be passed to the SmartImageModal.
-    const [itemName, setItemName] = useState('Arturo Fuente Hemingway');
-    const [itemImage, setItemImage] = useState('');
-    const [itemImagePosition, setItemImagePosition] = useState({ x: 50, y: 50 });
-
-    // This function is passed to the SmartImageModal and called when the user clicks "Accept Image".
-    // It updates the main form's state with the new image and its position.
-    const handleImageAccept = (image, position) => {
-        setItemImage(image);
-        setItemImagePosition(position);
-    };
-    return (
-        <div className="pb-24">
-            <div className="relative">
-                <SmartImageModal
-                    itemName={formData.name}
-                    itemCategory="humidor"
-                    itemType={formData.type}
-                    theme={theme}
-                    currentImage={formData.image || `https://placehold.co/400x600/5a3825/ffffff?text=${formData.name.replace(/\s/g, '+') || 'Humidor+Image'}`}
-                    currentPosition={formData.imagePosition || { x: 50, y: 50 }}
-                    onImageAccept={(img, pos) => setFormData(prev => ({
-                        ...prev,
-                        image: img,
-                        imagePosition: pos
-                    }))}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent pointer-events-none"></div>
-                <div className="absolute top-4 left-4 z-10">
-                    <button onClick={() => navigate('HumidorsScreen')} className="p-2 -ml-2 mr-2 bg-black/50 rounded-full">
-                        <ChevronLeft className={`w-7 h-7 ${theme.text}`} />
-                    </button>
-                </div>
-                <div className="absolute bottom-0 p-4 z-10 pointer-events-none">
-                    <h1 className={`text-3xl font-bold ${theme.text}`}>Add New Humidor</h1>
-                </div>
-            </div>
-            <div className="p-4 space-y-6">
-                <InputField name="name" label="Humidor Name" placeholder="e.g., The Big One" value={formData.name} onChange={handleInputChange} theme={theme} />
-                <InputField name="shortDescription" label="Short Description" placeholder="e.g., Main aging unit" value={formData.shortDescription} onChange={handleInputChange} theme={theme} />
-                <TextAreaField name="longDescription" label="Long Description" placeholder="e.g., A 150-count mahogany humidor with a Spanish cedar interior..." value={formData.longDescription} onChange={handleInputChange} theme={theme} />
-
-                <div>
-                    <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>Type of Humidor</label>
-                    <select name="type" value={formData.type} onChange={handleInputChange} className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} focus:outline-none focus:ring-2 ${theme.ring}`}>
-                        {humidorTypes.map(type => <option key={type} value={type}>{type}</option>)}
-                    </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <InputField name="size" label="Size" placeholder="e.g., 150-count" value={formData.size} onChange={handleInputChange} theme={theme} />
-                    <InputField name="location" label="Location" placeholder="e.g., Office" value={formData.location} onChange={handleInputChange} theme={theme} />
-                </div>
-
-                <div className={`${theme.card} p-4 rounded-xl`}>
-                    <div className="flex justify-between items-center">
-                        <h3 className="font-bold text-lg text-amber-300 flex items-center"><Thermometer className="w-5 h-5 mr-2" /> Environment Tracking</h3>
-                        <button onClick={() => setTrackEnvironment(!trackEnvironment)} className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${trackEnvironment ? 'bg-amber-500' : 'bg-gray-600'}`}>
-                            <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${trackEnvironment ? 'translate-x-6' : 'translate-x-1'}`} />
-                        </button>
-                    </div>
-                    {trackEnvironment && (
-                        <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-700">
-                            <InputField name="temp" label="Temperature (°F)" type="number" value={formData.temp} onChange={handleInputChange} theme={theme} />
-                            <InputField name="humidity" label="Humidity (%)" type="number" value={formData.humidity} onChange={handleInputChange} theme={theme} />
-                        </div>
-                    )}
-                </div>
-
-                <div className="pt-4 flex space-x-4">
-                    <button
-                        onClick={handleSave}
-                        className={`w-full ${theme.primaryBg} ${theme.text === 'text-white' ? 'text-white' : 'text-black'} font-bold py-3 rounded-lg ${theme.hoverPrimaryBg} transition-colors`}
-                    >
-                        Save Humidor
-                    </button>
-                    <button
-                        onClick={() => navigate('HumidorsScreen')}
-                        className={`w-full ${theme.button} ${theme.text} font-bold py-3 rounded-lg transition-colors`}
-                    >
-                        Cancel
-                    </button>
-                </div>
-
-
-            </div>
-        </div>
-    );
-};
-
-const EditHumidor = ({ navigate, db, appId, userId, humidor, goveeApiKey, goveeDevices, theme }) => {
-    const humidorTypes = ["Desktop Humidor", "Cabinet Humidor", "Glass Top Humidor", "Travel Humidor", "Cigar Cooler", "Walk-In Humidor", "Personalized Humidor"];
-    const [formData, setFormData] = useState({
-        ...humidor,
-        shortDescription: humidor.shortDescription || '',
-        longDescription: humidor.longDescription || humidor.description || '', // Migrate old description
-        trackingMethod: humidor.goveeDeviceId ? 'govee' : 'manual'
-    });
-
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleGoveeDeviceChange = (e) => {
-        const selectedDeviceId = e.target.value;
-        const selectedDevice = goveeDevices.find(d => d.device === selectedDeviceId);
-        setFormData(prev => ({ ...prev, goveeDeviceId: selectedDevice?.device || null, goveeDeviceModel: selectedDevice?.model || null }));
-    };
-
-    const handleSave = async () => {
-        const humidorRef = doc(db, 'artifacts', appId, 'users', userId, 'humidors', humidor.id);
-        const { id, description, ...dataToSave } = formData; // Exclude id and old description field
-        const updatedHumidor = {
-            ...dataToSave,
-            goveeDeviceId: formData.trackingMethod === 'manual' ? null : formData.goveeDeviceId,
-            goveeDeviceModel: formData.trackingMethod === 'manual' ? null : formData.goveeDeviceModel,
-            image: formData.image || `https://placehold.co/600x400/3a2d27/ffffff?text=${formData.name.replace(/\s/g, '+') || 'Humidor'}`,
-        };
-        await updateDoc(humidorRef, updatedHumidor);
-        navigate('MyHumidor', { humidorId: humidor.id });
-    };
-
-    // State in the parent form to hold the item's name, image URL, and image position.
-    // This will be passed to the SmartImageModal.
-    const [itemName, setItemName] = useState('Arturo Fuente Hemingway');
-    const [itemImage, setItemImage] = useState('');
-    const [itemImagePosition, setItemImagePosition] = useState({ x: 50, y: 50 });
-
-    // This function is passed to the SmartImageModal and called when the user clicks "Accept Image".
-    // It updates the main form's state with the new image and its position.
-    const handleImageAccept = (image, position) => {
-        setItemImage(image);
-        setItemImagePosition(position);
-    };
-
-    return (
-        <div className="p-4 pb-24">
-            <div className="relative">
-                {/* Image */}
-                <SmartImageModal
-                    itemName={formData.name}
-                    itemCategory="humidor"
-                    itemType={formData.type}
-                    theme={theme}
-                    currentImage={formData.image || `https://placehold.co/600x400/EEE/31343C?font=playfair-display&text=${formData.name.replace(/\s/g, '+') || 'My Humidor'}`}
-                    currentPosition={formData.imagePosition || { x: 50, y: 50 }}
-                    onImageAccept={(img, pos) => setFormData(prev => ({
-                        ...prev,
-                        image: img,
-                        imagePosition: pos
-                    }))}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent pointer-events-none"></div>
-                <div className="absolute top-4 left-4 z-10">
-                    <button onClick={() => navigate('HumidorsScreen')} className="p-2 -ml-2 mr-2 bg-black/50 rounded-full">
-                        <ChevronLeft className={`w-7 h-7 ${theme.text}`} />
-                    </button>
-                </div>
-                <div className="absolute bottom-0 p-4 z-10 pointer-events-none">
-                    <h1 className={`text-3xl font-bold ${theme.text}`}>Edit  Humidor</h1>
-                </div>
-            </div>
-
-            <div className="p-4 space-y-6">
-                {/* Humidor Name */}
-                <InputField name="name" label="Humidor Name" placeholder="e.g., The Big One" value={formData.name} onChange={handleInputChange} theme={theme} />
-                {/* Short Description */}
-                <InputField name="shortDescription" label="Short Description" placeholder="e.g., Main aging unit" value={formData.shortDescription} onChange={handleInputChange} theme={theme} />
-                {/* Long Description */}
-                <TextAreaField name="longDescription" label="Long Description" placeholder="e.g., A 150-count mahogany humidor..." value={formData.longDescription} onChange={handleInputChange} theme={theme} />
-
-                {/* Type of Humidor */}
-                <div>
-                    <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>Type of Humidor</label>
-                    <select name="type" value={formData.type} onChange={handleInputChange} className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} focus:outline-none focus:ring-2 ${theme.ring}`}>
-                        {humidorTypes.map(type => <option key={type} value={type}>{type}</option>)}
-                    </select>
-                </div>
-                {/* Size and location */}
-                <div id="pnlSizeAndLocation" className="grid grid-cols-2 gap-4">
-                    <InputField name="size" label="Size" placeholder="e.g., 150-count" value={formData.size} onChange={handleInputChange} theme={theme} />
-                    <InputField name="location" label="Location" placeholder="e.g., Office" value={formData.location} onChange={handleInputChange} theme={theme} />
-                </div>
-                {/* Environment Tracking */}
-                <div pnl="pnlEnvironmentTracking" className={`${theme.card} p-4 rounded-xl`}>
-                    <h3 className="font-bold text-xl text-amber-300 mb-4 flex items-center"><MapPin className="w-5 h-5 mr-2" /> Environment Tracking</h3>
-                    <div className="space-y-4">
-                        <div>
-                            <label className={`text-sm font-medium ${theme.subtleText} mb-2 block`}>Tracking Method</label>
-                            <div className="flex space-x-4">
-                                <label className="inline-flex items-center"><input type="radio" name="trackingMethod" value="manual" checked={formData.trackingMethod === 'manual'} onChange={handleInputChange} className="form-radio text-amber-500 h-4 w-4" /><span className={`ml-2 ${theme.text}`}>Manual Input</span></label>
-                                <label className="inline-flex items-center"><input type="radio" name="trackingMethod" value="govee" checked={formData.trackingMethod === 'govee'} onChange={handleInputChange} className="form-radio text-amber-500 h-4 w-4" /><span className={`ml-2 ${theme.text}`}>Govee Sensor</span></label>
-                            </div>
-                        </div>
-                        {formData.trackingMethod === 'manual' ? (
-                            <div className="grid grid-cols-2 gap-4">
-                                <InputField name="temp" label="Temperature (°F)" placeholder="e.g., 68" type="number" value={formData.temp} onChange={handleInputChange} theme={theme} />
-                                <InputField name="humidity" label="Humidity (%)" placeholder="e.g., 70" type="number" value={formData.humidity} onChange={handleInputChange} theme={theme} />
-                            </div>
-                        ) : (
-                            <div>
-                                <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>Govee Sensor</label>
-                                <select value={formData.goveeDeviceId || ''} onChange={handleGoveeDeviceChange} disabled={!goveeApiKey || goveeDevices.length === 0} className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} disabled:bg-gray-800 disabled:cursor-not-allowed`}>
-                                    <option value="">{!goveeApiKey ? "Connect Govee first" : (goveeDevices.length === 0 ? "No sensors found" : "Select a sensor")}</option>
-                                    {goveeDevices.map(device => (<option key={device.device} value={device.device}>{device.deviceName} ({device.model})</option>))}
-                                </select>
-                                {!goveeApiKey && (<p className="text-xs text-red-300 mt-1">Please connect your Govee API key in Integrations settings.</p>)}
-                                {goveeApiKey && goveeDevices.length === 0 && (<p className="text-xs text-yellow-300 mt-1">No Govee sensors found. Check your key and Govee app.</p>)}
-                                <div className="grid grid-cols-2 gap-4 mt-4">
-                                    <InputField name="temp" label="Current Temp (°F)" value={humidor.temp} type="number" onChange={() => { }} theme={theme} disabled={true} />
-                                    <InputField name="humidity" label="Current Humidity (%)" value={humidor.humidity} type="number" onChange={() => { }} theme={theme} disabled={true} />
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-                {/* Save and Cancel buttons */}
-                <div pnl="pnlSaveCancelButtons" className="pt-4 flex space-x-4">
-                    <button onClick={handleSave} className={`w-full ${theme.primaryBg} ${theme.text === 'text-white' ? 'text-white' : 'text-black'} font-bold py-3 rounded-lg ${theme.hoverPrimaryBg} transition-colors`}>Save Changes</button>
-                    <button onClick={() => navigate('MyHumidor', { humidorId: humidor.id })} className={`w-full ${theme.button} ${theme.text} font-bold py-3 rounded-lg transition-colors`}>Cancel</button>
-                </div>
-            </div>
-        </div>
-    );
-};
-// (070925) Updated MyHumidor component to include search, filter, sort, and select modes
-// ...existing code...
-const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, theme }) => {
-    const [searchQuery, setSearchQuery] = useState('');
-    const [suggestions, setSuggestions] = useState([]);
-    const [viewMode, setViewMode] = useState('list');
-    const [isSelectMode, setIsSelectMode] = useState(false);
-    const [selectedCigarIds, setSelectedCigarIds] = useState([]);
-    const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
-    const [isDeleteHumidorModalOpen, setIsDeleteHumidorModalOpen] = useState(false);
-    const [isDeleteCigarsModalOpen, setIsDeleteCigarsModalOpen] = useState(false);
-    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-    const [isManualReadingModalOpen, setIsManualReadingModalOpen] = useState(false);
-    const [isFilterSortModalOpen, setIsFilterSortModalOpen] = useState(false);
-    const [filters, setFilters] = useState({ brand: '', country: '', strength: '', flavorNotes: [] });
-    const [sortBy, setSortBy] = useState('name');
-    const [sortOrder, setSortOrder] = useState('asc');
-
-    const isFilterActive = useMemo(() => {
-        return filters.brand || filters.country || filters.strength || filters.flavorNotes.length > 0;
-    }, [filters]);
-
-    const uniqueBrands = useMemo(() => [...new Set(cigars.filter(c => c.humidorId === humidor.id).map(c => c.brand))].sort(), [cigars, humidor.id]);
-    const uniqueCountries = useMemo(() => [...new Set(cigars.filter(c => c.humidorId === humidor.id).map(c => c.country))].sort(), [cigars, humidor.id]);
-    const availableFlavorNotes = useMemo(() => [...new Set(cigars.filter(c => c.humidorId === humidor.id).flatMap(c => c.flavorNotes))].sort(), [cigars, humidor.id]);
-
-    const filteredAndSortedCigars = useMemo(() => {
-        let currentCigars = cigars.filter(c => c.humidorId === humidor.id);
-
-        if (searchQuery) {
-            currentCigars = currentCigars.filter(cigar => cigar.name.toLowerCase().includes(searchQuery.toLowerCase()) || cigar.brand.toLowerCase().includes(searchQuery.toLowerCase()));
-        }
-
-        if (filters.brand) currentCigars = currentCigars.filter(cigar => cigar.brand === filters.brand);
-        if (filters.country) currentCigars = currentCigars.filter(cigar => cigar.country === filters.country);
-        if (filters.strength) currentCigars = currentCigars.filter(cigar => cigar.strength === filters.strength);
-        if (filters.flavorNotes.length > 0) {
-            currentCigars = currentCigars.filter(cigar => filters.flavorNotes.every(note => cigar.flavorNotes.includes(note)));
-        }
-
-        currentCigars.sort((a, b) => {
-            let valA, valB;
-            switch (sortBy) {
-                case 'name': valA = a.name.toLowerCase(); valB = b.name.toLowerCase(); break;
-                case 'brand': valA = a.brand.toLowerCase(); valB = b.brand.toLowerCase(); break;
-                case 'rating': valA = a.rating || 0; valB = b.rating || 0; break;
-                case 'quantity': valA = a.quantity; valB = b.quantity; break;
-                case 'price': valA = a.price || 0; valB = b.price || 0; break;
-                case 'dateAdded': valA = a.dateAdded; valB = b.dateAdded; break;
-                default: return 0;
-            }
-            if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
-            if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
-            return 0;
-        });
-
-        return currentCigars;
-    }, [cigars, humidor.id, searchQuery, filters, sortBy, sortOrder]);
-
-    const totalQuantity = filteredAndSortedCigars.reduce((sum, c) => sum + c.quantity, 0);
-    const humidorValue = filteredAndSortedCigars.reduce((sum, c) => sum + (c.quantity * (c.price || 0)), 0);
-
-    const handleSearchChange = (e) => {
-        const query = e.target.value;
-        setSearchQuery(query);
-        if (query.length > 1) {
-            const allSuggestions = cigars.filter(c => c.humidorId === humidor.id).map(c => c.brand).concat(cigars.filter(c => c.humidorId === humidor.id).map(c => c.name)).filter(name => name.toLowerCase().includes(query.toLowerCase()));
-            setSuggestions([...new Set(allSuggestions)].slice(0, 5));
-        } else {
-            setSuggestions([]);
-        }
-    };
-
-    const handleSuggestionClick = (suggestion) => {
-        setSearchQuery(suggestion);
-        setSuggestions([]);
-    };
-
-    const handleToggleSelectMode = () => {
-        setIsSelectMode(!isSelectMode);
-        setSelectedCigarIds([]);
-    };
-
-    const handleSelectCigar = (cigarId) => {
-        setSelectedCigarIds(prev => prev.includes(cigarId) ? prev.filter(id => id !== cigarId) : [...prev, cigarId]);
-    };
-
-    // Function to handle the Move Cigars action
-    const handleMoveCigars = async (destinationHumidorId) => {
-        // Get a new write batch
-        const batch = writeBatch(db);
-        // Iterate over each selected cigar ID
-        selectedCigarIds.forEach(cigarId => {
-            // Correctly reference the cigar document using the cigarId from the loop
-            const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigarId);
-            // Update the humidorId and reset the dateAdded for the moved cigar
-            batch.update(cigarRef, { humidorId: destinationHumidorId, dateAdded: new Date().toISOString() });
-        });
-        // Commit the batch update
-        await batch.commit();
-        // Reset state and navigate to the destination humidor
-        setIsMoveModalOpen(false);
-        setIsSelectMode(false);
-        setSelectedCigarIds([]);
-        navigate('MyHumidor', { humidorId: destinationHumidorId });
-    };
-
-    const handleConfirmDeleteHumidor = async ({ action, destinationHumidorId }) => {
-        const batch = writeBatch(db);
-        const cigarsToDelete = cigars.filter(c => c.humidorId === humidor.id);
-
-        switch (action) {
-            case 'move':
-                cigarsToDelete.forEach(cigar => {
-                    const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
-                    batch.update(cigarRef, { humidorId: destinationHumidorId });
-                });
-                break;
-            case 'export':
-            case 'deleteAll':
-                cigarsToDelete.forEach(cigar => {
-                    const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
-                    batch.delete(cigarRef);
-                });
-                break;
-            default: break;
-        }
-
-        const humidorRef = doc(db, 'artifacts', appId, 'users', userId, 'humidors', humidor.id);
-        batch.delete(humidorRef);
-
-        await batch.commit();
-        setIsDeleteHumidorModalOpen(false);
-        navigate('HumidorsScreen');
-    };
-
-
-    // Function to handle the confirmation of deleting selected cigars
-    const handleConfirmDeleteCigars = async () => {
-        // Get a new write batch
-        const batch = writeBatch(db);
-        // Iterate over each selected cigar ID
-        selectedCigarIds.forEach(cigarId => {
-            // Correctly reference the cigar document using the cigarId from the loop
-            const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigarId);
-            // Delete the document
-            batch.delete(cigarRef);
-        });
-        // Commit the batch deletion
-        await batch.commit();
-        // Reset the state
-        setIsDeleteCigarsModalOpen(false);
-        setIsSelectMode(false);
-        setSelectedCigarIds([]);
-    };
-
-    const handleSaveManualReading = async (newTemp, newHumidity) => {
-        const humidorRef = doc(db, 'artifacts', appId, 'users', userId, 'humidors', humidor.id);
-        await updateDoc(humidorRef, { temp: newTemp, humidity: newHumidity });
-        setIsManualReadingModalOpen(false);
-    };
-
-    const handleFilterChange = (filterName, value) => setFilters(prev => ({ ...prev, [filterName]: value }));
-
-    const handleFlavorNoteToggle = (note) => {
-        setFilters(prev => ({ ...prev, flavorNotes: prev.flavorNotes.includes(note) ? prev.flavorNotes.filter(n => n !== note) : [...prev.flavorNotes, note] }));
-    };
-
-    const handleSortChange = (sortCriteria) => {
-        if (sortBy === sortCriteria) {
-            setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'));
-        } else {
-            setSortBy(sortCriteria);
-            setSortOrder('asc');
-        }
-    };
-
-    const handleClearFilters = () => {
-        setFilters({ brand: '', country: '', strength: '', flavorNotes: [] });
-    };
-
-    return (
-        <div className="bg-gray-900 min-h-screen pb-24">
-            {isManualReadingModalOpen && <ManualReadingModal humidor={humidor} onClose={() => setIsManualReadingModalOpen(false)} onSave={handleSaveManualReading} theme={theme} />}
-            {isMoveModalOpen && <MoveCigarsModal onClose={() => setIsMoveModalOpen(false)} onMove={handleMoveCigars} destinationHumidors={humidors.filter(h => h.id !== humidor.id)} theme={theme} />}
-            <DeleteHumidorModal isOpen={isDeleteHumidorModalOpen} onClose={() => setIsDeleteHumidorModalOpen(false)} onConfirm={handleConfirmDeleteHumidor} humidor={humidor} cigarsInHumidor={filteredAndSortedCigars} otherHumidors={humidors.filter(h => h.id !== humidor.id)} />
-            <DeleteCigarsModal isOpen={isDeleteCigarsModalOpen} onClose={() => setIsDeleteCigarsModalOpen(false)} onConfirm={handleConfirmDeleteCigars} count={selectedCigarIds.length} />
-            {isExportModalOpen && <ExportModal data={filteredAndSortedCigars} dataType="cigar" onClose={() => setIsExportModalOpen(false)} />}
-
-            <div className="relative">
-                <img src={humidor.image || `https://placehold.co/600x400/3a2d27/ffffff?text=${humidor.name.replace(/\s/g, '+')}`} alt={humidor.name} className="w-full h-64 object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
-                <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
-                    <button onClick={() => navigate('HumidorsScreen')} className="p-2 bg-black/50 rounded-full">
-                        <ChevronLeft className="w-7 h-7 text-white" />
-                    </button>
-                    <HumidorActionMenu
-                        onEdit={() => navigate('EditHumidor', { humidorId: humidor.id })}
-                        onTakeReading={() => setIsManualReadingModalOpen(true)}
-                        onExport={() => setIsExportModalOpen(true)}
-                        onDelete={() => setIsDeleteHumidorModalOpen(true)}
-                    />
-                </div>
-                <div className="absolute bottom-0 p-4">
-                    <h1 className="text-3xl font-bold text-white">{humidor.name}</h1>
-                    <p className="text-sm text-gray-300">{humidor.shortDescription || humidor.description}</p>
-                </div>
-            </div>
-
-            <div className="p-4">
-                <div className="flex justify-around items-center bg-gray-800/50 p-3 rounded-xl mb-6 text-center">
-                    <div className="flex flex-col items-center"><Droplets className="w-5 h-5 text-blue-400 mb-1" /><p className="text-sm text-gray-400">Humidity</p><p className="font-bold text-white text-base">{humidor.humidity}%</p></div>
-                    <div className="h-10 w-px bg-gray-700"></div>
-                    <div className="flex flex-col items-center"><Thermometer className="w-5 h-5 text-red-400 mb-1" /><p className="text-sm text-gray-400">Temperature</p><p className="font-bold text-white text-base">{humidor.temp}°F</p></div>
-                    <div className="h-10 w-px bg-gray-700"></div>
-                    <div className="flex flex-col items-center"><svg className="w-5 h-5 text-green-400 mb-1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg><p className="text-sm text-gray-400">Est. Value</p><p className="font-bold text-white text-base">${humidorValue.toFixed(2)}</p></div>
-                </div>
-
-                <div className="relative mb-4">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input type="text" placeholder="Search this humidor..." value={searchQuery} onChange={handleSearchChange} className="w-full bg-gray-800 border border-gray-700 rounded-full py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500" />
-                    {suggestions.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 bg-gray-700 border border-gray-600 rounded-b-xl mt-1 z-20 overflow-hidden">
-                            {suggestions.map(suggestion => (<div key={suggestion} onMouseDown={() => handleSuggestionClick(suggestion)} className="w-full text-left px-4 py-3 hover:bg-gray-600 transition-colors cursor-pointer">{suggestion}</div>))}
-                        </div>
-                    )}
-                </div>
-
-                <div className="flex justify-between items-center mb-6 px-2">
-                    <div>
-                        <p className="text-sm text-gray-300"><span className="font-bold text-white">{filteredAndSortedCigars.length}</span> Unique</p>
-                        <p className="text-xs text-gray-400"><span className="font-bold text-gray-200">{totalQuantity}</span> Total Cigars</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button onClick={() => setIsFilterSortModalOpen(true)} className="p-2 rounded-full bg-gray-700 text-white hover:bg-gray-600 transition-colors"><Filter className="w-5 h-5" /></button>
-                        <div className="flex bg-gray-800 border border-gray-700 rounded-full p-1">
-                            <button onClick={() => setViewMode('grid')} className={`p-2 rounded-full transition-colors duration-200 ${viewMode === 'grid' ? 'bg-amber-500 text-white' : 'text-gray-400'}`}><LayoutGrid className="w-5 h-5" /></button>
-                            <button onClick={() => setViewMode('list')} className={`p-2 rounded-full transition-colors duration-200 ${viewMode === 'list' ? 'bg-amber-500 text-white' : 'text-gray-400'}`}><List className="w-5 h-5" /></button>
-                        </div>
-                        <button onClick={handleToggleSelectMode} className={`p-2 rounded-full transition-colors duration-200 ${isSelectMode ? 'bg-amber-500 text-white' : 'bg-gray-700 text-gray-400'}`}><CheckSquare className="w-5 h-5" /></button>
-                    </div>
-                </div>
-
-                {isFilterActive && (
-                    <div className="flex justify-between items-center mb-4 bg-gray-800 p-3 rounded-lg">
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm text-gray-300">Filtering by:</span>
-                            {filters.brand && <span className="text-xs font-semibold px-2 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50">{filters.brand}</span>}
-                            {filters.country && <span className="text-xs font-semibold px-2 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50">{filters.country}</span>}
-                            {filters.strength && <span className="text-xs font-semibold px-2 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50">{filters.strength}</span>}
-                            {filters.flavorNotes.map(note => <span key={note} className="text-xs font-semibold px-2 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50">{note}</span>)}
-                        </div>
-                        <button onClick={handleClearFilters} className="p-1 rounded-full hover:bg-amber-800 transition-colors text-amber-400"><X className="w-4 h-4" /></button>
-                    </div>
-                )}
-
-                <div className={viewMode === 'grid' ? "grid grid-cols-2 gap-4" : "flex flex-col gap-4"}>
-                    {filteredAndSortedCigars.map(cigar => (viewMode === 'grid' ? <GridCigarCard key={cigar.id} cigar={cigar} navigate={navigate} isSelectMode={isSelectMode} isSelected={selectedCigarIds.includes(cigar.id)} onSelect={handleSelectCigar} /> : <ListCigarCard key={cigar.id} cigar={cigar} navigate={navigate} isSelectMode={isSelectMode} isSelected={selectedCigarIds.includes(cigar.id)} onSelect={handleSelectCigar} />))}
-                    {filteredAndSortedCigars.length === 0 && (
-                        <div className="col-span-full text-center py-10">
-                            <p className="text-gray-400">No cigars match your search.</p>
-                        </div>
-                    )}
-                </div>
-
-                {/* Floating Action Button for Add Cigar */}
-                {!isSelectMode && (
-                    <button
-                        onClick={() => navigate('AddCigar', { humidorId: humidor.id })}
-                        className="fixed bottom-24 right-4 bg-amber-500 text-white p-4 rounded-full shadow-lg hover:bg-amber-600 transition-colors z-20"
-                        aria-label="Add Cigar"
-                    >
-                        <Plus className="w-6 h-6" />
-                    </button>
-                )}
-
-                {isSelectMode && (
-                    <div className="fixed bottom-20 left-0 right-0 bg-gray-900/80 backdrop-blur-sm p-4 z-20 border-t border-gray-700">
-                        <div className="max-w-md mx-auto">
-                            <div className="flex justify-between items-center mb-2">
-                                <h3 className="text-lg font-bold text-white">{selectedCigarIds.length} Selected</h3>
-                                <button onClick={handleToggleSelectMode} className="text-amber-400 font-semibold">Done</button>
-                            </div>
-                            {selectedCigarIds.length > 0 && (
-                                <div className="flex gap-2">
-                                    <button onClick={() => setIsMoveModalOpen(true)} className="flex-1 flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-full hover:bg-amber-600 transition-colors shadow-lg"><Move className="w-5 h-5" />Move</button>
-                                    <button onClick={() => setIsDeleteCigarsModalOpen(true)} className="flex-1 flex items-center justify-center gap-2 bg-red-600 text-white font-bold py-3 rounded-full hover:bg-red-700 transition-colors shadow-lg"><Trash2 className="w-5 h-5" />Delete</button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-};
-//
 
 const AlertsScreen = ({ navigate, humidors }) => {
     const [alertSettings, setAlertSettings] = useState(
@@ -4113,8 +4094,97 @@ const DataSyncScreen = ({ navigate, db, appId, userId, cigars, humidors }) => {
     );
 };
 
+
+const AboutScreen = ({ navigate }) => {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalContent, setModalContent] = useState({ title: '', text: '' });
+    const privacyPolicyText = "Your data is stored securely in your private Firestore database and is not shared. We respect your privacy.\n\nEffective Date: July 4, 2025";
+    const termsOfServiceText = "By using Humidor Hub, you agree to track your cigars responsibly. This app is for informational purposes only. Enjoy your collection!\n\nLast Updated: July 4, 2025";
+
+    const showModal = (type) => {
+        setModalContent({ title: type === 'privacy' ? 'Privacy Policy' : 'Terms of Service', text: type === 'privacy' ? privacyPolicyText : termsOfServiceText });
+        setIsModalOpen(true);
+    };
+
+    return (
+        <div className="p-4 pb-24">
+            {isModalOpen && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100]" onClick={() => setIsModalOpen(false)}>
+                    <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-4"><h3 className="text-xl font-bold text-amber-400">{modalContent.title}</h3><button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white"><X /></button></div>
+                        <p className="text-gray-300 whitespace-pre-wrap">{modalContent.text}</p>
+                    </div>
+                </div>
+            )}
+            <div className="flex items-center mb-6">
+                <button onClick={() => navigate('Settings')} className="p-2 -ml-2 mr-2"><ChevronLeft className="w-7 h-7 text-white" /></button>
+                <h1 className="text-3xl font-bold text-white">About Humidor Hub</h1>
+            </div>
+            <div className="space-y-6 bg-gray-800/50 p-6 rounded-xl">
+                <div className="flex flex-col items-center">
+                    <Box className="w-16 h-16 text-amber-400 mb-4" />
+                    <h2 className="text-2xl font-bold text-white">Humidor Hub</h2>
+                    <p className="text-gray-400">Version 1.1.0</p>
+                </div>
+                <p className="text-gray-300 text-center">Your personal assistant for managing and enjoying your cigar collection.</p>
+                <div className="border-t border-gray-700 pt-4 space-y-2 text-center">
+                    <p className="text-sm text-gray-400">Developed with passion for aficionados.</p>
+                    <div className="flex justify-center gap-4">
+                        <button onClick={() => showModal('privacy')} className="text-amber-400 hover:underline text-sm">Privacy Policy</button>
+                        <button onClick={() => showModal('terms')} className="text-amber-400 hover:underline text-sm">Terms of Service</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const ProfileScreen = ({ navigate, cigars, theme }) => {
+    const totalCigars = cigars.reduce((sum, c) => sum + c.quantity, 0);
+    const topFlavors = useMemo(() => {
+        const flavorCounts = cigars.flatMap(c => c.flavorNotes).reduce((acc, flavor) => {
+            acc[flavor] = (acc[flavor] || 0) + 1;
+            return acc;
+        }, {});
+        return Object.entries(flavorCounts).sort((a, b) => b[1] - a[1]).slice(0, 5).map(entry => entry[0]);
+    }, [cigars]);
+
+    return (
+        <div className="p-4 pb-24">
+            <div className="flex items-center mb-6">
+                <button onClick={() => navigate('Settings')} className="p-2 -ml-2 mr-2"><ChevronLeft className="w-7 h-7 text-white" /></button>
+                <h1 className="text-3xl font-bold text-white">Profile</h1>
+            </div>
+            <div className="space-y-6">
+                <div className="flex flex-col items-center p-6 bg-gray-800/50 rounded-xl">
+                    <img src="https://placehold.co/100x100/3a2d27/ffffff?text=User" alt="User Avatar" className="w-24 h-24 rounded-full border-4 border-amber-400" />
+                    <h2 className="text-2xl font-bold text-white mt-4">Cigar Aficionado</h2>
+                    <p className="text-gray-400">Hudson Bend, TX</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <StatCard title="Total Cigars" value={totalCigars} icon={Box} theme={theme} />
+                    <StatCard title="Member Since" value="2024" icon={Star} theme={theme} />
+                </div>
+                <div className="bg-gray-800/50 p-4 rounded-xl">
+                    <h3 className="font-bold text-amber-300 text-lg mb-3">Tasting Preferences</h3>
+                    <div>
+                        <h4 className="font-semibold text-white mb-2">Preferred Strength</h4>
+                        <div className="w-full bg-gray-700 rounded-full h-2.5"><div className="bg-amber-500 h-2.5 rounded-full" style={{ width: '70%' }}></div></div>
+                        <div className="flex justify-between text-xs text-gray-400 mt-1"><span>Mild</span><span>Medium</span><span>Full</span></div>
+                    </div>
+                    <div className="mt-4">
+                        <h4 className="font-semibold text-white mb-2">Top Flavors</h4>
+                        <div className="flex flex-wrap gap-2">{topFlavors.map(note => (<span key={note} className={`text-xs font-semibold px-3 py-1 rounded-full ${getFlavorTagColor(note)}`}>{note}</span>))}</div>
+                    </div>
+                </div>
+                <button className="w-full flex items-center justify-center gap-2 bg-red-800/80 text-white font-bold py-3 rounded-lg hover:bg-red-700 transition-colors"><LogOut className="w-5 h-5" />Log Out</button>
+            </div>
+        </div>
+    );
+};
+
 /**
- * Generic ImportCsvModal component to handle both cigar and humidor imports.
+ * ImportCsvModal component handles both cigar and humidor imports.
  */
 const ImportCsvModal = ({ dataType, data, db, appId, userId, onClose, humidors, navigate }) => {
     const [step, setStep] = useState('selectFile');
@@ -4358,7 +4428,7 @@ const ImportCsvModal = ({ dataType, data, db, appId, userId, onClose, humidors, 
 };
 
 /**
- * Generic ExportModal component to handle both cigar and humidor exports.
+ * ExportModal component handles both cigar and humidor exports.
  */
 const ExportModal = ({ data, dataType, onClose }) => {
     const getHeaders = () => {
@@ -4429,94 +4499,6 @@ const ExportModal = ({ data, dataType, onClose }) => {
                     <button onClick={exportToCsv} className="w-full flex items-center justify-center gap-2 bg-green-600/80 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-colors">Export as CSV</button>
                     <button onClick={exportToJson} className="w-full flex items-center justify-center gap-2 bg-blue-600/80 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors">Export as JSON</button>
                 </div>
-            </div>
-        </div>
-    );
-};
-
-const AboutScreen = ({ navigate }) => {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [modalContent, setModalContent] = useState({ title: '', text: '' });
-    const privacyPolicyText = "Your data is stored securely in your private Firestore database and is not shared. We respect your privacy.\n\nEffective Date: July 4, 2025";
-    const termsOfServiceText = "By using Humidor Hub, you agree to track your cigars responsibly. This app is for informational purposes only. Enjoy your collection!\n\nLast Updated: July 4, 2025";
-
-    const showModal = (type) => {
-        setModalContent({ title: type === 'privacy' ? 'Privacy Policy' : 'Terms of Service', text: type === 'privacy' ? privacyPolicyText : termsOfServiceText });
-        setIsModalOpen(true);
-    };
-
-    return (
-        <div className="p-4 pb-24">
-            {isModalOpen && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100]" onClick={() => setIsModalOpen(false)}>
-                    <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
-                        <div className="flex justify-between items-center mb-4"><h3 className="text-xl font-bold text-amber-400">{modalContent.title}</h3><button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white"><X /></button></div>
-                        <p className="text-gray-300 whitespace-pre-wrap">{modalContent.text}</p>
-                    </div>
-                </div>
-            )}
-            <div className="flex items-center mb-6">
-                <button onClick={() => navigate('Settings')} className="p-2 -ml-2 mr-2"><ChevronLeft className="w-7 h-7 text-white" /></button>
-                <h1 className="text-3xl font-bold text-white">About Humidor Hub</h1>
-            </div>
-            <div className="space-y-6 bg-gray-800/50 p-6 rounded-xl">
-                <div className="flex flex-col items-center">
-                    <Box className="w-16 h-16 text-amber-400 mb-4" />
-                    <h2 className="text-2xl font-bold text-white">Humidor Hub</h2>
-                    <p className="text-gray-400">Version 1.1.0</p>
-                </div>
-                <p className="text-gray-300 text-center">Your personal assistant for managing and enjoying your cigar collection.</p>
-                <div className="border-t border-gray-700 pt-4 space-y-2 text-center">
-                    <p className="text-sm text-gray-400">Developed with passion for aficionados.</p>
-                    <div className="flex justify-center gap-4">
-                        <button onClick={() => showModal('privacy')} className="text-amber-400 hover:underline text-sm">Privacy Policy</button>
-                        <button onClick={() => showModal('terms')} className="text-amber-400 hover:underline text-sm">Terms of Service</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const ProfileScreen = ({ navigate, cigars, theme }) => {
-    const totalCigars = cigars.reduce((sum, c) => sum + c.quantity, 0);
-    const topFlavors = useMemo(() => {
-        const flavorCounts = cigars.flatMap(c => c.flavorNotes).reduce((acc, flavor) => {
-            acc[flavor] = (acc[flavor] || 0) + 1;
-            return acc;
-        }, {});
-        return Object.entries(flavorCounts).sort((a, b) => b[1] - a[1]).slice(0, 5).map(entry => entry[0]);
-    }, [cigars]);
-
-    return (
-        <div className="p-4 pb-24">
-            <div className="flex items-center mb-6">
-                <button onClick={() => navigate('Settings')} className="p-2 -ml-2 mr-2"><ChevronLeft className="w-7 h-7 text-white" /></button>
-                <h1 className="text-3xl font-bold text-white">Profile</h1>
-            </div>
-            <div className="space-y-6">
-                <div className="flex flex-col items-center p-6 bg-gray-800/50 rounded-xl">
-                    <img src="https://placehold.co/100x100/3a2d27/ffffff?text=User" alt="User Avatar" className="w-24 h-24 rounded-full border-4 border-amber-400" />
-                    <h2 className="text-2xl font-bold text-white mt-4">Cigar Aficionado</h2>
-                    <p className="text-gray-400">Hudson Bend, TX</p>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <StatCard title="Total Cigars" value={totalCigars} icon={Box} theme={theme} />
-                    <StatCard title="Member Since" value="2024" icon={Star} theme={theme} />
-                </div>
-                <div className="bg-gray-800/50 p-4 rounded-xl">
-                    <h3 className="font-bold text-amber-300 text-lg mb-3">Tasting Preferences</h3>
-                    <div>
-                        <h4 className="font-semibold text-white mb-2">Preferred Strength</h4>
-                        <div className="w-full bg-gray-700 rounded-full h-2.5"><div className="bg-amber-500 h-2.5 rounded-full" style={{ width: '70%' }}></div></div>
-                        <div className="flex justify-between text-xs text-gray-400 mt-1"><span>Mild</span><span>Medium</span><span>Full</span></div>
-                    </div>
-                    <div className="mt-4">
-                        <h4 className="font-semibold text-white mb-2">Top Flavors</h4>
-                        <div className="flex flex-wrap gap-2">{topFlavors.map(note => (<span key={note} className={`text-xs font-semibold px-3 py-1 rounded-full ${getFlavorTagColor(note)}`}>{note}</span>))}</div>
-                    </div>
-                </div>
-                <button className="w-full flex items-center justify-center gap-2 bg-red-800/80 text-white font-bold py-3 rounded-lg hover:bg-red-700 transition-colors"><LogOut className="w-5 h-5" />Log Out</button>
             </div>
         </div>
     );
