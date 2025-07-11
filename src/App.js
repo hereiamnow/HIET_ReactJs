@@ -3165,6 +3165,7 @@ Provide a brief, encouraging, and slightly personalized note about this cigar's 
                         <DetailItem label="Wrapper" value={cigar.wrapper} />
                         <DetailItem label="Binder" value={cigar.binder} />
                         <DetailItem label="Filler" value={cigar.filler} />
+                        <DetailItem label="My Rating" value={cigar.userRating || 'N/A'} />
                         {/* <DetailItem label="Price Paid" value={cigar.price ? `$${Number(cigar.price).toFixed(2)}` : 'N/A'} /> */}
                         <DetailItem label="Date Added" value={formatDate(cigar.dateAdded)} />
                         <DetailItem label="Time in Humidor" value={calculateAge(cigar.dateAdded)} />
@@ -3658,27 +3659,12 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
     };
 
     return (
-        <div className="pb-24">
+        <div className="bg-gray-900 min-h-screen pb-24">
+            {isManualReadingModalOpen && <ManualReadingModal humidor={humidor} onClose={() => setIsManualReadingModalOpen(false)} onSave={handleSaveManualReading} theme={theme} />}
             {isMoveModalOpen && <MoveCigarsModal onClose={() => setIsMoveModalOpen(false)} onMove={handleMoveCigars} destinationHumidors={humidors.filter(h => h.id !== humidor.id)} theme={theme} />}
             <DeleteHumidorModal isOpen={isDeleteHumidorModalOpen} onClose={() => setIsDeleteHumidorModalOpen(false)} onConfirm={handleConfirmDeleteHumidor} humidor={humidor} cigarsInHumidor={filteredAndSortedCigars} otherHumidors={humidors.filter(h => h.id !== humidor.id)} />
             <DeleteCigarsModal isOpen={isDeleteCigarsModalOpen} onClose={() => setIsDeleteCigarsModalOpen(false)} onConfirm={handleConfirmDeleteCigars} count={selectedCigarIds.length} />
             {isExportModalOpen && <ExportModal data={filteredAndSortedCigars} dataType="cigar" onClose={() => setIsExportModalOpen(false)} />}
-            {isManualReadingModalOpen && <ManualReadingModal isOpen={isManualReadingModalOpen} onClose={() => setIsManualReadingModalOpen(false)} onSave={handleSaveManualReading} initialTemp={humidor.temp} initialHumidity={humidor.humidity} />}
-            <FilterSortModal
-                isOpen={isFilterSortModalOpen}
-                onClose={() => setIsFilterSortModalOpen(false)}
-                filters={filters}
-                sortBy={sortBy}
-                sortOrder={sortOrder}
-                onFilterChange={handleFilterChange}
-                onFlavorNoteToggle={handleFlavorNoteToggle}
-                onSortChange={handleSortChange}
-                onClearFilters={handleClearFilters}
-                uniqueBrands={uniqueBrands}
-                uniqueCountries={uniqueCountries}
-                availableFlavorNotes={availableFlavorNotes}
-                theme={theme}
-            />
 
             <div className="relative">
                 <img src={humidor.image || `https://placehold.co/600x400/3a2d27/ffffff?text=${humidor.name.replace(/\s/g, '+')}`} alt={humidor.name} className="w-full h-64 object-cover" />
