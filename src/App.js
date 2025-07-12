@@ -31,7 +31,7 @@ import { ArrowUp, ArrowDown, MoreVertical, CheckSquare, AlertTriangle, BarChart2
 
 // recharts is a library for creating the charts (bar, line, pie) on the dashboard.
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-
+import Papa from 'papaparse'; // Import papaparse for CSV parsing and exporting.
 // Import Firebase libraries for database and authentication
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, writeBatch, connectFirestoreEmulator } from "firebase/firestore";
@@ -3841,35 +3841,52 @@ const AlertsScreen = ({ navigate, humidors }) => {
                 <h1 className="text-3xl font-bold text-white">Alerts</h1>
             </div>
             <div className="space-y-6">
-                {alertSettings.map(setting => (
-                    <div key={setting.humidorId} className="bg-gray-800/50 p-4 rounded-xl">
-                        <h3 className="font-bold text-xl text-amber-300 mb-4">{setting.name}</h3>
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center">
-                                <span className="text-gray-300">Humidity Alert</span>
-                                <button onClick={() => handleToggle(setting.humidorId, 'humidityAlert')} className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${setting.humidityAlert ? 'bg-amber-500' : 'bg-gray-600'}`}><span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${setting.humidityAlert ? 'translate-x-6' : 'translate-x-1'}`} /></button>
-                            </div>
-                            {setting.humidityAlert && (
-                                <div className="grid grid-cols-2 gap-4 pl-4 border-l-2 border-gray-700 ml-2">
-                                    <div className="flex items-center space-x-2"><label className="text-sm text-gray-400">Min:</label><input type="number" value={setting.minHumidity} onChange={(e) => handleValueChange(setting.humidorId, 'minHumidity', e.target.value)} className="w-16 bg-gray-700 text-white text-center rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500" /><span className="text-gray-400">%</span></div>
-                                    {/* FIX: Changed unit from °F to % for max humidity */}
-                                    <div className="flex items-center space-x-2"><label className="text-sm text-gray-400">Max:</label><input type="number" value={setting.maxHumidity} onChange={(e) => handleValueChange(setting.humidorId, 'maxHumidity', e.target.value)} className="w-16 bg-gray-700 text-white text-center rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500" /><span className="text-gray-400">%</span></div>
+                {humidors && humidors.length > 0 ? (
+                    alertSettings.map(setting => (
+                        <div key={setting.humidorId} className="bg-gray-800/50 p-4 rounded-xl">
+                            <h3 className="font-bold text-xl text-amber-300 mb-4">{setting.name}</h3>
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-gray-300">Humidity Alert</span>
+                                    <button onClick={() => handleToggle(setting.humidorId, 'humidityAlert')} className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${setting.humidityAlert ? 'bg-amber-500' : 'bg-gray-600'}`}><span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${setting.humidityAlert ? 'translate-x-6' : 'translate-x-1'}`} /></button>
                                 </div>
-                            )}
-                            <div className="border-t border-gray-700"></div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-gray-300">Temperature Alert</span>
-                                <button onClick={() => handleToggle(setting.humidorId, 'tempAlert')} className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${setting.tempAlert ? 'bg-amber-500' : 'bg-gray-600'}`}><span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${setting.tempAlert ? 'translate-x-6' : 'translate-x-1'}`} /></button>
-                            </div>
-                            {setting.tempAlert && (
-                                <div className="grid grid-cols-2 gap-4 pl-4 border-l-2 border-gray-700 ml-2">
-                                    <div className="flex items-center space-x-2"><label className="text-sm text-gray-400">Min:</label><input type="number" value={setting.minTemp} onChange={(e) => handleValueChange(setting.humidorId, 'minTemp', e.target.value)} className="w-16 bg-gray-700 text-white text-center rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500" /><span className="text-gray-400">°F</span></div>
-                                    <div className="flex items-center space-x-2"><label className="text-sm text-gray-400">Max:</label><input type="number" value={setting.maxTemp} onChange={(e) => handleValueChange(setting.humidorId, 'maxTemp', e.target.value)} className="w-16 bg-gray-700 text-white text-center rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500" /><span className="text-gray-400">°F</span></div>
+                                {setting.humidityAlert && (
+                                    <div className="grid grid-cols-2 gap-4 pl-4 border-l-2 border-gray-700 ml-2">
+                                        <div className="flex items-center space-x-2"><label className="text-sm text-gray-400">Min:</label><input type="number" value={setting.minHumidity} onChange={(e) => handleValueChange(setting.humidorId, 'minHumidity', e.target.value)} className="w-16 bg-gray-700 text-white text-center rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500" /><span className="text-gray-400">%</span></div>
+                                        {/* FIX: Changed unit from °F to % for max humidity */}
+                                        <div className="flex items-center space-x-2"><label className="text-sm text-gray-400">Max:</label><input type="number" value={setting.maxHumidity} onChange={(e) => handleValueChange(setting.humidorId, 'maxHumidity', e.target.value)} className="w-16 bg-gray-700 text-white text-center rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500" /><span className="text-gray-400">%</span></div>
+                                    </div>
+                                )}
+                                <div className="border-t border-gray-700"></div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-gray-300">Temperature Alert</span>
+                                    <button onClick={() => handleToggle(setting.humidorId, 'tempAlert')} className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${setting.tempAlert ? 'bg-amber-500' : 'bg-gray-600'}`}><span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${setting.tempAlert ? 'translate-x-6' : 'translate-x-1'}`} /></button>
                                 </div>
-                            )}
+                                {setting.tempAlert && (
+                                    <div className="grid grid-cols-2 gap-4 pl-4 border-l-2 border-gray-700 ml-2">
+                                        <div className="flex items-center space-x-2"><label className="text-sm text-gray-400">Min:</label><input type="number" value={setting.minTemp} onChange={(e) => handleValueChange(setting.humidorId, 'minTemp', e.target.value)} className="w-16 bg-gray-700 text-white text-center rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500" /><span className="text-gray-400">°F</span></div>
+                                        <div className="flex items-center space-x-2"><label className="text-sm text-gray-400">Max:</label><input type="number" value={setting.maxTemp} onChange={(e) => handleValueChange(setting.humidorId, 'maxTemp', e.target.value)} className="w-16 bg-gray-700 text-white text-center rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500" /><span className="text-gray-400">°F</span></div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
+                    ))
+                ) : (
+                    <div className="bg-amber-900/20 border border-amber-800 rounded-xl p-6 text-center">
+                        <h3 className="font-bold text-amber-300 text-lg flex items-center justify-center mb-3">
+                            <Wind className="w-5 h-5 mr-2" /> Roxy's Corner
+                        </h3>
+                        <p className="text-amber-200 text-sm mb-4">
+                            Ruff! You need to add a humidor before you can set up any alerts. Let's get your first one set up!
+                        </p>
+                        <button
+                            onClick={() => navigate('AddHumidor')}
+                            className="flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-amber-600 transition-colors w-full"
+                        >
+                            <Plus className="w-4 h-4" /> Add a Humidor
+                        </button>
                     </div>
-                ))}
+                )}
             </div>
         </div>
     );
@@ -4323,40 +4340,41 @@ const ImportCsvModal = ({ dataType, data, db, appId, userId, onClose, humidors, 
         setFileName(file.name);
         setIsProcessing(true);
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const text = e.target.result;
-            const lines = text.split(/[\r\n]+/).filter(line => line.trim() !== '');
-            if (lines.length < 2) {
-                // Use a custom message box instead of alert()
-                alert("CSV file must have a header and at least one data row.");
-                setIsProcessing(false);
-                return;
-            }
-            const headers = lines[0].trim().split(',').map(h => h.replace(/"/g, ''));
-            const rows = lines.slice(1).map(line => {
-                // Split the line by commas and then remove quotes from each resulting part.
-                return line.trim().split(',').map(field => field.replace(/"/g, ''));
-            });
-
-            setCsvHeaders(headers);
-            setCsvRows(rows.filter(row => row.length === headers.length));
-
-            const initialMapping = {};
-            currentAppFields.forEach(appField => {
-                const matchedHeader = headers.find(header => header.toLowerCase().replace(/[\s_]/g, '') === appField.label.toLowerCase().replace(/[\s_]/g, ''));
-                if (matchedHeader) {
-                    initialMapping[appField.key] = matchedHeader;
-                } else {
-                    initialMapping[appField.key] = 'none';
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+                if (!results.data.length || !results.meta.fields) {
+                    alert("CSV file appears to be empty or invalid.");
+                    setIsProcessing(false);
+                    return;
                 }
-            });
-            setFieldMapping(initialMapping);
 
-            setStep('mapFields');
-            setIsProcessing(false);
-        };
-        reader.readAsText(file);
+                const headers = results.meta.fields;
+                const rows = results.data.map(row => headers.map(header => row[header]));
+
+                setCsvHeaders(headers);
+                setCsvRows(rows);
+
+                const initialMapping = {};
+                currentAppFields.forEach(appField => {
+                    const matchedHeader = headers.find(header => header.toLowerCase().replace(/[\s_]/g, '') === appField.label.toLowerCase().replace(/[\s_]/g, ''));
+                    if (matchedHeader) {
+                        initialMapping[appField.key] = matchedHeader;
+                    } else {
+                        initialMapping[appField.key] = 'none';
+                    }
+                });
+                setFieldMapping(initialMapping);
+
+                setStep('mapFields');
+                setIsProcessing(false);
+            },
+            error: (error) => {
+                alert(`Error parsing CSV file: ${error.message}`);
+                setIsProcessing(false);
+            }
+        });
     };
 
     const handleMappingChange = (appFieldKey, csvHeader) => {
