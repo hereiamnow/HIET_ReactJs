@@ -680,15 +680,15 @@ const Gauge = ({ value, maxValue, label, unit, icon: Icon }) => {
  * StatCard component for displaying a single statistic on the dashboard.
  */
 const StatCard = ({ title, value, icon: Icon, theme }) => (
-    <div className={`${theme.card} p-4 rounded-xl flex items-center space-x-4`}>
+    <div className={`${theme.card} p-3 rounded-xl flex items-center space-x-3 w-full min-w-0`}>
         {Icon && (
-            <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>
+            <div className="p-2 rounded-lg flex-shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}>
                 <Icon className={`w-6 h-6 ${theme.primary}`} />
             </div>
         )}
-        <div>
-            <p className={`${theme.subtleText} text-sm`}>{title}</p>
-            <p className={`${theme.text} font-bold text-lg`}>{value}</p>
+        <div className="flex flex-col min-w-0">
+            <p className={`${theme.subtleText} text-xs truncate`}>{title}</p>
+            <p className={`${theme.text} font-bold text-lg truncate`}>{value}</p>
         </div>
     </div>
 );
@@ -1900,7 +1900,7 @@ const InventoryAnalysisPanel = ({ cigars, theme, isCollapsed, onToggle }) => {
 
 const MyCollectionStatsCards = ({ totalCigars, totalValue, humidors, theme }) => {
     return (
-        <div id="my-collection-stats" className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div id="my-collection-stats" className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
             <StatCard title="Total Cigars" value={totalCigars} theme={theme} />
             <StatCard title="Est. Value" value={`$${totalValue.toFixed(2)}`} theme={theme} />
             <StatCard title="Humidors" value={humidors.length} theme={theme} />

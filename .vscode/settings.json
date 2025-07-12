@@ -1,6 +1,6 @@
 {
-    "editor.fontSize": 10,
-    "terminal.integrated.fontSize": 10,
-    "chat.editor.fontSize": 10,
-    "scm.inputFontSize": 10
+    "editor.fontSize": 9,
+    "terminal.integrated.fontSize": 9,
+    "chat.editor.fontSize": 9,
+    "scm.inputFontSize": 9
 }

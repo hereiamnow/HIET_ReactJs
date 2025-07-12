@@ -7,7 +7,7 @@
 			"script": "build",
 			"group": "build",
 			"problemMatcher": [],
-			"detail": "Builds the React app for production."
+			"detail": "Builds the application for production."
 		},
 		{
 			"label": "npm: start",
