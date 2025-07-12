@@ -98,6 +98,34 @@ const themes = {
     }
 };
 
+const fontOptions = [
+    {
+        label: "Playfair Display + Inter",
+        heading: "'Playfair Display', serif",
+        body: "'Inter', sans-serif"
+    },
+    {
+        label: "Merriweather + Lato",
+        heading: "'Merriweather', serif",
+        body: "'Lato', sans-serif"
+    },
+    {
+        label: "Cormorant Garamond + Roboto",
+        heading: "'Cormorant Garamond', serif",
+        body: "'Roboto', sans-serif"
+    },
+    {
+        label: "Cinzel + Open Sans",
+        heading: "'Cinzel', serif",
+        body: "'Open Sans', sans-serif"
+    },
+    {
+        label: "EB Garamond + Montserrat",
+        heading: "'EB Garamond', serif",
+        body: "'Montserrat', sans-serif"
+    }
+];
+
 const allFlavorNotes = [
     'Earth', 'Earthy', 'Woody', 'Spice', 'Spicy', 'Nutty', 'Sweet', 'Fruity', 'Floral', 'Herbal',
     'Leather', 'Coffee', 'Cocoa', 'Chocolate', 'Creamy', 'Pepper', 'Cedar', 'Oak',
@@ -1352,14 +1380,39 @@ const GridCigarCard = ({ cigar, navigate, isSelectMode, isSelected, onSelect }) 
         <div className="relative" onClick={clickHandler}>
             <div className={`bg-gray-800/50 rounded-xl overflow-hidden group cursor-pointer transition-all duration-200 ${isSelected ? 'ring-2 ring-amber-400' : ''}`}>
                 <div className="relative">
-                    <img src={cigar.image || `https://placehold.co/400x600/5a3825/ffffff?text=${cigar.brand.replace(/\s/g, '+')}`} alt={`${cigar.brand} ${cigar.name}`} className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <img
+                        src={cigar.image || `https://placehold.co/400x600/5a3825/ffffff?text=${cigar.brand.replace(/\s/g, '+')}`}
+                        alt={`${cigar.brand} ${cigar.name}`}
+                        className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    {/* Brand/Name and Rating badge overlayed on image */}
+                    <div
+                        id="BrandNameRating"
+                        className="absolute top-0 left-0 w-full flex justify-between items-start p-2"
+                    >
+                        <div className="bg-black/60 rounded-lg px-2 py-1 max-w-[70%]">
+                            <p className="text-gray-200 text-xs font-semibold uppercase truncate">{cigar.brand}</p>
+                            <h3 className="text-white font-bold text-sm truncate">{cigar.name}</h3>
+                        </div>
+                        {cigar.rating > 0 && (
+                            <div
+                                className={`ml-2 flex items-center justify-center rounded-full border ${ratingColor} bg-black/70`}
+                                style={{ width: 36, height: 36, minWidth: 36, minHeight: 36 }}
+                            >
+                                <span className="text-xs font-bold text-white">{cigar.rating}</span>
+                            </div>
+                        )}
+                    </div>
                 </div>
                 <div className="p-3">
-                    <p className="text-gray-400 text-xs font-semibold uppercase">{cigar.brand}</p>
-                    <h3 className="text-white font-bold text-sm truncate">{cigar.name}</h3>
-                    <div className="flex justify-between items-center mt-2">
-                        {cigar.rating > 0 && <div className={`text-xs font-bold text-white px-2 py-0.5 rounded-full border ${ratingColor}`}>{cigar.rating}</div>}
-                        <span className="text-xs bg-gray-700 text-white font-bold px-2 py-1 rounded-full">{cigar.quantity}</span>
+                    {/* Details */}
+                    <div className="text-xs mt-1 space-y-1">
+                        <p className="text-gray-400">Origin: <span className="font-semibold text-gray-200">{cigar.country}</span></p>
+                        <p className="text-gray-400 truncate">Flavors: <span className="font-semibold text-gray-200">{(cigar.flavorNotes || []).join(', ')}</span></p>
+                    </div>
+                    <div className="flex justify-between items-end mt-2">
+                        <p className="text-gray-400 text-xs">Strength: <span className="font-semibold text-gray-200">{cigar.strength}</span></p>
+                        <span className="text-lg font-bold bg-gray-700 text-white px-3 py-1 rounded-full">{cigar.quantity}</span>
                     </div>
                 </div>
             </div>
@@ -2768,8 +2821,8 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
                         <button onClick={handleClearFilters} className="p-1 rounded-full hover:bg-amber-800 transition-colors text-amber-400"><X className="w-4 h-4" /></button>
                     </div>
                 )}
-
-                <div className={viewMode === 'grid' ? "grid grid-cols-2 gap-4" : "flex flex-col gap-4"}>
+                {/* change the grid layout columns */}
+                <div className={viewMode === 'grid' ? "grid grid-cols-1 gap-4" : "flex flex-col gap-4"}>
                     {filteredAndSortedCigars.map(cigar => (viewMode === 'grid' ? <GridCigarCard key={cigar.id} cigar={cigar} navigate={navigate} isSelectMode={isSelectMode} isSelected={selectedCigarIds.includes(cigar.id)} onSelect={handleSelectCigar} /> : <ListCigarCard key={cigar.id} cigar={cigar} navigate={navigate} isSelectMode={isSelectMode} isSelected={selectedCigarIds.includes(cigar.id)} onSelect={handleSelectCigar} />))}
                     {filteredAndSortedCigars.length === 0 && (
                         <div className="col-span-full text-center py-10">
@@ -3868,13 +3921,73 @@ const DashboardSettingsScreen = ({ navigate, theme, dashboardPanelVisibility, se
     );
 };
 
-const SettingsScreen = ({ navigate, theme, setTheme, dashboardPanelVisibility, setDashboardPanelVisibility }) => {
+// --- New FontsScreen Component ---
+const FontsScreen = ({ navigate, selectedFont, setSelectedFont, theme }) => {
+    // Font Picker UI
+    const FontPicker = () => (
+        <div id="font-picker" className="mb-4">
+            <label className={`block text-sm font-bold mb-2 ${theme.text}`}>Font Style</label>
+            <select
+                value={selectedFont.label}
+                onChange={e => {
+                    const font = fontOptions.find(f => f.label === e.target.value);
+                    setSelectedFont(font);
+                }}
+                className={`w-full p-2 rounded border ${theme.inputBg} ${theme.text} ${theme.borderColor}`}
+            >
+                {fontOptions.map(font => (
+                    <option key={font.label} value={font.label}>
+                        {font.label}
+                    </option>
+                ))}
+            </select>
+            <div className="mt-2">
+                <span
+                    style={{
+                        fontFamily: selectedFont.heading,
+                        fontWeight: 700,
+                        fontSize: 18,
+                        color: theme.text === 'text-white' ? '#fff' : undefined
+                    }}
+                >
+                    Heading Example
+                </span>
+                <br />
+                <span className={`text-xs ${theme.subtleText}`} style={{ fontFamily: selectedFont.body, color: theme.text === 'text-white' ? '#fff' : undefined }}>
+                    Body text example for preview.
+                </span>
+            </div>
+        </div>
+    );
+
+    return (
+        <div className="p-4 pb-24">
+            <div className="flex items-center mb-6">
+                <button onClick={() => navigate('Settings')} className="p-2 -ml-2 mr-2">
+                    <ChevronLeft className={`w-7 h-7 ${theme.text}`} />
+                </button>
+                <h1 className="text-3xl font-bold text-white">Fonts</h1>
+            </div>
+            <div className="bg-gray-800/50 rounded-lg p-4">
+                <FontPicker />
+            </div>
+            <p className="mt-6 text-gray-400 text-sm">
+                Choose your preferred font combination for the app. This will change the look and feel of all text throughout Humidor Hub.
+            </p>
+        </div>
+    );
+};
+
+const SettingsScreen = ({ navigate, theme, setTheme, dashboardPanelVisibility, setDashboardPanelVisibility, selectedFont, setSelectedFont }) => {
     const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
 
     const SettingItem = ({ icon: Icon, title, subtitle, onClick }) => (
         <button onClick={onClick} className="w-full flex items-center gap-4 p-4 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-colors text-left">
             <div className="p-2 bg-gray-700 rounded-full"><Icon className={`w-6 h-6 ${theme.primary}`} /></div>
-            <div><p className={`font-bold ${theme.text}`}>{title}</p><p className={`text-xs ${theme.subtleText}`}>{subtitle}</p></div>
+            <div>
+                <p className={`font-bold ${theme.text}`}>{title}</p>
+                <p className={`text-xs ${theme.subtleText}`}>{subtitle}</p>
+            </div>
         </button>
     );
 
@@ -3885,14 +3998,16 @@ const SettingsScreen = ({ navigate, theme, setTheme, dashboardPanelVisibility, s
             <div className="space-y-4">
                 <SettingItem icon={User} title="Profile" subtitle="Manage your account details" onClick={() => navigate('Profile')} />
                 <SettingItem icon={LayoutGrid} title="Dashboard Components" subtitle="Customize what appears on your dashboard" onClick={() => navigate('DashboardSettings')} />
-                <SettingItem icon={Bell} title="Notifications" subtitle="Set up alerts for humidity and temp" onClick={() => navigate('Notifications')} />                <SettingItem icon={Zap} title="Integrations" subtitle="Connect to Govee and other services" onClick={() => navigate('Integrations')} />
+                <SettingItem icon={Bell} title="Notifications" subtitle="Set up alerts for humidity and temp" onClick={() => navigate('Notifications')} />
+                <SettingItem icon={Zap} title="Integrations" subtitle="Connect to Govee and other services" onClick={() => navigate('Integrations')} />
                 <SettingItem icon={Database} title="Data & Sync" subtitle="Export or import your collection" onClick={() => navigate('DataSync')} />
                 <SettingItem icon={Palette} title="Theme" subtitle={`Current: ${theme.name}`} onClick={() => setIsThemeModalOpen(true)} />
+                <SettingItem icon={Info} title="Fonts" subtitle="Choose your preferred font combination" onClick={() => navigate('Fonts')} />
                 <SettingItem icon={Info} title="About Humidor Hub" subtitle="Version 1.1.0" onClick={() => navigate('About')} />
             </div>
         </div>
     );
-};
+};;
 
 const IntegrationsScreen = ({ navigate, goveeApiKey, setGoveeApiKey, goveeDevices, setGoveeDevices, theme }) => {
     const [key, setKey] = useState(goveeApiKey || '');
@@ -4552,6 +4667,8 @@ export default function App() {
     const [goveeApiKey, setGoveeApiKey] = useState('');
     const [goveeDevices, setGoveeDevices] = useState([]);
 
+    const [selectedFont, setSelectedFont] = useState(fontOptions[0]);
+
     // State for controlling dashboard panel visibility
     // This state will determine which panels are shown in the Dashboard.
     // It is initialized to show all panels by default, will be conditionally overridden in Dashboard component
@@ -4702,19 +4819,7 @@ export default function App() {
         // A `switch` statement is used to select the correct component.
         switch (screen) {
             case 'Dashboard':
-                return <Dashboard
-                    navigate={navigate}
-                    cigars={cigars}
-                    humidors={humidors}
-                    theme={theme}
-                    showWrapperPanel={dashboardPanelVisibility.showWrapperPanel}
-                    showStrengthPanel={dashboardPanelVisibility.showStrengthPanel}
-                    showCountryPanel={dashboardPanelVisibility.showCountryPanel}
-                    showLiveEnvironment={dashboardPanelVisibility.showLiveEnvironment}
-                    showInventoryAnalysis={dashboardPanelVisibility.showInventoryAnalysis}
-                    panelStates={dashboardPanelStates}
-                    setPanelStates={setDashboardPanelStates}
-                />;
+                return <Dashboard navigate={navigate} cigars={cigars} humidors={humidors} theme={theme} showWrapperPanel={dashboardPanelVisibility.showWrapperPanel} showStrengthPanel={dashboardPanelVisibility.showStrengthPanel} showCountryPanel={dashboardPanelVisibility.showCountryPanel} showLiveEnvironment={dashboardPanelVisibility.showLiveEnvironment} showInventoryAnalysis={dashboardPanelVisibility.showInventoryAnalysis} panelStates={dashboardPanelStates} setPanelStates={setDashboardPanelStates} />;
             case 'HumidorsScreen':
                 return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} db={db} appId={appId} userId={userId} theme={theme} {...params} />;
             case 'MyHumidor':
@@ -4730,8 +4835,10 @@ export default function App() {
                 return cigarToEdit ? <EditCigar navigate={navigate} db={db} appId={appId} userId={userId} cigar={cigarToEdit} theme={theme} /> : <div>Cigar not found</div>;
             case 'Alerts':
                 return <AlertsScreen navigate={navigate} humidors={humidors} />;
+            case 'Fonts':
+                return <FontsScreen navigate={navigate} selectedFont={selectedFont} setSelectedFont={setSelectedFont} theme={theme} />;
             case 'Settings':
-                return <SettingsScreen navigate={navigate} theme={theme} setTheme={setTheme} dashboardPanelVisibility={dashboardPanelVisibility} setDashboardPanelVisibility={setDashboardPanelVisibility} />;
+                return <SettingsScreen navigate={navigate} theme={theme} setTheme={setTheme} dashboardPanelVisibility={dashboardPanelVisibility} setDashboardPanelVisibility={setDashboardPanelVisibility} selectedFont={selectedFont} setSelectedFont={setSelectedFont} />;
             case 'AddHumidor':
                 return <AddHumidor navigate={navigate} db={db} appId={appId} userId={userId} theme={theme} />;
             case 'EditHumidor':
@@ -4750,25 +4857,18 @@ export default function App() {
             case 'Profile':
                 return <ProfileScreen navigate={navigate} cigars={cigars} theme={theme} />;
             default:
-                return <Dashboard
-                    navigate={navigate}
-                    cigars={cigars}
-                    humidors={humidors}
-                    theme={theme}
-                    showWrapperPanel={dashboardPanelVisibility.showWrapperPanel}
-                    showStrengthPanel={dashboardPanelVisibility.showStrengthPanel}
-                    showCountryPanel={dashboardPanelVisibility.showCountryPanel}
-                    showLiveEnvironment={dashboardPanelVisibility.showLiveEnvironment}
-                    showInventoryAnalysis={dashboardPanelVisibility.showInventoryAnalysis}
-                    panelStates={dashboardPanelStates}
-                    setPanelStates={setDashboardPanelStates}
-                />;
+                return <Dashboard navigate={navigate} cigars={cigars} humidors={humidors} theme={theme} showWrapperPanel={dashboardPanelVisibility.showWrapperPanel} showStrengthPanel={dashboardPanelVisibility.showStrengthPanel} showCountryPanel={dashboardPanelVisibility.showCountryPanel} showLiveEnvironment={dashboardPanelVisibility.showLiveEnvironment} showInventoryAnalysis={dashboardPanelVisibility.showInventoryAnalysis} panelStates={dashboardPanelStates} setPanelStates={setDashboardPanelStates} />;
         }
     };
 
     // The main return statement for the App component.
     return (
-        <div className={`min-h-screen font-sans ${theme.bg} ${theme.text}`}>
+        <div
+            className={`min-h-screen ${theme.bg} ${theme.text}`}
+            style={{
+                fontFamily: selectedFont.body,
+            }}
+        >
             <div className="max-w-md mx-auto">
                 {renderScreen()}
             </div>
