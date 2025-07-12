@@ -4318,7 +4318,7 @@ const ProfileScreen = ({ navigate, cigars, theme }) => {
 /**
  * ImportCsvModal component handles both cigar and humidor imports.
  */
-const ImportCsvModal = ({ dataType, data, db, appId, userId, onClose, humidors, navigate }) => {
+const ImportCsvModal = ({ dataType, data, db, appId, userId, onClose, humidors, navigate, onSwitchType }) => {
     const [step, setStep] = useState('selectFile');
     const [selectedHumidor, setSelectedHumidor] = useState(humidors[0]?.id || '');
     const [csvHeaders, setCsvHeaders] = useState([]);
@@ -4458,10 +4458,15 @@ const ImportCsvModal = ({ dataType, data, db, appId, userId, onClose, humidors, 
         if (fileInputRef.current) fileInputRef.current.value = "";
     };
 
+    const handleSwitchType = (newType) => {
+        onSwitchType(newType); // Notify parent to change the data type
+        handleReset(); // Reset the modal state for the new import
+    };
+
     const isMappingValid = useMemo(() => {
         const requiredFields = currentAppFields.filter(f => f.required);
         return requiredFields.every(f => fieldMapping[f.key] && fieldMapping[f.key] !== 'none');
-    }, [fieldMapping]);
+    }, [fieldMapping, currentAppFields]);
 
     const renderContent = () => {
         switch (step) {
@@ -4528,24 +4533,43 @@ const ImportCsvModal = ({ dataType, data, db, appId, userId, onClose, humidors, 
                 );
             case 'complete':
                 return (
-                    <>
-                        <div className="flex justify-center items-center mb-4">
-                            <h3 className="text-xl font-bold text-green-400 flex items-center"><Check className="w-6 h-6 mr-2" /> Import Complete</h3>
-                        </div>
-                        <p className="text-center text-gray-300 mb-6">Successfully imported {importedCount} {dataType === 'cigar' ? 'cigars' : 'humidors'}.</p>
-                        <button
-                            onClick={() => {
-                                if (dataType === 'cigar' && selectedHumidor) {
-                                    navigate('MyHumidor', { humidorId: selectedHumidor });
-                                } else {
+                    <div className="bg-amber-900/20 border border-amber-800 rounded-xl p-6 text-center">
+                        <h3 className="font-bold text-amber-300 text-xl flex items-center justify-center mb-3">
+                            <Wind className="w-5 h-5 mr-2" /> Import Complete!
+                        </h3>
+                        <p className="text-amber-200 text-sm mb-6">
+                            Woof! Successfully imported {importedCount} {dataType === 'cigar' ? 'cigars' : 'humidors'}.
+                            <br />
+                            What would you like to do next?
+                        </p>
+                        <div className="space-y-3">
+                            <button
+                                onClick={() => handleSwitchType('cigar')}
+                                className="w-full flex items-center justify-center gap-2 bg-blue-600/80 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                                <UploadCloud className="w-5 h-5" /> Import More Cigars
+                            </button>
+                            <button
+                                onClick={() => handleSwitchType('humidor')}
+                                className="w-full flex items-center justify-center gap-2 bg-blue-600/80 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                                <UploadCloud className="w-5 h-5" /> Import More Humidors
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (dataType === 'cigar' && selectedHumidor) {
+                                        navigate('MyHumidor', { humidorId: selectedHumidor });
+                                    } else if (dataType === 'humidor') {
+                                        navigate('HumidorsScreen');
+                                    }
                                     onClose();
-                                }
-                            }}
-                            className="w-full bg-amber-500 text-white font-bold py-3 rounded-lg hover:bg-amber-600 transition-colors"
-                        >
-                            Finish
-                        </button>
-                    </>
+                                }}
+                                className="w-full bg-amber-500 text-white font-bold py-3 rounded-lg hover:bg-amber-600 transition-colors"
+                            >
+                                Finish & Close
+                            </button>
+                        </div>
+                    </div>
                 );
             default: return null;
         }
