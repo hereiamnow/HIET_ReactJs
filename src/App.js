@@ -5,7 +5,7 @@
 // Time: 10:01 PM CDT
 
 // Description of Changes:
-// - Add changes here...
+// - Updated the "Description of Changes" header with a summary of the recent changes.
 
 // Next Suggestions:
 // - Implement drag-and-drop reordering for the dashboard panels on desktop.
@@ -1385,34 +1385,57 @@ const GridCigarCard = ({ cigar, navigate, isSelectMode, isSelected, onSelect }) 
                         alt={`${cigar.brand} ${cigar.name}`}
                         className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    {/* Brand/Name and Rating badge overlayed on image */}
-                    <div
-                        id="BrandNameRating"
-                        className="absolute top-0 left-0 w-full flex justify-between items-start p-2"
-                    >
-                        <div className="bg-black/60 rounded-lg px-2 py-1 max-w-[70%]">
-                            <p className="text-gray-200 text-xs font-semibold uppercase truncate">{cigar.brand}</p>
-                            <h3 className="text-white font-bold text-sm truncate">{cigar.name}</h3>
+                    <div className="absolute top-2 left-2 bg-black/60 rounded-lg px-2 py-1 max-w-[70%]">
+                        <p className="text-gray-200 text-xs font-semibold uppercase truncate">
+                            {cigar.brand}
+                            {cigar.country ? ` - ${cigar.country}` : ''}
+                        </p>
+                        <h3 className="text-white font-bold text-sm truncate">{cigar.name}</h3>
+                    </div>
+                    {cigar.rating > 0 && (
+                        <div className={`absolute bottom-2 right-2 flex items-center justify-center rounded-full border-2 ${ratingColor} bg-black/70`} style={{ width: 44, height: 44, minWidth: 44, minHeight: 44 }}>
+                            <span className="text-sm font-bold text-white">{cigar.rating}</span>
                         </div>
-                        {cigar.rating > 0 && (
-                            <div
-                                className={`ml-2 flex items-center justify-center rounded-full border ${ratingColor} bg-black/70`}
-                                style={{ width: 36, height: 36, minWidth: 36, minHeight: 36 }}
-                            >
-                                <span className="text-xs font-bold text-white">{cigar.rating}</span>
-                            </div>
-                        )}
-                    </div>
+                    )}
                 </div>
-                <div className="p-3">
+                <div className="p-3 space-y-3">
                     {/* Details */}
-                    <div className="text-xs mt-1 space-y-1">
-                        <p className="text-gray-400">Origin: <span className="font-semibold text-gray-200">{cigar.country}</span></p>
-                        <p className="text-gray-400 truncate">Flavors: <span className="font-semibold text-gray-200">{(cigar.flavorNotes || []).join(', ')}</span></p>
+                    <div className="text-xs space-y-2">
+                        <div id="pnlShapeSizeStrength" className="grid grid-cols-3 gap-x-2 mb-2 text-left">
+                            <div>
+                                <p className="text-gray-400">Shape</p>
+                                <p className="font-semibold text-gray-200 truncate" title={cigar.shape}>{cigar.shape || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <p className="text-gray-400">Size</p>
+                                <p className="font-semibold text-gray-200 truncate" title={cigar.size}>{cigar.size || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <p className="text-gray-400">Strength</p>
+                                <p className="font-semibold text-gray-200 truncate" title={cigar.strength}>{cigar.strength || 'N/A'}</p>
+                            </div>
+                        </div>
+
+                        <div id="pnlWrapperBinderFiller" className="grid grid-cols-3 gap-x-2 text-left">
+                            <div>
+                                <p className="text-gray-400">Wrapper</p>
+                                <p className="font-semibold text-gray-200 truncate" title={cigar.wrapper}>{cigar.wrapper || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <p className="text-gray-400">Binder</p>
+                                <p className="font-semibold text-gray-200 truncate" title={cigar.binder}>{cigar.binder || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <p className="text-gray-400">Filler</p>
+                                <p className="font-semibold text-gray-200 truncate" title={cigar.filler}>{cigar.filler || 'N/A'}</p>
+                            </div>
+                        </div>
+                        <div id="pnlShortDescription"> {cigar.shortDescription && <p className="text-gray-400 pt-1">"{cigar.shortDescription}"</p>}</div>
+                       
                     </div>
-                    <div className="flex justify-between items-end mt-2">
-                        <p className="text-gray-400 text-xs">Strength: <span className="font-semibold text-gray-200">{cigar.strength}</span></p>
-                        <span className="text-lg font-bold bg-gray-700 text-white px-3 py-1 rounded-full">{cigar.quantity}</span>
+                    <div className="flex justify-between items-center pt-2 border-t border-gray-700/50">
+                        <p className="text-gray-400 text-xs">Time in Humidor: <span className="font-semibold text-gray-200">{calculateAge(cigar.dateAdded)}</span></p>
+                        <span id="cigar-quantity" className="text-lg font-bold bg-gray-700 text-white px-3 py-1 rounded-full">{cigar.quantity}</span>
                     </div>
                 </div>
             </div>
@@ -2570,7 +2593,7 @@ const EditHumidor = ({ navigate, db, appId, userId, humidor, goveeApiKey, goveeD
 const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, theme }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [suggestions, setSuggestions] = useState([]);
-    const [viewMode, setViewMode] = useState('list');
+    const [viewMode, setViewMode] = useState('grid');
     const [isSelectMode, setIsSelectMode] = useState(false);
     const [selectedCigarIds, setSelectedCigarIds] = useState([]);
     const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
@@ -4395,6 +4418,8 @@ const ImportCsvModal = ({ dataType, data, db, appId, userId, onClose, humidors, 
                 ...(dataType === 'cigar' && { flavorNotes: [] }),
                 // Default quantity for cigars
                 ...(dataType === 'cigar' && { quantity: 1 }),
+                // Default dateAdded to now if not provided
+                ...(dataType === 'cigar' && { dateAdded: new Date().toISOString() }),
                 // Default temp/humidity for humidors if not provided
                 ...(dataType === 'humidor' && { temp: 70, humidity: 70 }),
             };
@@ -4413,6 +4438,12 @@ const ImportCsvModal = ({ dataType, data, db, appId, userId, onClose, humidors, 
                         newItem[appField.key] = value?.toLowerCase() === 'true' || value === '1';
                     } else if (appField.type === 'array') {
                         newItem[appField.key] = value ? value.split(';').map(s => s.trim()).filter(Boolean) : [];
+                    } else if (appField.type === 'date') {
+                        const date = new Date(value);
+                        if (value && !isNaN(date)) {
+                            newItem[appField.key] = date.toISOString();
+                        }
+                        // If value is invalid or missing, the default from above is used.
                     } else {
                         newItem[appField.key] = value;
                     }
@@ -4590,7 +4621,7 @@ const ImportCsvModal = ({ dataType, data, db, appId, userId, onClose, humidors, 
 const ExportModal = ({ data, dataType, onClose }) => {
     const getHeaders = () => {
         if (dataType === 'cigar') {
-            return ['id,name,brand,line,shape,isBoxPress,length_inches,ring_gauge,Size,Country of Origin,wrapper,binder,filler,strength,flavorNotes,rating,userRating,price,quantity,image,shortDescription,description'];
+            return ['id,name,brand,line,shape,isBoxPress,length_inches,ring_gauge,Size,Country of Origin,wrapper,binder,filler,strength,flavorNotes,rating,userRating,price,quantity,image,shortDescription,description,dateAdded'];
         } else if (dataType === 'humidor') {
             return ['id,name,shortDescription,longDescription,size,location,image,type,temp,humidity,goveeDeviceId,goveeDeviceModel'];
         }
@@ -4604,13 +4635,13 @@ const ExportModal = ({ data, dataType, onClose }) => {
                 const {
                     id, name, brand, line = '', shape, isBoxPress = false, length_inches = 0, ring_gauge = 0,
                     size, country, wrapper, binder, filler, strength, flavorNotes, rating, userRating = 0,
-                    quantity, price, image = '', shortDescription = '', description = ''
+                    quantity, price, image = '', shortDescription = '', description = '', dateAdded
                 } = item;
                 acc.push([
                     id, name, brand, line, shape, isBoxPress ? 'TRUE' : 'FALSE', length_inches, ring_gauge,
                     size, country, wrapper, binder, filler, strength, `"${(flavorNotes || []).join(';')}"`,
-                    rating, userRating, price, quantity, image, `"${shortDescription}"`, `"${description}"`
-                ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')); // Escape double quotes
+                    rating, userRating, price, quantity, image, `"${shortDescription}"`, `"${description}"`, dateAdded
+                ].map(field => `"${String(field ?? '').replace(/"/g, '""')}"`).join(',')); // Escape double quotes
             } else if (dataType === 'humidor') {
                 const {
                     id, name, shortDescription = '', longDescription = '', size = '', location = '',
@@ -4698,7 +4729,8 @@ const APP_FIELDS = [
     { key: 'quantity', label: 'Quantity', required: true, type: 'number' },
     { key: 'image', label: 'Image URL', required: false },
     { key: 'shortDescription', label: 'Short Description', required: false },
-    { key: 'description', label: 'Long Description', required: false }
+    { key: 'description', label: 'Long Description', required: false },
+    { key: 'dateAdded', label: 'Date Added', required: false, type: 'date' }
 ];
 
 export default function App() {
