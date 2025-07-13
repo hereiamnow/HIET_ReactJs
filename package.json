@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@capacitor/android": "^7.4.2",
+    "@capacitor/core": "^7.4.2",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
@@ -17,6 +19,7 @@
     "web-vitals": "^5.0.3"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.4.2",
     "@tailwindcss/postcss": "^4.1.11",
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.2.0",
