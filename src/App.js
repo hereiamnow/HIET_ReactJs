@@ -1430,7 +1430,7 @@ const GridCigarCard = ({ cigar, navigate, isSelectMode, isSelected, onSelect }) 
                                 <p className="font-semibold text-gray-200 truncate" title={cigar.filler}>{cigar.filler || 'N/A'}</p>
                             </div>
                         </div>
-                        <div id="pnlShortDescription"> {cigar.shortDescription && <p className="text-gray-400 pt-1">"{cigar.shortDescription}"</p>}</div>
+                        <div id="pnlShortDescription"> {cigar.shortDescription && <p className="text-gray-400 pt-1">{cigar.shortDescription}</p>}</div>
                        
                     </div>
                     <div className="flex justify-between items-center pt-2 border-t border-gray-700/50">
