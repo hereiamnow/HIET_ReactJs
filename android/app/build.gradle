@@ -1,5 +1,5 @@
 apply plugin: 'com.android.application'
-
+apply plugin: 'com.google.gms.google-services'
 android {
     namespace "com.humidorhub.app"
     compileSdk rootProject.ext.compileSdkVersion
@@ -40,6 +40,17 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+    // Import the Firebase BoM
+    implementation platform('com.google.firebase:firebase-bom:32.2.3') // Use the latest version
+
+    // Add the Firebase SDKs for the products you want to use
+    // For example, for Analytics:
+    implementation 'com.google.firebase:firebase-analytics-ktx'
+    // For Authentication:
+    implementation 'com.google.firebase:firebase-auth-ktx'
+    // For Firestore:
+    implementation 'com.google.firebase:firebase-firestore-ktx'
+    // Add other SDKs as needed
 }
 
 apply from: 'capacitor.build.gradle'
