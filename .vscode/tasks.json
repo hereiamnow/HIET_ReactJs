@@ -28,7 +28,7 @@
 		{
 			"label": "Start Firebase Emulators",
 			"type": "shell",
-			"command": "firebase emulators:start",
+			"command": "firebase emulators:start --project humidor-hub",
 			"group": "build",
 			"problemMatcher": [],
 			"detail": "Starts the Firebase emulators for local development."
