@@ -4041,6 +4041,13 @@ const SettingsScreen = ({ navigate, theme, setTheme, dashboardPanelVisibility, s
             {isThemeModalOpen && <ThemeModal currentTheme={theme} setTheme={setTheme} onClose={() => setIsThemeModalOpen(false)} />}
             <h1 className="text-3xl font-bold text-white mb-6">Settings</h1>
             <div className="space-y-4">
+                {/* --- New Button for Deeper Statistics --- */}
+                <SettingItem
+                    icon={BarChart2}
+                    title="Deeper Statistics & Insights"
+                    subtitle="Explore advanced stats about your collection"
+                    onClick={() => navigate('DeeperStatistics')}
+                />
                 <SettingItem icon={User} title="Profile" subtitle="Manage your account details" onClick={() => navigate('Profile')} />
                 <SettingItem icon={LayoutGrid} title="Dashboard Components" subtitle="Customize what appears on your dashboard" onClick={() => navigate('DashboardSettings')} />
                 <SettingItem icon={Bell} title="Notifications" subtitle="Set up alerts for humidity and temp" onClick={() => navigate('Notifications')} />
@@ -4052,7 +4059,7 @@ const SettingsScreen = ({ navigate, theme, setTheme, dashboardPanelVisibility, s
             </div>
         </div>
     );
-};;
+};
 
 const IntegrationsScreen = ({ navigate, goveeApiKey, setGoveeApiKey, goveeDevices, setGoveeDevices, theme }) => {
     const [key, setKey] = useState(goveeApiKey || '');
@@ -4254,6 +4261,162 @@ const DataSyncScreen = ({ navigate, db, appId, userId, cigars, humidors }) => {
     );
 };
 
+// --- New DeeperStatisticsScreen Component ---
+const DeeperStatisticsScreen = ({ navigate, cigars, theme }) => {
+    // 1. Collection Value
+    const totalValue = cigars.reduce((sum, c) => sum + ((c.price || 0) * (c.quantity || 0)), 0);
+
+    // 2. Average User Rating (only rated cigars)
+    const ratedCigars = cigars.filter(c => typeof c.userRating === 'number' && c.userRating > 0);
+    const avgUserRating = ratedCigars.length > 0
+        ? (ratedCigars.reduce((sum, c) => sum + c.userRating, 0) / ratedCigars.length).toFixed(1)
+        : 'N/A';
+
+    // 3. Favorite Brand/Country
+    const getMostCommon = (arr, key) => {
+        const counts = arr.reduce((acc, item) => {
+            const val = (item[key] || '').trim();
+            if (val) acc[val] = (acc[val] || 0) + (item.quantity || 1);
+            return acc;
+        }, {});
+        const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+        return sorted.length > 0 ? { name: sorted[0][0], count: sorted[0][1] } : null;
+    };
+    const favoriteBrand = getMostCommon(cigars, 'brand');
+    const favoriteCountry = getMostCommon(cigars, 'country');
+
+    // 4. Oldest Cigar
+    const oldestCigar = cigars
+        .filter(c => c.dateAdded)
+        .sort((a, b) => new Date(a.dateAdded) - new Date(b.dateAdded))[0];
+
+    // Tasting Preferences Panel logic
+    const strengthOptions = ['Mild', 'Mild-Medium', 'Medium', 'Medium-Full', 'Full'];
+    const strengthCounts = useMemo(() => {
+        const counts = {};
+        cigars.forEach(cigar => {
+            const strength = cigar.strength || 'Unknown';
+            counts[strength] = (counts[strength] || 0) + (cigar.quantity || 1);
+        });
+        return counts;
+    }, [cigars]);
+    const totalStrengthCigars = strengthOptions.reduce((sum, s) => sum + (strengthCounts[s] || 0), 0);
+    const preferredStrength = useMemo(() => {
+        let max = 0, pref = 'N/A';
+        for (const s of strengthOptions) {
+            if ((strengthCounts[s] || 0) > max) {
+                max = strengthCounts[s];
+                pref = s;
+            }
+        }
+        return pref;
+    }, [strengthCounts]);
+    const topFlavors = useMemo(() => {
+        const flavorCounts = cigars.flatMap(c => c.flavorNotes || []).reduce((acc, flavor) => {
+            acc[flavor] = (acc[flavor] || 0) + 1;
+            return acc;
+        }, {});
+        return Object.entries(flavorCounts).sort((a, b) => b[1] - a[1]).slice(0, 5).map(entry => entry[0]);
+    }, [cigars]);
+
+    return (
+        <div className="p-4 pb-24">
+            <div className="flex items-center mb-6">
+                <button onClick={() => navigate('Settings')} className="p-2 -ml-2 mr-2">
+                    <ChevronLeft className={`w-7 h-7 ${theme.text}`} />
+                </button>
+                <h1 className="text-3xl font-bold text-white">Deeper Statistics & Insights</h1>
+            </div>
+            <div className="space-y-6">
+                {/* 1. Collection Value */}
+                <div className={`${theme.card} p-4 rounded-xl flex items-center gap-4`}>
+                    <DollarSign className="w-8 h-8 text-green-400" />
+                    <div>
+                        <p className="text-lg font-bold text-white">Collection Value</p>
+                        <p className="text-2xl text-green-300 font-bold">${totalValue.toFixed(2)}</p>
+                    </div>
+                </div>
+                {/* 2. Average User Rating */}
+                <div className={`${theme.card} p-4 rounded-xl flex items-center gap-4`}>
+                    <Star className="w-8 h-8 text-yellow-400" />
+                    <div>
+                        <p className="text-lg font-bold text-white">Average My Rating</p>
+                        <p className="text-2xl text-yellow-300 font-bold">{avgUserRating}</p>
+                        <p className="text-xs text-gray-400">{ratedCigars.length} cigars rated</p>
+                    </div>
+                </div>
+                {/* 3. Favorite Brand/Country */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className={`${theme.card} p-4 rounded-xl flex items-center gap-4`}>
+                        <Box className="w-8 h-8 text-amber-400" />
+                        <div>
+                            <p className="text-lg font-bold text-white">Favorite Brand</p>
+                            <p className="text-xl text-amber-300 font-bold">{favoriteBrand ? favoriteBrand.name : 'N/A'}</p>
+                            {favoriteBrand && <p className="text-xs text-gray-400">{favoriteBrand.count} cigars</p>}
+                        </div>
+                    </div>
+                    <div className={`${theme.card} p-4 rounded-xl flex items-center gap-4`}>
+                        <MapPin className="w-8 h-8 text-blue-400" />
+                        <div>
+                            <p className="text-lg font-bold text-white">Favorite Country</p>
+                            <p className="text-xl text-blue-300 font-bold">{favoriteCountry ? favoriteCountry.name : 'N/A'}</p>
+                            {favoriteCountry && <p className="text-xs text-gray-400">{favoriteCountry.count} cigars</p>}
+                        </div>
+                    </div>
+                </div>
+                {/* 4. Oldest Cigar */}
+                <div className={`${theme.card} p-4 rounded-xl flex items-center gap-4`}>
+                    <CalendarIcon className="w-8 h-8 text-purple-400" />
+                    <div>
+                        <p className="text-lg font-bold text-white">Oldest Cigar</p>
+                        {oldestCigar ? (
+                            <>
+                                <p className="text-xl text-purple-300 font-bold">{oldestCigar.brand} {oldestCigar.name}</p>
+                                <p className="text-xs text-gray-400">Aging since {formatDate(oldestCigar.dateAdded)} ({calculateAge(oldestCigar.dateAdded)})</p>
+                            </>
+                        ) : (
+                            <p className="text-gray-400">No cigars with a date added.</p>
+                        )}
+                    </div>
+                </div>
+                {/* --- Tasting Preferences Panel --- */}
+                <div id="pnlTastingPreferences" className="bg-gray-800/50 p-4 rounded-xl">
+                    <h3 className="font-bold text-amber-300 text-lg mb-3">Tasting Preferences</h3>
+                    <div>
+                        <h4 className="font-semibold text-white mb-2">Preferred Strength</h4>
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xs text-gray-400">Most Common:</span>
+                            <span className="font-bold text-amber-400">{preferredStrength}</span>
+                        </div>
+                        <div className="flex gap-1 w-full mb-1">
+                            {strengthOptions.map(strength => {
+                                const count = strengthCounts[strength] || 0;
+                                const percent = totalStrengthCigars > 0 ? (count / totalStrengthCigars) * 100 : 0;
+                                return (
+                                    <div
+                                        key={strength}
+                                        className={`h-3 rounded-full transition-all duration-300 ${count > 0 ? 'bg-amber-500' : 'bg-gray-700'}`}
+                                        style={{ width: `${percent}%`, minWidth: count > 0 ? '8%' : '2px' }}
+                                        title={`${strength}: ${count}`}
+                                    />
+                                );
+                            })}
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-400 mt-1">
+                            {strengthOptions.map(strength => (
+                                <span key={strength} className="w-1/5 text-center">{strength}</span>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="mt-4">
+                        <h4 className="font-semibold text-white mb-2">Top Flavors</h4>
+                        <div className="flex flex-wrap gap-2">{topFlavors.map(note => (<span key={note} className={`text-xs font-semibold px-3 py-1 rounded-full ${getFlavorTagColor(note)}`}>{note}</span>))}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const AboutScreen = ({ navigate }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -4306,7 +4469,6 @@ const ProfileScreen = ({ navigate, cigars, humidors, theme, userId, auth }) => {
     const [isAchievementsCollapsed, setIsAchievementsCollapsed] = useState(true);
 
     // --- MOCK SUBSCRIPTION DATA ---
-    // In a real app, this would come from your backend/database.
     const subscription = {
         plan: 'Premium',
         status: 'Active',
@@ -4331,14 +4493,6 @@ const ProfileScreen = ({ navigate, cigars, humidors, theme, userId, auth }) => {
         const stats = { totalCigars, totalValue, uniqueCountries, humidors, cigars };
         return achievementsList.map(ach => ({ ...ach, earned: ach.check(stats) }));
     }, [cigars, humidors, totalCigars, totalValue, uniqueCountries, achievementsList]);
-
-    const topFlavors = useMemo(() => {
-        const flavorCounts = cigars.flatMap(c => c.flavorNotes || []).reduce((acc, flavor) => {
-            acc[flavor] = (acc[flavor] || 0) + 1;
-            return acc;
-        }, {});
-        return Object.entries(flavorCounts).sort((a, b) => b[1] - a[1]).slice(0, 5).map(entry => entry[0]);
-    }, [cigars]);
 
     const user = auth?.currentUser;
     const displayName = user?.displayName || "Cigar Aficionado";
@@ -4374,19 +4528,40 @@ const ProfileScreen = ({ navigate, cigars, humidors, theme, userId, auth }) => {
 
     return (
         <div className="p-4 pb-24">
-            <div className="flex items-center mb-6">
+            <div id="pnlProfileHeader" className="flex items-center mb-6">
                 <button onClick={() => navigate('Settings')} className="p-2 -ml-2 mr-2"><ChevronLeft className="w-7 h-7 text-white" /></button>
                 <h1 className="text-3xl font-bold text-white">Profile</h1>
             </div>
             <div className="space-y-6">
-                <div className="flex flex-col items-center p-6 bg-gray-800/50 rounded-xl">
+                {/* --- Profile Info Panel --- */}
+                <div id="pnlProfileInfo" className="flex flex-col items-center p-6 bg-gray-800/50 rounded-xl">
                     <img src={photoURL} alt="User Avatar" className="w-24 h-24 rounded-full border-4 border-amber-400" />
                     <h2 className="text-2xl font-bold text-white mt-4">{displayName}</h2>
                     <p className="text-gray-400">{email}</p>
                 </div>
-
-                {/* --- NEW: Subscription Panel --- */}
-                <div className="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 p-4 rounded-xl border border-amber-400/50 shadow-lg">
+                {/* --- Achievements Panel --- */}
+                <div id="pnlAchievements" className="bg-gray-800/50 rounded-xl overflow-hidden">
+                    <button
+                        onClick={() => setIsAchievementsCollapsed(!isAchievementsCollapsed)}
+                        className="w-full p-4 flex justify-between items-center"
+                    >
+                        <h3 className="font-bold text-amber-300 text-lg flex items-center">
+                            <Star className="w-5 h-5 mr-2" /> Achievements
+                        </h3>
+                        <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isAchievementsCollapsed ? '' : 'rotate-180'}`} />
+                    </button>
+                    {!isAchievementsCollapsed && (
+                        <div className="px-4 pb-4">
+                            <div className="grid grid-cols-4 gap-4">
+                                {earnedAchievements.map(ach => (
+                                    <BadgeIcon key={ach.id} achievement={ach} />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+                {/* --- Subscription Panel --- */}
+                <div id="pnlSubscription" className="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 p-4 rounded-xl border border-amber-400/50 shadow-lg">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="font-bold text-amber-200 text-lg flex items-center">
                             <Zap className="w-5 h-5 mr-2" /> Subscription
@@ -4415,46 +4590,6 @@ const ProfileScreen = ({ navigate, cigars, humidors, theme, userId, auth }) => {
                     <button className="mt-4 w-full bg-amber-500 text-white font-bold py-2 rounded-lg hover:bg-amber-600 transition-colors">
                         Manage Subscription
                     </button>
-                </div>
-                {/* --- END: Subscription Panel --- */}
-
-                <div className="grid grid-cols-2 gap-4">
-                    <StatCard title="Total Cigars" value={totalCigars} icon={Box} theme={theme} />
-                    <StatCard title="Est. Value" value={`$${totalValue.toFixed(2)}`} icon={DollarSignIcon} theme={theme} />
-                </div>
-
-                <div className="bg-gray-800/50 rounded-xl overflow-hidden">
-                    <button
-                        onClick={() => setIsAchievementsCollapsed(!isAchievementsCollapsed)}
-                        className="w-full p-4 flex justify-between items-center"
-                    >
-                        <h3 className="font-bold text-amber-300 text-lg flex items-center">
-                            <Star className="w-5 h-5 mr-2" /> Achievements
-                        </h3>
-                        <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isAchievementsCollapsed ? '' : 'rotate-180'}`} />
-                    </button>
-                    {!isAchievementsCollapsed && (
-                        <div className="px-4 pb-4">
-                            <div className="grid grid-cols-4 gap-4">
-                                {earnedAchievements.map(ach => (
-                                    <BadgeIcon key={ach.id} achievement={ach} />
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                <div className="bg-gray-800/50 p-4 rounded-xl">
-                    <h3 className="font-bold text-amber-300 text-lg mb-3">Tasting Preferences</h3>
-                    <div>
-                        <h4 className="font-semibold text-white mb-2">Preferred Strength</h4>
-                        <div className="w-full bg-gray-700 rounded-full h-2.5"><div className="bg-amber-500 h-2.5 rounded-full" style={{ width: '70%' }}></div></div>
-                        <div className="flex justify-between text-xs text-gray-400 mt-1"><span>Mild</span><span>Medium</span><span>Full</span></div>
-                    </div>
-                    <div className="mt-4">
-                        <h4 className="font-semibold text-white mb-2">Top Flavors</h4>
-                        <div className="flex flex-wrap gap-2">{topFlavors.map(note => (<span key={note} className={`text-xs font-semibold px-3 py-1 rounded-full ${getFlavorTagColor(note)}`}>{note}</span>))}</div>
-                    </div>
                 </div>
                 <button
                     className="w-full flex items-center justify-center gap-2 bg-red-800/80 text-white font-bold py-3 rounded-lg hover:bg-red-700 transition-colors"
@@ -5055,6 +5190,8 @@ export default function App() {
                 return humidorToEdit ? <EditHumidor navigate={navigate} db={db} appId={appId} userId={userId} humidor={humidorToEdit} goveeApiKey={goveeApiKey} goveeDevices={goveeDevices} theme={theme} /> : <div>Humidor not found</div>;
             case 'DashboardSettings':
                 return <DashboardSettingsScreen navigate={navigate} theme={theme} dashboardPanelVisibility={dashboardPanelVisibility} setDashboardPanelVisibility={setDashboardPanelVisibility} />;
+            case 'DeeperStatistics':
+                return <DeeperStatisticsScreen navigate={navigate} cigars={cigars} theme={theme} />;
             case 'Integrations':
                 return <IntegrationsScreen navigate={navigate} goveeApiKey={goveeApiKey} setGoveeApiKey={setGoveeApiKey} goveeDevices={goveeDevices} setGoveeDevices={setGoveeDevices} theme={theme} />;
             case 'DataSync':
