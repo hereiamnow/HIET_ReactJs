@@ -2621,23 +2621,6 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
         "shortDescription", "description", "wrapper", "binder", "filler", "rating", "flavorNotes", "price"
     ];
 
-    // Find cigars with missing fields (only for this humidor)
-    const cigarsWithMissingDetails = filteredAndSortedCigars.filter(cigar =>
-        FIELDS_TO_AUTOFILL.some(field =>
-            cigar[field] === undefined ||
-            cigar[field] === "" ||
-            (Array.isArray(cigar[field]) && cigar[field].length === 0)
-        )
-    );
-
-    const isFilterActive = useMemo(() => {
-        return filters.brand || filters.country || filters.strength || filters.flavorNotes.length > 0;
-    }, [filters]);
-
-    const uniqueBrands = useMemo(() => [...new Set(cigars.filter(c => c.humidorId === humidor.id).map(c => c.brand))].sort(), [cigars, humidor.id]);
-    const uniqueCountries = useMemo(() => [...new Set(cigars.filter(c => c.humidorId === humidor.id).map(c => c.country))].sort(), [cigars, humidor.id]);
-    const availableFlavorNotes = useMemo(() => [...new Set(cigars.filter(c => c.humidorId === humidor.id).flatMap(c => c.flavorNotes))].sort(), [cigars, humidor.id]);
-
     const filteredAndSortedCigars = useMemo(() => {
         let currentCigars = cigars.filter(c => c.humidorId === humidor.id);
 
@@ -2670,6 +2653,25 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
 
         return currentCigars;
     }, [cigars, humidor.id, searchQuery, filters, sortBy, sortOrder]);
+
+    // Find cigars with missing fields (only for this humidor)
+    const cigarsWithMissingDetails = filteredAndSortedCigars.filter(cigar =>
+        FIELDS_TO_AUTOFILL.some(field =>
+            cigar[field] === undefined ||
+            cigar[field] === "" ||
+            (Array.isArray(cigar[field]) && cigar[field].length === 0)
+        )
+    );
+
+    const isFilterActive = useMemo(() => {
+        return filters.brand || filters.country || filters.strength || filters.flavorNotes.length > 0;
+    }, [filters]);
+
+    const uniqueBrands = useMemo(() => [...new Set(cigars.filter(c => c.humidorId === humidor.id).map(c => c.brand))].sort(), [cigars, humidor.id]);
+    const uniqueCountries = useMemo(() => [...new Set(cigars.filter(c => c.humidorId === humidor.id).map(c => c.country))].sort(), [cigars, humidor.id]);
+    const availableFlavorNotes = useMemo(() => [...new Set(cigars.filter(c => c.humidorId === humidor.id).flatMap(c => c.flavorNotes))].sort(), [cigars, humidor.id]);
+
+
 
     const totalQuantity = filteredAndSortedCigars.reduce((sum, c) => sum + c.quantity, 0);
     const humidorValue = filteredAndSortedCigars.reduce((sum, c) => sum + (c.quantity * (c.price || 0)), 0);
@@ -2794,10 +2796,14 @@ If you cannot determine a value, use "" or [] or 0. Only return the JSON object.
                         updateData[field] = result[field];
                     }
                 });
+                console.log("Fields to update for", cigar.name, updateData);
                 if (Object.keys(updateData).length > 0) {
                     const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
                     await updateDoc(cigarRef, updateData);
                 }
+            } else {
+                setAutofillStatus(`Roxy couldn't find any details for "${cigar.name}".`);
+                console.warn("No data returned from Gemini for", cigar.name, result);
             }
         }
         setAutofillStatus("Auto-fill complete!");
@@ -2852,25 +2858,7 @@ If you cannot determine a value, use "" or [] or 0. Only return the JSON object.
     return (
         <div className="bg-gray-900 min-h-screen pb-24">
 
-            {/* Show the autofill banner if enabled and there are cigars with missing details */}
-            {showAutofillBanner && cigarsWithMissingDetails.length > 0 && (
-                <div id="pnlAutofillBanner" className="bg-yellow-900/80 border border-yellow-600 text-yellow-200 p-4 rounded-lg mb-4 flex items-center justify-between">
-                    <div>
-                        <span>
-                            Some imported cigars are missing details.{" "}
-                            <button
-                                onClick={handleAutofillMissingDetails}
-                                disabled={isAutofilling}
-                                className="bg-amber-500 text-white font-bold px-3 py-1 rounded hover:bg-amber-600 ml-2"
-                            >
-                                {isAutofilling ? "Auto-filling..." : "Auto-fill Details"}
-                            </button>
-                        </span>
-                        {autofillStatus && <span className="ml-4">{autofillStatus}</span>}
-                    </div>
-                    <button onClick={() => setShowAutofillBanner(false)} className="ml-4 text-yellow-300 hover:text-white text-xl font-bold">&times;</button>
-                </div>
-            )}
+
 
 
             {isManualReadingModalOpen && <ManualReadingModal humidor={humidor} onClose={() => setIsManualReadingModalOpen(false)} onSave={handleSaveManualReading} theme={theme} />}
@@ -2901,7 +2889,7 @@ If you cannot determine a value, use "" or [] or 0. Only return the JSON object.
             </div> {/* End main MyHumidor content */}
 
             <div className="p-4">
-                <div className="flex justify-around items-center bg-gray-800/50 p-3 rounded-xl mb-6 text-center">
+                <div id="pnlHumidityTemperatureValue" className="flex justify-around items-center bg-gray-800/50 p-3 rounded-xl mb-6 text-center">
                     <div className="flex flex-col items-center"><Droplets className="w-5 h-5 text-blue-400 mb-1" /><p className="text-sm text-gray-400">Humidity</p><p className="font-bold text-white text-base">{humidor.humidity}%</p></div>
                     <div className="h-10 w-px bg-gray-700"></div>
                     <div className="flex flex-col items-center"><Thermometer className="w-5 h-5 text-red-400 mb-1" /><p className="text-sm text-gray-400">Temperature</p><p className="font-bold text-white text-base">{humidor.temp}°F</p></div>
@@ -2933,6 +2921,49 @@ If you cannot determine a value, use "" or [] or 0. Only return the JSON object.
                         <button onClick={handleToggleSelectMode} className={`p-2 rounded-full transition-colors duration-200 ${isSelectMode ? 'bg-amber-500 text-white' : 'bg-gray-700 text-gray-400'}`}><CheckSquare className="w-5 h-5" /></button>
                     </div>
                 </div>
+
+                {/* Show the autofill banner if enabled and there are cigars with missing details */}
+                {showAutofillBanner && cigarsWithMissingDetails.length > 0 && (
+                    <div
+                        id="pnlAutofillBanner"
+                        className="relative bg-amber-900/20 border border-amber-800 rounded-xl p-4 mb-4 flex flex-col shadow-lg overflow-hidden"
+                        style={{ boxShadow: '0 2px 12px 0 rgba(255, 193, 7, 0.10)' }}
+                    >
+                        {/* Close button in top right */}
+                        <button
+                            onClick={() => setShowAutofillBanner(false)}
+                            className="absolute top-2 right-2 text-yellow-300 hover:text-white text-2xl font-bold z-10"
+                            aria-label="Close"
+                        >
+                            &times;
+                        </button>
+                        <div className="flex items-center gap-3 mb-2">
+                            <span className="flex items-center justify-center bg-amber-400 rounded-full w-10 h-10 mr-2 shadow">
+                                {/* Use the same icon as Roxy's Corner */}
+                                <svg className="w-7 h-7 text-amber-900" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <path d="M3 16s.5-1 2-1 2 1 2 1 1-1 2-1 2 1 2 1 1-1 2-1 2 1 2 1 1-1 2-1 2 1 2 1" />
+                                    <circle cx="12" cy="7" r="4" />
+                                </svg>
+                            </span>
+                            <h3 className="font-bold text-amber-200 text-lg flex items-center">Roxy's Corner</h3>
+                        </div>
+                        <span className="text-amber-100 text-sm mb-3">
+                            Some imported cigars are missing details. Let Roxy auto-fill them for you!
+                        </span>
+                        <button
+                            onClick={handleAutofillMissingDetails}
+                            disabled={isAutofilling}
+                            className="bg-amber-500 text-white font-bold px-4 py-2 rounded-lg hover:bg-amber-600 transition-colors w-full sm:w-auto"
+                        >
+                            {isAutofilling ? "Auto-filling..." : "Auto-fill Details"}
+                        </button>
+                        {autofillStatus && (
+                            <div className="mt-2 text-amber-200 text-xs">{autofillStatus}</div>
+                        )}
+                    </div>
+                )}
+
+
 
                 {isFilterActive && (
                     <div className="flex justify-between items-center mb-4 bg-gray-800 p-3 rounded-lg">
@@ -3328,6 +3359,7 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
 
         // Call the Gemini API with the prompt and response schema
         const result = await callGeminiAPI(prompt, responseSchema);
+        console.log("Gemini result for", cigar.name, result);
 
         if (typeof result === 'object' && result !== null) {
             const updatedFields = [];
