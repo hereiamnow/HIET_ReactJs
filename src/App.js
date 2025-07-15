@@ -2611,6 +2611,25 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
     const [sortBy, setSortBy] = useState('name');
     const [sortOrder, setSortOrder] = useState('asc');
 
+    // --- Auto-fill Missing Cigar Details Banner Logic ---
+    const [showAutofillBanner, setShowAutofillBanner] = useState(true);
+    const [isAutofilling, setIsAutofilling] = useState(false);
+    const [autofillStatus, setAutofillStatus] = useState(""); // For feedback
+
+    // Fields to auto-fill (do NOT include shape, size, length_inches, ring_gauge)
+    const FIELDS_TO_AUTOFILL = [
+        "shortDescription", "description", "wrapper", "binder", "filler", "rating", "flavorNotes", "price"
+    ];
+
+    // Find cigars with missing fields (only for this humidor)
+    const cigarsWithMissingDetails = filteredAndSortedCigars.filter(cigar =>
+        FIELDS_TO_AUTOFILL.some(field =>
+            cigar[field] === undefined ||
+            cigar[field] === "" ||
+            (Array.isArray(cigar[field]) && cigar[field].length === 0)
+        )
+    );
+
     const isFilterActive = useMemo(() => {
         return filters.brand || filters.country || filters.strength || filters.flavorNotes.length > 0;
     }, [filters]);
@@ -2729,6 +2748,62 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
         navigate('HumidorsScreen');
     };
 
+    const handleAutofillMissingDetails = async () => {
+        setIsAutofilling(true);
+        setAutofillStatus("Auto-filling details...");
+
+        for (const cigar of cigarsWithMissingDetails) {
+            // Build prompt for Gemini
+            const missingFields = FIELDS_TO_AUTOFILL.filter(f =>
+                cigar[f] === undefined ||
+                cigar[f] === "" ||
+                (Array.isArray(cigar[f]) && cigar[f].length === 0)
+            );
+            if (!cigar.name || missingFields.length === 0) continue;
+
+            const prompt = `You are a cigar database. Fill in missing details for this cigar as a JSON object.
+Cigar: "${cigar.brand} ${cigar.name}".
+Missing fields: ${missingFields.join(", ")}.
+Schema: { "shortDescription": "string", "description": "string", "wrapper": "string", "binder": "string", "filler": "string", "rating": "number", "flavorNotes": ["string"], "price": "number" }.
+If you cannot determine a value, use "" or [] or 0. Only return the JSON object.`;
+
+            const responseSchema = {
+                type: "OBJECT",
+                properties: {
+                    shortDescription: { type: "STRING" },
+                    description: { type: "STRING" },
+                    wrapper: { type: "STRING" },
+                    binder: { type: "STRING" },
+                    filler: { type: "STRING" },
+                    rating: { type: "NUMBER" },
+                    flavorNotes: { type: "ARRAY", items: { type: "STRING" } },
+                    price: { type: "NUMBER" }
+                }
+            };
+
+            const result = await callGeminiAPI(prompt, responseSchema);
+
+            if (typeof result === "object" && result !== null) {
+                // Only update missing fields
+                const updateData = {};
+                FIELDS_TO_AUTOFILL.forEach(field => {
+                    if (
+                        (!cigar[field] || (Array.isArray(cigar[field]) && cigar[field].length === 0)) &&
+                        result[field] !== undefined
+                    ) {
+                        updateData[field] = result[field];
+                    }
+                });
+                if (Object.keys(updateData).length > 0) {
+                    const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
+                    await updateDoc(cigarRef, updateData);
+                }
+            }
+        }
+        setAutofillStatus("Auto-fill complete!");
+        setIsAutofilling(false);
+        setShowAutofillBanner(false);
+    };
 
     // Function to handle the confirmation of deleting selected cigars
     const handleConfirmDeleteCigars = async () => {
@@ -2776,6 +2851,28 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
 
     return (
         <div className="bg-gray-900 min-h-screen pb-24">
+
+            {/* Show the autofill banner if enabled and there are cigars with missing details */}
+            {showAutofillBanner && cigarsWithMissingDetails.length > 0 && (
+                <div id="pnlAutofillBanner" className="bg-yellow-900/80 border border-yellow-600 text-yellow-200 p-4 rounded-lg mb-4 flex items-center justify-between">
+                    <div>
+                        <span>
+                            Some imported cigars are missing details.{" "}
+                            <button
+                                onClick={handleAutofillMissingDetails}
+                                disabled={isAutofilling}
+                                className="bg-amber-500 text-white font-bold px-3 py-1 rounded hover:bg-amber-600 ml-2"
+                            >
+                                {isAutofilling ? "Auto-filling..." : "Auto-fill Details"}
+                            </button>
+                        </span>
+                        {autofillStatus && <span className="ml-4">{autofillStatus}</span>}
+                    </div>
+                    <button onClick={() => setShowAutofillBanner(false)} className="ml-4 text-yellow-300 hover:text-white text-xl font-bold">&times;</button>
+                </div>
+            )}
+
+
             {isManualReadingModalOpen && <ManualReadingModal humidor={humidor} onClose={() => setIsManualReadingModalOpen(false)} onSave={handleSaveManualReading} theme={theme} />}
             {isMoveModalOpen && <MoveCigarsModal onClose={() => setIsMoveModalOpen(false)} onMove={handleMoveCigars} destinationHumidors={humidors.filter(h => h.id !== humidor.id)} theme={theme} />}
             <DeleteHumidorModal isOpen={isDeleteHumidorModalOpen} onClose={() => setIsDeleteHumidorModalOpen(false)} onConfirm={handleConfirmDeleteHumidor} humidor={humidor} cigarsInHumidor={filteredAndSortedCigars} otherHumidors={humidors.filter(h => h.id !== humidor.id)} />
@@ -4587,7 +4684,14 @@ const ProfileScreen = ({ navigate, cigars, humidors, theme, userId, auth }) => {
                             </div>
                         </div>
                     </div>
-                    <button className="mt-4 w-full bg-amber-500 text-white font-bold py-2 rounded-lg hover:bg-amber-600 transition-colors">
+                    {/* 
+                    for a direct link to your app’s subscription:
+                    https://play.google.com/store/account/subscriptions?sku=YOUR_SUBSCRIPTION_ID&package=YOUR_APP_PACKAGE 
+                    */}
+                    <button
+                        className="mt-4 w-full bg-amber-500 text-white font-bold py-2 rounded-lg hover:bg-amber-600 transition-colors"
+                        onClick={() => window.open('https://play.google.com/store/account/subscriptions', '_blank')}
+                    >
                         Manage Subscription
                     </button>
                 </div>
