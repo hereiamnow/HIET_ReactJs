@@ -38,175 +38,12 @@ import Papa from 'papaparse'; // Import papaparse for CSV parsing and exporting.
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, writeBatch, connectFirestoreEmulator } from "firebase/firestore";
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, connectAuthEmulator } from "firebase/auth";
+import { themes } from './constants/themes';
+import { roxysTips } from './constants/roxysTips';
+import { fontOptions } from './constants/fontOptions';
+import { strengthOptions, allFlavorNotes, commonCigarDimensions, cigarShapes, cigarLengths, cigarRingGauges, cigarWrapperColors, cigarBinderTypes, cigarFillerTypes, cigarCountryOfOrigin } from './constants/cigarOptions';
 
 const initialAuthToken = typeof window !== "undefined" && window.initialAuthToken ? window.initialAuthToken : null;
-
-// The 'themes' object defines available UI themes for the app.
-// Each theme contains keys for background, card, text, primary color, border, input, and button styles.
-// Usage: Pass the selected theme object to components for consistent styling.
-const themes = {
-    "Humidor Hub": {
-        name: "Humidor Hub",
-        bg: "bg-gray-900",
-        card: "bg-gray-800/50",
-        text: "text-white",
-        subtleText: "text-gray-400",
-        primary: "text-amber-400",
-        primaryBg: "bg-amber-500",
-        hoverPrimaryBg: "hover:bg-amber-600",
-        borderColor: "border-gray-700",
-        inputBg: "bg-gray-800",
-        ring: "focus:ring-amber-500",
-        button: "bg-gray-700 hover:bg-gray-600",
-    },
-    "Midnight Blue": {
-        name: "Midnight Blue",
-        bg: "bg-slate-900",
-        card: "bg-slate-800/50",
-        text: "text-white",
-        subtleText: "text-slate-400",
-        primary: "text-sky-400",
-        primaryBg: "bg-sky-500",
-        hoverPrimaryBg: "hover:bg-sky-600",
-        borderColor: "border-slate-700",
-        inputBg: "bg-slate-800",
-        ring: "focus:ring-sky-500",
-        button: "bg-slate-700 hover:bg-slate-600",
-    },
-    "Vintage Leather": {
-        name: "Vintage Leather",
-        bg: "bg-stone-900",
-        card: "bg-stone-800/50",
-        text: "text-white",
-        subtleText: "text-stone-400",
-        primary: "text-orange-400",
-        primaryBg: "bg-orange-500",
-        hoverPrimaryBg: "hover:bg-orange-600",
-        borderColor: "border-stone-700",
-        inputBg: "bg-stone-800",
-        ring: "focus:ring-orange-500",
-        button: "bg-stone-700 hover:bg-stone-600",
-    },
-    "Classic Light": {
-        name: "Classic Light",
-        bg: "bg-gray-100",
-        card: "bg-white/60",
-        text: "text-gray-800",
-        subtleText: "text-gray-500",
-        primary: "text-amber-700",
-        primaryBg: "bg-amber-600",
-        hoverPrimaryBg: "hover:bg-amber-700",
-        borderColor: "border-gray-300",
-        inputBg: "bg-white",
-        ring: "focus:ring-amber-500",
-        button: "bg-gray-200 hover:bg-gray-300",
-    }
-};
-
-const fontOptions = [
-    {
-        label: "Playfair Display + Inter",
-        heading: "'Playfair Display', serif",
-        body: "'Inter', sans-serif"
-    },
-    {
-        label: "Merriweather + Lato",
-        heading: "'Merriweather', serif",
-        body: "'Lato', sans-serif"
-    },
-    {
-        label: "Cormorant Garamond + Roboto",
-        heading: "'Cormorant Garamond', serif",
-        body: "'Roboto', sans-serif"
-    },
-    {
-        label: "Cinzel + Open Sans",
-        heading: "'Cinzel', serif",
-        body: "'Open Sans', sans-serif"
-    },
-    {
-        label: "EB Garamond + Montserrat",
-        heading: "'EB Garamond', serif",
-        body: "'Montserrat', sans-serif"
-    }
-];
-
-const allFlavorNotes = [
-    'Earth', 'Earthy', 'Woody', 'Spice', 'Spicy', 'Nutty', 'Sweet', 'Fruity', 'Floral', 'Herbal',
-    'Leather', 'Coffee', 'Cocoa', 'Chocolate', 'Creamy', 'Pepper', 'Cedar', 'Oak',
-    'Cinnamon', 'Vanilla', 'Honey', 'Caramel', 'Citrus', 'Dried Fruit', 'Hay', 'Toasted',
-    'Dark Cherry', 'Roasted Nuts', 'Toasted Bread'
-].sort(); // .sort() keeps the list alphabetical.
-
-const strengthOptions = ['Mild', 'Mild-Medium', 'Medium', 'Medium-Full', 'Full'];
-
-const cigarShapes = [
-    'Parejo', 'Corona', 'Robusto', 'Toro', 'Churchill', 'Double Corona', 'Lonsdale',
-    'Panetela', 'Lancero', 'Grand Corona', 'Presidente', 'Figurado', 'Belicoso',
-    'Torpedo', 'Piramide', 'Perfecto', 'Diadema', 'Culebra', 'Double Robusto'
-].sort();// .sort() keeps the list alphabetical.
-
-const cigarRingGauges = [30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58].sort();// .sort() keeps the list alphabetical.
-
-const cigarLengths = [3, 3.5, 4, 4.5, 5, 5.25, 5.5, 5.75, 6, 6.25, 6.5, 6.75, 7, 7.5, 8].sort();// .sort() keeps the list alphabetical.
-
-const cigarWrapperColors = [
-    'Natural', 'Maduro', 'Connecticut', 'Habano', 'Sumatra', 'Candela', 'Oscuro',
-    'Colorado', 'Criollo', 'Cameroon', 'San Andres', 'Mexican', 'Brazilian',
-    'Pennsylvania', 'Nicaraguan', 'Dominican', 'Honduran'
-].sort();// .sort() keeps the list alphabetical.
-
-const cigarBinderTypes = [
-    'Natural', 'Maduro', 'Connecticut', 'Habano', 'Sumatra', 'Candela', 'Oscuro',
-    'Colorado', 'Criollo', 'Cameroon', 'San Andres', 'Mexican', 'Brazilian',
-    'Pennsylvania', 'Nicaraguan', 'Dominican', 'Honduran'
-].sort();// .sort() keeps the list alphabetical.
-
-const cigarFillerTypes = [
-    'Natural', 'Maduro', 'Connecticut', 'Habano', 'Sumatra', 'Candela', 'Oscuro',
-    'Colorado', 'Criollo', 'Cameroon', 'San Andres', 'Mexican', 'Brazilian',
-    'Pennsylvania', 'Nicaraguan', 'Dominican', 'Honduran'
-].sort();// .sort() keeps the list alphabetical.
-
-const cigarCountryOfOrigin = [
-    'Cuba', 'Dominican Republic', 'Nicaragua', 'Honduras', 'Mexico', 'Brazil',
-    'Peru', 'United States', 'Colombia', 'Costa Rica', 'Panama', 'Jamaica',
-    'Philippines', 'India', 'El Salvador', 'Ecuador', 'Guatemala', 'Nicaragua'
-].sort();
-
-// Common cigar dimensions for various vitolas.
-// This is used to fill the cigar length and ring gauge fields in the form when the user selects a vitola.
-const commonCigarDimensions = {
-    'Corona': { length_inches: 5.5, ring_gauge: 42 },
-    'Robusto': { length_inches: 5, ring_gauge: 50 },
-    'Toro': { length_inches: 6, ring_gauge: 52 },
-    'Churchill': { length_inches: 7, ring_gauge: 48 },
-    'Double Corona': { length_inches: 7.5, ring_gauge: 49 },
-    'Lonsdale': { length_inches: 6.5, ring_gauge: 42 },
-    'Panetela': { length_inches: 6, ring_gauge: 38 },
-    'Lancero': { length_inches: 7.5, ring_gauge: 38 },
-    'Perfecto': { length_inches: 4.5, ring_gauge: 48 }, // Example, can vary widely
-    'Piramide': { length_inches: 6.2, ring_gauge: 52 },
-    'Torpedo': { length_inches: 6, ring_gauge: 52 },
-    'Belicoso': { length_inches: 5, ring_gauge: 50 },
-    'Figurado': { length_inches: null, ring_gauge: null }, // Varies too much
-    'Parejo': { length_inches: null, ring_gauge: null }, // General term
-    'Double Robusto': { length_inches: 5.5, ring_gauge: 54 },
-    'Grand Corona': { length_inches: 5.6, ring_gauge: 46 },
-    'Presidente': { length_inches: 8, ring_gauge: 52 }
-};
-
-// RoxysTips is an array of tips and trivia about cigars, provided by Roxy.
-const roxysTips = [
-    "Did you know? A steady 70% humidity is perfect for aging most cigars. Don't let it fluctuate!",
-    "Remember to rotate your cigars every few months to ensure they age evenly. It's like a little cigar ballet!",
-    "The wrapper provides a large part of a cigar's flavor. A darker wrapper often means a sweeter, richer taste.",
-    "Pairing a cigar with the right drink can elevate the experience. Try a medium-bodied cigar with a good rum!",
-    "Patience is a virtue for a cigar lover. Letting a cigar rest in your humidor for a few weeks after purchase can improve its flavor.",
-    "The 'vitola' of a cigar refers to its size and shape. Different vitolas can offer surprisingly different smoking experiences, even with the same tobacco tobacco blend.",
-    "Don't inhale cigar smoke! The rich flavors are meant to be savored in your mouth, much like a fine wine.",
-    "A good cut is crucial. A dull cutter can tear the wrapper and ruin the draw. Keep your tools sharp!"
-];
 
 // --- HELPER & UI COMPONENTS ---
 
@@ -290,7 +127,6 @@ const generateAiImage = async (itemName, itemCategory, itemType) => {
     }
 };
 
-// (0709250) FilterSortModal - Used for Humidar Detail Refactor
 const FilterSortModal = ({
     isOpen,
     onClose,
@@ -422,13 +258,13 @@ const HumidorActionMenu = ({ onEdit, onTakeReading, onExport, onDelete, onImport
             </button>
             {isOpen && (
                 <div className="absolute top-full right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-30 overflow-hidden">
-                    <MenuItem icon={Edit} text="Edit Humidor" onClick={onEdit} className="text-gray-200" />
+                    <MenuItem icon={Edit} text="Edit this Humidor" onClick={onEdit} className="text-gray-200" />
                     <MenuItem icon={FileText} text="Take Manual Reading" onClick={onTakeReading} className="text-gray-200" />
-                    {/* --- New Import Cigars menu item --- */}
-                    <MenuItem icon={UploadCloud} text="Import Cigars" onClick={onImport} className="text-gray-200" />
-                    <MenuItem icon={Download} text="Export Cigars" onClick={onExport} className="text-gray-200" />
                     <div className="border-t border-gray-700 my-1"></div>
-                    <MenuItem icon={Trash2} text="Delete Humidor" onClick={onDelete} className="text-red-400 hover:bg-red-900/50" />
+                    <MenuItem icon={UploadCloud} text="Import Cigars from CSV" onClick={onImport} className="text-gray-200" />
+                    <MenuItem icon={Download} text="Export Cigars to CSV" onClick={onExport} className="text-gray-200" />
+                    <div className="border-t border-gray-700 my-1"></div>
+                    <MenuItem icon={Trash2} text="Delete this Humidor" onClick={onDelete} className="text-red-400 hover:bg-red-900/50" />
                 </div>
             )}
         </div>
@@ -3361,7 +3197,7 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
 
         // Call the Gemini API with the prompt and response schema
         const result = await callGeminiAPI(prompt, responseSchema);
-        console.log("Gemini result for", cigar.name, result);
+        console.log("Gemini result for", formData.name, result);
 
         if (typeof result === 'object' && result !== null) {
             const updatedFields = [];
@@ -3979,7 +3815,6 @@ Do not include any text or markdown formatting outside of the JSON object.`;
     );
 };
 
-
 const AlertsScreen = ({ navigate, humidors }) => {
     const [alertSettings, setAlertSettings] = useState(
         humidors.map(h => ({ humidorId: h.id, name: h.name, humidityAlert: false, minHumidity: 68, maxHumidity: 72, tempAlert: false, minTemp: 65, maxTemp: 70 }))
@@ -4097,7 +3932,6 @@ const DashboardSettingsScreen = ({ navigate, theme, dashboardPanelVisibility, se
     );
 };
 
-// --- New FontsScreen Component ---
 const FontsScreen = ({ navigate, selectedFont, setSelectedFont, theme }) => {
     // Font Picker UI
     const FontPicker = () => (
@@ -4172,18 +4006,12 @@ const SettingsScreen = ({ navigate, theme, setTheme, dashboardPanelVisibility, s
             {isThemeModalOpen && <ThemeModal currentTheme={theme} setTheme={setTheme} onClose={() => setIsThemeModalOpen(false)} />}
             <h1 className="text-3xl font-bold text-white mb-6">Settings</h1>
             <div className="space-y-4">
-                {/* --- New Button for Deeper Statistics --- */}
-                <SettingItem
-                    icon={BarChart2}
-                    title="Deeper Statistics & Insights"
-                    subtitle="Explore advanced stats about your collection"
-                    onClick={() => navigate('DeeperStatistics')}
-                />
                 <SettingItem icon={User} title="Profile" subtitle="Manage your account details" onClick={() => navigate('Profile')} />
                 <SettingItem icon={LayoutGrid} title="Dashboard Components" subtitle="Customize what appears on your dashboard" onClick={() => navigate('DashboardSettings')} />
                 <SettingItem icon={Bell} title="Notifications" subtitle="Set up alerts for humidity and temp" onClick={() => navigate('Notifications')} />
                 <SettingItem icon={Zap} title="Integrations" subtitle="Connect to Govee and other services" onClick={() => navigate('Integrations')} />
                 <SettingItem icon={Database} title="Data & Sync" subtitle="Export or import your collection" onClick={() => navigate('DataSync')} />
+                <SettingItem icon={BarChart2} title="Deeper Statistics & Insights" subtitle="Explore advanced stats about your collection" onClick={() => navigate('DeeperStatistics')} />
                 <SettingItem icon={Palette} title="Theme" subtitle={`Current: ${theme.name}`} onClick={() => setIsThemeModalOpen(true)} />
                 <SettingItem icon={Info} title="Fonts" subtitle="Choose your preferred font combination" onClick={() => navigate('Fonts')} disabled={true} />
                 <SettingItem icon={Info} title="About Humidor Hub" subtitle="Version 1.1.0" onClick={() => navigate('About')} />
@@ -4392,7 +4220,6 @@ const DataSyncScreen = ({ navigate, db, appId, userId, cigars, humidors }) => {
     );
 };
 
-// --- New DeeperStatisticsScreen Component ---
 const DeeperStatisticsScreen = ({ navigate, cigars, theme }) => {
     // 1. Collection Value
     const totalValue = cigars.reduce((sum, c) => sum + ((c.price || 0) * (c.quantity || 0)), 0);
@@ -5094,7 +4921,6 @@ const ExportModal = ({ data, dataType, onClose }) => {
     );
 };
 
-// Define fields for Humidor import/export
 const APP_HUMIDOR_FIELDS = [
     { key: 'name', label: 'Humidor Name', required: true },
     { key: 'shortDescription', label: 'Short Description', required: false },
@@ -5109,7 +4935,6 @@ const APP_HUMIDOR_FIELDS = [
     { key: 'goveeDeviceModel', label: 'Govee Device Model', required: false },
 ];
 
-// Define fields for Cigar import/export
 const APP_FIELDS = [
     { key: 'name', label: 'Cigar Name', required: true },
     { key: 'brand', label: 'Brand', required: true },

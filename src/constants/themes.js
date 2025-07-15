@@ -1,0 +1,62 @@
+
+// The 'themes' object defines available UI themes for the app.
+// Each theme contains keys for background, card, text, primary color, border, input, and button styles.
+// Usage: Pass the selected theme object to components for consistent styling.
+export const themes = {
+    "Humidor Hub": {
+        name: "Humidor Hub",
+        bg: "bg-gray-900",
+        card: "bg-gray-800/50",
+        text: "text-white",
+        subtleText: "text-gray-400",
+        primary: "text-amber-400",
+        primaryBg: "bg-amber-500",
+        hoverPrimaryBg: "hover:bg-amber-600",
+        borderColor: "border-gray-700",
+        inputBg: "bg-gray-800",
+        ring: "focus:ring-amber-500",
+        button: "bg-gray-700 hover:bg-gray-600",
+    },
+    "Midnight Blue": {
+        name: "Midnight Blue",
+        bg: "bg-slate-900",
+        card: "bg-slate-800/50",
+        text: "text-white",
+        subtleText: "text-slate-400",
+        primary: "text-sky-400",
+        primaryBg: "bg-sky-500",
+        hoverPrimaryBg: "hover:bg-sky-600",
+        borderColor: "border-slate-700",
+        inputBg: "bg-slate-800",
+        ring: "focus:ring-sky-500",
+        button: "bg-slate-700 hover:bg-slate-600",
+    },
+    "Vintage Leather": {
+        name: "Vintage Leather",
+        bg: "bg-stone-900",
+        card: "bg-stone-800/50",
+        text: "text-white",
+        subtleText: "text-stone-400",
+        primary: "text-orange-400",
+        primaryBg: "bg-orange-500",
+        hoverPrimaryBg: "hover:bg-orange-600",
+        borderColor: "border-stone-700",
+        inputBg: "bg-stone-800",
+        ring: "focus:ring-orange-500",
+        button: "bg-stone-700 hover:bg-stone-600",
+    },
+    "Classic Light": {
+        name: "Classic Light",
+        bg: "bg-gray-100",
+        card: "bg-white/60",
+        text: "text-gray-800",
+        subtleText: "text-gray-500",
+        primary: "text-amber-700",
+        primaryBg: "bg-amber-600",
+        hoverPrimaryBg: "hover:bg-amber-700",
+        borderColor: "border-gray-300",
+        inputBg: "bg-white",
+        ring: "focus:ring-amber-500",
+        button: "bg-gray-200 hover:bg-gray-300",
+    }
+};
