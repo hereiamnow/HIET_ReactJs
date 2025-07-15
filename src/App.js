@@ -28,9 +28,10 @@ import FirebaseAuthUI from './FirebaseAuthUI';// FirebaseUI component for handli
 // React is the main library for building the user interface.
 // useState, useEffect, and useMemo are "hooks" that let us use state and other React features in functional components.
 import React, { useState, useEffect, useMemo, useRef } from 'react'; // Import useRef for flashing effect
-// lucide-react provides a set of clean, modern icons used throughout the app.
 
-import { ArrowUp, ArrowDown, MoreVertical, CheckSquare, AlertTriangle, BarChart2, Bell, Box, Calendar as CalendarIcon, Check, ChevronDown, ChevronLeft, Cigarette, Database, DollarSign, Download, Droplets, Edit, FileText, Filter, Info, LayoutGrid, Leaf, List, ListFilter, LoaderCircle, LogOut, MapPin, Minus, Move, Palette, PieChart as PieChartIcon, Plus, Search, Settings as SettingsIcon, Sparkles, Star, Tag, Thermometer, Trash2, Upload, UploadCloud, User, Wind, X, Zap } from 'lucide-react';// recharts is a library for creating the charts (bar, line, pie) on the dashboard.
+// lucide-react provides a set of clean, modern icons used throughout the app.
+import { ArrowUp, ArrowDown, MoreVertical, CheckSquare, AlertTriangle, BarChart2, Bell, Box, Calendar as CalendarIcon, Check, ChevronDown, ChevronLeft, Cigarette, Database, DollarSign, Download, Droplets, Edit, FileText, Filter, Info, LayoutGrid, Leaf, List, ListFilter, LoaderCircle, LogOut, MapPin, Minus, Move, Palette, PieChart as PieChartIcon, Plus, Search, Settings as SettingsIcon, Sparkles, Star, Tag, Thermometer, Trash2, Upload, UploadCloud, User, Wind, X, Zap, PencilRuler, FileUp, Trash } from 'lucide-react';
+
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import Papa from 'papaparse'; // Import papaparse for CSV parsing and exporting.
 // Import Firebase libraries for database and authentication
@@ -236,6 +237,11 @@ const FilterSortModal = ({
     );
 };
 
+
+
+
+
+
 /**
  * HumidorActionMenu is a dropdown menu for managing humidor actions.
  * It provides options to edit, take readings, export, delete, and import cigars.
@@ -286,6 +292,56 @@ const HumidorActionMenu = ({ onEdit, onTakeReading, onExport, onDelete, onImport
         </div>
     );
 }
+
+
+/**
+ * CigarActionMenu is a dropdown menu for managing cigar-specific actions.
+ */
+const CigarActionMenu = ({ onEdit, onExport, onDelete }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const menuRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [menuRef]);
+
+    const MenuItem = ({ icon: Icon, text, onClick, className = '' }) => (
+        <button
+            onClick={() => {
+                onClick();
+                setIsOpen(false);
+            }}
+            className={`w-full flex items-center gap-3 px-4 py-2 text-sm text-left hover:bg-gray-700 ${className}`}
+        >
+            <Icon className="w-5 h-5" />
+            <span>{text}</span>
+        </button>
+    );
+
+    return (
+        <div className="relative" ref={menuRef}>
+            <button onClick={() => setIsOpen(!isOpen)} className="p-2 bg-black/50 rounded-full text-white">
+                <MoreVertical className="w-6 h-6" />
+            </button>
+            {isOpen && (
+                <div className="absolute top-full right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-30 overflow-hidden">
+                    <MenuItem icon={PencilRuler} text="Edit this Cigar" onClick={onEdit} className="text-gray-200" />
+                    <MenuItem icon={FileUp} text="Export this Cigar" onClick={onExport} className="text-gray-200" />
+                    <div className="border-t border-gray-700 my-1"></div>
+                    <MenuItem icon={Trash} text="Delete this Cigar" onClick={onDelete} className="text-red-400 hover:bg-red-900/50" />
+                </div>
+            )}
+        </div>
+    );
+};
+
+
 
 // ===================================================================================
 //  REUSABLE & CHILD COMPONENTS
@@ -2448,10 +2504,11 @@ If you cannot determine a value, use "" or [] or 0. Only return the JSON object.
                     <HumidorActionMenu
                         onEdit={() => navigate('EditHumidor', { humidorId: humidor.id })}
                         onTakeReading={() => setIsManualReadingModalOpen(true)}
-                        onImport={() => setIsExportModalOpen(false) || navigate('DataSync', { openImportModal: true, importHumidorId: humidor.id })}
                         onExport={() => setIsExportModalOpen(true)}
                         onDelete={() => setIsDeleteHumidorModalOpen(true)}
+                        onImport={() => navigate('DataSync')} // Navigate to DataSync for import options
                     />
+       
                 </div>
                 <div className="absolute bottom-0 p-4">
                     <h1 className="text-3xl font-bold text-white">{humidor.name}</h1>
@@ -2784,12 +2841,19 @@ Provide a brief, encouraging, and slightly personalized note about this cigar's 
                 <img src={cigar.image || `https://placehold.co/400x600/5a3825/ffffff?font=playfair-display&text=${cigar.brand.replace(/\s/g, '+')}`} alt={cigar.name} className="w-full h-64 object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
 
-
+                {/* Page Header Action Buttons */}
                 <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
                     <button onClick={() => navigate('MyHumidor', { humidorId: cigar.humidorId })} className="p-2 bg-black/50 rounded-full text-white"><ChevronLeft className="w-7 h-7" /></button>
+                    <CigarActionMenu
+                        onEdit={() => navigate('EditCigar', { cigarId: cigar.id })}
+                        onExport={() => setIsExportModalOpen(true)}
+                        onDelete={() => setIsDeleteModalOpen(true)}
+                    />               
                 </div>
 
-                {/* Rating Badge and Title moved to bottom */}
+
+
+                {/* Title and Rating Badge */}
                 <div className="absolute bottom-0 p-4 w-full flex justify-between items-end">
                     <div>
                         <p className="text-gray-300 text-sm font-semibold uppercase">{cigar.brand}</p>
@@ -2815,21 +2879,9 @@ Provide a brief, encouraging, and slightly personalized note about this cigar's 
                 <div className="bg-gray-800/50 p-4 rounded-xl space-y-4">
 
                     <div className="flex justify-between items-center">
-                        {/* Panel Title */}
-                        <h3 className="font-bold text-amber-300 text-lg">Cigar Profile</h3>
+            
+                        <h3 className="font-bold text-amber-300 text-lg">Profile</h3>
 
-                        {/* Action Buttons */}
-                        <div id="action-buttons" className="flex items-center gap-2">
-                            <button onClick={() => setIsDeleteModalOpen(true)} className="p-2 text-white hover:text-red-500 transition-colors">
-                                <Trash2 className="w-5 h-5" />
-                            </button>
-                            <button onClick={() => setIsExportModalOpen(true)} className="p-2 text-white hover:text-green-400 transition-colors">
-                                <UploadCloud className="w-5 h-5" />
-                            </button>
-                            <button onClick={() => navigate('EditCigar', { cigarId: cigar.id })} className="p-2 text-white hover:text-amber-400 transition-colors">
-                                <Edit className="w-5 h-5" />
-                            </button>
-                        </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-x-4 gap-y-3">
@@ -4581,8 +4633,7 @@ const ExportModal = ({ data, dataType, onClose }) => {
                     <button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button>
                 </div>
                 <div className="space-y-4">
-                    <p className="text-sm text-gray-400">Choose a format to download your {dataType} collection.</p>
-                    <button onClick={exportToCsv} className="w-full flex items-center justify-center gap-2 bg-green-600/80 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-colors">Export as CSV</button>
+                    <p className="text-sm text-gray-400">{dataType === 'cigar' && data.length === 1 ? "Choose a format to export this cigar." : `Choose a format to export your ${dataType} collection.`}</p>                    <button onClick={exportToCsv} className="w-full flex items-center justify-center gap-2 bg-green-600/80 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-colors">Export as CSV</button>
                     <button onClick={exportToJson} className="w-full flex items-center justify-center gap-2 bg-blue-600/80 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors">Export as JSON</button>
                 </div>
             </div>
