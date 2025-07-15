@@ -30,8 +30,7 @@ import FirebaseAuthUI from './FirebaseAuthUI';// FirebaseUI component for handli
 import React, { useState, useEffect, useMemo, useRef } from 'react'; // Import useRef for flashing effect
 
 // lucide-react provides a set of clean, modern icons used throughout the app.
-import { ArrowUp, ArrowDown, MoreVertical, CheckSquare, AlertTriangle, BarChart2, Bell, Box, Calendar as CalendarIcon, Check, ChevronDown, ChevronLeft, Cigarette, Database, DollarSign, Download, Droplets, Edit, FileText, Filter, Info, LayoutGrid, Leaf, List, ListFilter, LoaderCircle, LogOut, MapPin, Minus, Move, Palette, PieChart as PieChartIcon, Plus, Search, Settings as SettingsIcon, Sparkles, Star, Tag, Thermometer, Trash2, Upload, UploadCloud, User, Wind, X, Zap, PencilRuler, FileUp, Trash } from 'lucide-react';
-
+import { ArrowUp, ArrowDown, MoreVertical, CheckSquare, AlertTriangle, BarChart2, Bell, Box, Calendar as CalendarIcon, Check, ChevronDown, ChevronLeft, Cigarette, Database, DollarSign, Download, Droplets, Edit, FileText, Filter, Info, LayoutGrid, Leaf, List, ListFilter, LoaderCircle, LogOut, MapPin, Minus, Move, Palette, PieChart as PieChartIcon, Plus, Search, Settings as SettingsIcon, Sparkles, Star, Tag, Thermometer, Trash2, Upload, UploadCloud, User, Wind, X, Zap, PencilRuler, FileUp, Trash, ClipboardPenLine, FileDown } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import Papa from 'papaparse'; // Import papaparse for CSV parsing and exporting.
 // Import Firebase libraries for database and authentication
@@ -280,13 +279,13 @@ const HumidorActionMenu = ({ onEdit, onTakeReading, onExport, onDelete, onImport
             </button>
             {isOpen && (
                 <div className="absolute top-full right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-30 overflow-hidden">
-                    <MenuItem icon={Edit} text="Edit this Humidor" onClick={onEdit} className="text-gray-200" />
-                    <MenuItem icon={FileText} text="Take Manual Reading" onClick={onTakeReading} className="text-gray-200" />
+                    <MenuItem icon={PencilRuler} text="Edit this Humidor" onClick={onEdit} className="text-gray-200" />
+                    <MenuItem icon={ClipboardPenLine} text="Take Manual Reading" onClick={onTakeReading} className="text-gray-200" />
                     <div className="border-t border-gray-700 my-1"></div>
-                    <MenuItem icon={UploadCloud} text="Import Cigars from CSV" onClick={onImport} className="text-gray-200" />
-                    <MenuItem icon={Download} text="Export Cigars to CSV" onClick={onExport} className="text-gray-200" />
+                    <MenuItem icon={FileDown} text="Import Cigars from CSV" onClick={onImport} className="text-gray-200" />
+                    <MenuItem icon={FileUp} text="Export Cigars to CSV" onClick={onExport} className="text-gray-200" />
                     <div className="border-t border-gray-700 my-1"></div>
-                    <MenuItem icon={Trash2} text="Delete this Humidor" onClick={onDelete} className="text-red-400 hover:bg-red-900/50" />
+                    <MenuItem icon={Trash} text="Delete this Humidor" onClick={onDelete} className="text-red-400 hover:bg-red-900/50" />
                 </div>
             )}
         </div>
@@ -3858,7 +3857,7 @@ const FontsScreen = ({ navigate, selectedFont, setSelectedFont, theme }) => {
 
 const SettingsScreen = ({ navigate, theme, setTheme, dashboardPanelVisibility, setDashboardPanelVisibility, selectedFont, setSelectedFont }) => {
     const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
-
+    const appVersion = process.env.REACT_APP_VERSION || '1.1.0-dev';
     const SettingItem = ({ icon: Icon, title, subtitle, onClick }) => (
         <button onClick={onClick} className="w-full flex items-center gap-4 p-4 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-colors text-left">
             <div className="p-2 bg-gray-700 rounded-full"><Icon className={`w-6 h-6 ${theme.primary}`} /></div>
@@ -3882,7 +3881,7 @@ const SettingsScreen = ({ navigate, theme, setTheme, dashboardPanelVisibility, s
                 <SettingItem icon={BarChart2} title="Deeper Statistics & Insights" subtitle="Explore advanced stats about your collection" onClick={() => navigate('DeeperStatistics')} />
                 <SettingItem icon={Palette} title="Theme" subtitle={`Current: ${theme.name}`} onClick={() => setIsThemeModalOpen(true)} />
                 <SettingItem icon={Info} title="Fonts" subtitle="Choose your preferred font combination" onClick={() => navigate('Fonts')} disabled={true} />
-                <SettingItem icon={Info} title="About Humidor Hub" subtitle="Version 1.1.0" onClick={() => navigate('About')} />
+                <SettingItem icon={Info} title="About Humidor Hub" subtitle={`Version ${appVersion}`} onClick={() => navigate('About')} />
             </div>
         </div>
     );
@@ -4250,6 +4249,9 @@ const AboutScreen = ({ navigate }) => {
     const privacyPolicyText = "Your data is stored securely in your private Firestore database and is not shared. We respect your privacy.\n\nEffective Date: July 4, 2025";
     const termsOfServiceText = "By using Humidor Hub, you agree to track your cigars responsibly. This app is for informational purposes only. Enjoy your collection!\n\nLast Updated: July 4, 2025";
 
+    // Read the version from environment variables, with a fallback for development
+    const appVersion = process.env.REACT_APP_VERSION || '1.1.0-dev';
+
     const showModal = (type) => {
         setModalContent({ title: type === 'privacy' ? 'Privacy Policy' : 'Terms of Service', text: type === 'privacy' ? privacyPolicyText : termsOfServiceText });
         setIsModalOpen(true);
@@ -4273,7 +4275,7 @@ const AboutScreen = ({ navigate }) => {
                 <div className="flex flex-col items-center">
                     <Box className="w-16 h-16 text-amber-400 mb-4" />
                     <h2 className="text-2xl font-bold text-white">Humidor Hub</h2>
-                    <p className="text-gray-400">Version 1.1.0</p>
+                    <p className="text-gray-400">Version {appVersion}</p>
                 </div>
                 <p className="text-gray-300 text-center">Your personal assistant for managing and enjoying your cigar collection.</p>
                 <div className="border-t border-gray-700 pt-4 space-y-2 text-center">
