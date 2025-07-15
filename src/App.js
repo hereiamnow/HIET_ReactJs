@@ -30,7 +30,7 @@ import FirebaseAuthUI from './FirebaseAuthUI';// FirebaseUI component for handli
 import React, { useState, useEffect, useMemo, useRef } from 'react'; // Import useRef for flashing effect
 
 // lucide-react provides a set of clean, modern icons used throughout the app.
-import { ArrowUp, ArrowDown, MoreVertical, CheckSquare, AlertTriangle, BarChart2, Bell, Box, Calendar as CalendarIcon, Check, ChevronDown, ChevronLeft, Cigarette, Database, DollarSign, Download, Droplets, Edit, FileText, Filter, Info, LayoutGrid, Leaf, List, ListFilter, LoaderCircle, LogOut, MapPin, Minus, Move, Palette, PieChart as PieChartIcon, Plus, Search, Settings as SettingsIcon, Sparkles, Star, Tag, Thermometer, Trash2, Upload, UploadCloud, User, Wind, X, Zap, PencilRuler, FileUp, Trash, ClipboardPenLine, FileDown } from 'lucide-react';
+import { ArrowUp, ArrowDown, MoreVertical, CheckSquare, AlertTriangle, BarChart2, Bell, Box, Calendar as CalendarIcon, Check, ChevronDown, ChevronLeft, Cigarette, Database, DollarSign, Download, Droplets, Edit, FileText, Filter, Info, LayoutGrid, Leaf, List, ListFilter, LoaderCircle, LogOut, MapPin, Minus, Move, Palette, PieChart as PieChartIcon, Plus, Search, Settings as SettingsIcon, Sparkles, Star, Tag, Thermometer, Trash2, Upload, UploadCloud, User, Wind, X, Zap, PencilRuler, FileUp, Trash, ClipboardPenLine, FileDown, Github, Bug } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import Papa from 'papaparse'; // Import papaparse for CSV parsing and exporting.
 // Import Firebase libraries for database and authentication
@@ -4257,6 +4257,13 @@ const AboutScreen = ({ navigate }) => {
         setIsModalOpen(true);
     };
 
+    const LinkItem = ({ icon: Icon, text, href }) => (
+        <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-amber-400 hover:underline text-sm">
+            <Icon className="w-4 h-4" />
+            <span>{text}</span>
+        </a>
+    );
+
     return (
         <div className="p-4 pb-24">
             {isModalOpen && (
@@ -4271,18 +4278,34 @@ const AboutScreen = ({ navigate }) => {
                 <button onClick={() => navigate('Settings')} className="p-2 -ml-2 mr-2"><ChevronLeft className="w-7 h-7 text-white" /></button>
                 <h1 className="text-3xl font-bold text-white">About Humidor Hub</h1>
             </div>
-            <div className="space-y-6 bg-gray-800/50 p-6 rounded-xl">
-                <div className="flex flex-col items-center">
-                    <Box className="w-16 h-16 text-amber-400 mb-4" />
-                    <h2 className="text-2xl font-bold text-white">Humidor Hub</h2>
-                    <p className="text-gray-400">Version {appVersion}</p>
+            <div className="space-y-6">
+                <div className="bg-gray-800/50 p-6 rounded-xl text-center">
+                    <div className="flex flex-col items-center">
+                        <Box className="w-16 h-16 text-amber-400 mb-4" />
+                        <h2 className="text-2xl font-bold text-white">Humidor Hub</h2>
+                        <p className="text-gray-400">Version {appVersion}</p>
+                    </div>
+                    <p className="text-gray-300 text-center mt-4">Your personal assistant for managing and enjoying your cigar collection.</p>
+                    <div className="border-t border-gray-700 pt-4 mt-4 space-y-2">
+                        <p className="text-sm text-gray-400">Developed with passion by Shawn Miller.</p>
+                        <div className="flex justify-center gap-4">
+                            <button onClick={() => showModal('privacy')} className="text-amber-400 hover:underline text-sm">Privacy Policy</button>
+                            <button onClick={() => showModal('terms')} className="text-amber-400 hover:underline text-sm">Terms of Service</button>
+                        </div>
+                    </div>
                 </div>
-                <p className="text-gray-300 text-center">Your personal assistant for managing and enjoying your cigar collection.</p>
-                <div className="border-t border-gray-700 pt-4 space-y-2 text-center">
-                    <p className="text-sm text-gray-400">Developed with passion for aficionados.</p>
-                    <div className="flex justify-center gap-4">
-                        <button onClick={() => showModal('privacy')} className="text-amber-400 hover:underline text-sm">Privacy Policy</button>
-                        <button onClick={() => showModal('terms')} className="text-amber-400 hover:underline text-sm">Terms of Service</button>
+
+                <div className="bg-gray-800/50 p-6 rounded-xl">
+                    <h3 className="font-bold text-amber-300 text-lg mb-4">Acknowledgements & Links</h3>
+                    <div className="space-y-3">
+                        <p className="text-sm text-gray-400">This app is built with amazing open-source technology.</p>
+                        <div className="flex flex-col items-start gap-3 pt-2">
+                            <LinkItem icon={Github} text="View Source on GitHub" href="https://github.com/hereiamnow/HIET_ReactJs" />
+                            <LinkItem icon={Bug} text="Report an Issue" href="mailto:hereiamnow@gmail.com?subject=Humidor Hub Feedback" />
+                        </div>
+                        <div className="border-t border-gray-700 pt-3 mt-3">
+                            <p className="text-xs text-gray-500">Powered by React, Firebase, Lucide Icons, and the Google Gemini API.</p>
+                        </div>
                     </div>
                 </div>
             </div>
