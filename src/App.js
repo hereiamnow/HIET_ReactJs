@@ -42,6 +42,16 @@ import { themes } from './constants/themes';
 import { roxysTips } from './constants/roxysTips';
 import { fontOptions } from './constants/fontOptions';
 import { strengthOptions, allFlavorNotes, commonCigarDimensions, cigarShapes, cigarLengths, cigarRingGauges, cigarWrapperColors, cigarBinderTypes, cigarFillerTypes, cigarCountryOfOrigin } from './constants/cigarOptions';
+import QuantityControl from './components/UI/QuantityControl';
+import GridCigarCard from './components/Cigar/GridCigarCard';
+import ListCigarCard from './components/Cigar/ListCigarCard';
+import InputField from './components/UI/InputField';
+import TextAreaField from './components/UI/TextAreaField';
+import AutoCompleteInputField from './components/UI/AutoCompleteInputField';
+import ChartCard from './components/UI/ChartCard';
+import { getRatingColor } from './components/utils/getRatingColor';
+import { calculateAge } from './components/utils/calculateAge';
+import  ProfileScreen  from './components/Settings/ProfileScreen';
 
 const initialAuthToken = typeof window !== "undefined" && window.initialAuthToken ? window.initialAuthToken : null;
 
@@ -118,12 +128,12 @@ const generateAiImage = async (itemName, itemCategory, itemType) => {
         } else {
             // This case handles a successful API call that doesn't return the expected image data.
             console.error("AI image generation failed:", result);
-            return `https://placehold.co/600x400/ef4444/ffffff?text=Generation+Failed`;
+            return `https://placehold.co/600x400/ef4444/ffffff?font=playfair-display&text=Generation+Failed`;
         }
     } catch (error) {
         // This catches network errors or the error thrown above.
         console.error("Error calling Gemini API:", error);
-        return `https://placehold.co/600x400/ef4444/ffffff?text=Error`;
+        return `https://placehold.co/600x400/ef4444/ffffff?font=playfair-display&text=Error`;
     }
 };
 
@@ -423,19 +433,6 @@ const getFlavorTagColor = (note) => {
 };
 
 /**
- * A helper function to determine the color of the rating badge based on the score.
- */
-const getRatingColor = (rating) => {
-    if (rating >= 95) return 'bg-blue-500/80 border-blue-400';
-    if (rating >= 90) return 'bg-green-500/80 border-green-400';
-    if (rating >= 85) return 'bg-yellow-500/80 border-yellow-400';
-    if (rating >= 80) return 'bg-orange-500/80 border-orange-400';
-    if (rating >= 75) return 'bg-red-500/80 border-red-400';
-    if (rating >= 70) return 'bg-purple-500/80 border-purple-400';
-    return 'bg-gray-600/80 border-gray-500';
-};
-
-/**
  * A helper function to parse the numerical capacity from a humidor's size string.
  * e.g., "150-count" -> 150
  */
@@ -458,36 +455,6 @@ const formatDate = (isoString) => {
         day: 'numeric',
         timeZone: 'UTC'
     });
-};
-
-/**
- * Calculates the age of a cigar based on its added date.
- * Returns a human-readable string like "1 Year, 2 Months".
- */
-const calculateAge = (isoString) => {
-    if (!isoString) return 'N/A';
-    const startDate = new Date(isoString);
-    const now = new Date();
-
-    let years = now.getFullYear() - startDate.getFullYear();
-    let months = now.getMonth() - startDate.getMonth();
-
-    if (months < 0 || (months === 0 && now.getDate() < startDate.getDate())) {
-        years--;
-        months = (months + 12) % 12;
-    }
-
-    if (years > 0) {
-        return `${years} Year${years > 1 ? 's' : ''}${months > 0 ? `, ${months} Month${months > 1 ? 's' : ''}` : ''}`;
-    }
-    if (months > 0) {
-        return `${months} Month${months > 1 ? 's' : ''}`;
-    }
-
-    // Calculate days if less than a month
-    const diffTime = Math.abs(now - startDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return `${diffDays} Day${diffDays !== 1 ? 's' : ''}`;
 };
 
 /**
@@ -1086,22 +1053,6 @@ const SmartImageModal = ({ itemName, currentImage, currentPosition, onImageAccep
 };
 
 /**
- * A reusable component for adjusting quantity.
- */
-const QuantityControl = ({ quantity, onChange, theme }) => (
-    <div className="flex items-center gap-4">
-        <button type="button" onClick={() => onChange(quantity - 1)} className={`${theme.button} text-white rounded-full w-12 h-12 flex items-center justify-center text-2xl active:bg-gray-500 disabled:opacity-50`} disabled={quantity <= 0}>
-            <Minus className="w-6 h-6" />
-        </button>
-        {/* Increased font size for the quantity display */}
-        <span className={`text-5xl ${quantity === 0 ? 'text-red-500' : theme.text} font-bold w-16 text-center`}>{quantity}</span>
-        <button type="button" onClick={() => onChange(quantity + 1)} className={`${theme.button} text-white rounded-full w-12 h-12 flex items-center justify-center text-2xl active:bg-gray-500`}>
-            <Plus className="w-6 h-6" />
-        </button>
-    </div>
-);
-
-/**
  * Asynchronous function to make a POST request to the Gemini API.
  * @param {string} prompt - The text prompt to send to the Gemini API.
  * @param {object|null} responseSchema - An optional schema to tell the API to return a structured JSON object.
@@ -1193,7 +1144,6 @@ async function callGeminiAPI(prompt, responseSchema = null) {
     }
 }
 
-
 /**
  * Simulates fetching a list of Govee devices.
  */
@@ -1213,236 +1163,6 @@ async function fetchGoveeDevices(apiKey) {
         }, 1500);
     });
 }
-
-const GridCigarCard = ({ cigar, navigate, isSelectMode, isSelected, onSelect }) => {
-    const ratingColor = getRatingColor(cigar.rating);
-    const clickHandler = isSelectMode ? () => onSelect(cigar.id) : () => navigate('CigarDetail', { cigarId: cigar.id });
-
-    return (
-        <div className="relative" onClick={clickHandler}>
-            <div className={`bg-gray-800/50 rounded-xl overflow-hidden group cursor-pointer transition-all duration-200 ${isSelected ? 'ring-2 ring-amber-400' : ''}`}>
-                <div className="relative">
-                    <img
-                        src={cigar.image || `https://placehold.co/400x600/5a3825/ffffff?text=${cigar.brand.replace(/\s/g, '+')}`}
-                        alt={`${cigar.brand} ${cigar.name}`}
-                        className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute top-2 left-2 bg-black/60 rounded-lg px-2 py-1 max-w-[70%]">
-                        <p className="text-gray-200 text-xs font-semibold uppercase truncate">
-                            {cigar.brand}
-                            {cigar.country ? ` - ${cigar.country}` : ''}
-                        </p>
-                        <h3 className="text-white font-bold text-sm truncate">{cigar.name}</h3>
-                    </div>
-                    {cigar.rating > 0 && (
-                        <div className={`absolute bottom-2 right-2 flex items-center justify-center rounded-full border-2 ${ratingColor} bg-black/70`} style={{ width: 44, height: 44, minWidth: 44, minHeight: 44 }}>
-                            <span className="text-sm font-bold text-white">{cigar.rating}</span>
-                        </div>
-                    )}
-                </div>
-                <div className="p-3 space-y-3">
-                    {/* Details */}
-                    <div className="text-xs space-y-2">
-                        <div id="pnlShapeSizeStrength" className="grid grid-cols-3 gap-x-2 mb-2 text-left">
-                            <div>
-                                <p className="text-gray-400">Shape</p>
-                                <p className="font-semibold text-gray-200 truncate" title={cigar.shape}>{cigar.shape || 'N/A'}</p>
-                            </div>
-                            <div>
-                                <p className="text-gray-400">Size</p>
-                                <p className="font-semibold text-gray-200 truncate" title={cigar.size}>{cigar.size || 'N/A'}</p>
-                            </div>
-                            <div>
-                                <p className="text-gray-400">Strength</p>
-                                <p className="font-semibold text-gray-200 truncate" title={cigar.strength}>{cigar.strength || 'N/A'}</p>
-                            </div>
-                        </div>
-
-                        <div id="pnlWrapperBinderFiller" className="grid grid-cols-3 gap-x-2 text-left">
-                            <div>
-                                <p className="text-gray-400">Wrapper</p>
-                                <p className="font-semibold text-gray-200 truncate" title={cigar.wrapper}>{cigar.wrapper || 'N/A'}</p>
-                            </div>
-                            <div>
-                                <p className="text-gray-400">Binder</p>
-                                <p className="font-semibold text-gray-200 truncate" title={cigar.binder}>{cigar.binder || 'N/A'}</p>
-                            </div>
-                            <div>
-                                <p className="text-gray-400">Filler</p>
-                                <p className="font-semibold text-gray-200 truncate" title={cigar.filler}>{cigar.filler || 'N/A'}</p>
-                            </div>
-                        </div>
-                        <div id="pnlShortDescription"> {cigar.shortDescription && <p className="text-gray-400 pt-1">{cigar.shortDescription}</p>}</div>
-
-                    </div>
-                    <div className="flex justify-between items-center pt-2 border-t border-gray-700/50">
-                        <p className="text-gray-400 text-xs">Time in Humidor: <span className="font-semibold text-gray-200">{calculateAge(cigar.dateAdded)}</span></p>
-                        <span id="cigar-quantity" className="text-lg font-bold bg-gray-700 text-white px-3 py-1 rounded-full">{cigar.quantity}</span>
-                    </div>
-                </div>
-            </div>
-            {isSelectMode && (
-                <div className={`absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center border-2 ${isSelected ? 'bg-amber-500 border-white' : 'bg-gray-900/50 border-gray-400'}`}>
-                    {isSelected && <Check className="w-4 h-4 text-white" />}
-                </div>
-            )}
-        </div>
-    );
-};
-
-const ListCigarCard = ({ cigar, navigate, isSelectMode, isSelected, onSelect }) => {
-    const ratingColor = getRatingColor(cigar.rating);
-    const clickHandler = isSelectMode ? () => onSelect(cigar.id) : () => navigate('CigarDetail', { cigarId: cigar.id });
-
-    return (
-        <div className="relative" onClick={clickHandler}>
-            <div className={`bg-gray-800/50 rounded-xl overflow-hidden group cursor-pointer flex transition-all duration-200 ${isSelected ? 'ring-2 ring-amber-400' : ''}`}>
-                <div className="relative flex-shrink-0">
-                    <img src={cigar.image || `https://placehold.co/400x600/5a3825/ffffff?text=${cigar.brand.replace(/\s/g, '+')}`} alt={`${cigar.brand} ${cigar.name}`} className="w-28 h-full object-cover" />
-                </div>
-                <div className="p-3 flex-grow flex flex-col justify-between">
-                    <div>
-                        <p className="text-gray-400 text-xs font-semibold uppercase">{cigar.brand}</p>
-                        <h3 className="text-white font-bold text-base truncate">{cigar.name}</h3>
-                    </div>
-                    <div className="text-xs mt-2 space-y-1">
-                        <p className="text-gray-400">Origin: <span className="font-semibold text-gray-200">{cigar.country}</span></p>
-                        <p className="text-gray-400 truncate">Flavors: <span className="font-semibold text-gray-200">{cigar.flavorNotes.join(', ')}</span></p>
-                        {cigar.rating > 0 && <div className="flex items-center gap-2">
-                            <p className="text-gray-400">Rating:</p>
-                            <div className={`text-xs font-bold text-white px-2 py-0.5 rounded-full border ${ratingColor}`}>{cigar.rating}</div>
-                        </div>}
-                    </div>
-                    <div className="flex justify-between items-end mt-2">
-                        <p className="text-gray-400 text-xs">Strength: <span className="font-semibold text-gray-200">{cigar.strength}</span></p>
-                        <span className="text-lg font-bold bg-gray-700 text-white px-3 py-1 rounded-full">{cigar.quantity}</span>
-                    </div>
-                </div>
-            </div>
-            {isSelectMode && (
-                <div className={`absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center border-2 ${isSelected ? 'bg-amber-500 border-white' : 'bg-gray-900/50 border-gray-400'}`}>
-                    {isSelected && <Check className="w-4 h-4 text-white" />}
-                </div>
-            )}
-        </div>
-    );
-};
-
-const InputField = ({ name, label, placeholder, type = 'text', value, onChange, onBlur, theme, className = '', inputRef }) => (
-    <div>
-        <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>{label}</label>
-        <input
-            type={type}
-            name={name}
-            placeholder={placeholder}
-            value={value || ''}
-            onChange={onChange}
-            onBlur={onBlur}
-            ref={inputRef} // Apply ref here
-            className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} placeholder-gray-500 focus:outline-none focus:ring-2 ${theme.ring} ${className}`}
-        />
-    </div>
-);
-
-const TextAreaField = ({ name, label, placeholder, value, onChange, theme, className = '' }) => (
-    <div>
-        <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>{label}</label>
-        <textarea
-            name={name}
-            placeholder={placeholder}
-            value={value || ''}
-            onChange={onChange}
-            rows="3"
-            className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} placeholder-gray-500 focus:outline-none focus:ring-2 ${theme.ring} ${className}`}
-        />
-    </div>
-);
-
-const AutoCompleteInputField = ({ name, label, placeholder, value, onChange, suggestions, theme, className = '', inputRef }) => {
-    const [filteredSuggestions, setFilteredSuggestions] = useState([]);
-    const [showSuggestions, setShowSuggestions] = useState(false);
-
-    const handleInputChange = (e) => {
-        const inputValue = e.target.value;
-        onChange(e); // Pass the event up to the parent form's handler
-
-        if (inputValue.length > 0) {
-            const filtered = suggestions.filter(
-                (suggestion) => suggestion.toLowerCase().includes(inputValue.toLowerCase())
-            );
-            setFilteredSuggestions(filtered);
-            setShowSuggestions(true);
-        } else {
-            setFilteredSuggestions([]);
-            setShowSuggestions(false);
-        }
-    };
-
-    const handleSuggestionClick = (suggestion) => {
-        // Create a synthetic event to pass to the parent's onChange handler
-        onChange({ target: { name, value: suggestion } });
-        setShowSuggestions(false);
-        setFilteredSuggestions([]);
-    };
-
-    const handleBlur = () => {
-        // Delay hiding suggestions to allow click events on suggestions to fire
-        setTimeout(() => setShowSuggestions(false), 100);
-    };
-
-    return (
-        <div className="relative">
-            <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>{label}</label>
-            <input
-                type="text"
-                name={name}
-                placeholder={placeholder}
-                value={value || ''}
-                onChange={handleInputChange}
-                onFocus={() => { // Show suggestions if input has value on focus
-                    if (value && value.length > 0) {
-                        const filtered = suggestions.filter(
-                            (suggestion) => suggestion.toLowerCase().includes(value.toLowerCase())
-                        );
-                        setFilteredSuggestions(filtered);
-                        setShowSuggestions(true);
-                    }
-                }}
-                onBlur={handleBlur}
-                ref={inputRef}
-                className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} placeholder-gray-500 focus:outline-none focus:ring-2 ${theme.ring} ${className}`}
-            />
-            {showSuggestions && filteredSuggestions.length > 0 && (
-                <div className={`absolute z-10 w-full ${theme.card} border ${theme.borderColor} rounded-lg mt-1 max-h-48 overflow-y-auto shadow-lg`}>
-                    {filteredSuggestions.map((suggestion, index) => (
-                        <div
-                            key={index}
-                            onMouseDown={(e) => { // Use onMouseDown to prevent blur from hiding suggestions before click
-                                e.preventDefault(); // Prevent input from losing focus immediately
-                                handleSuggestionClick(suggestion);
-                            }}
-                            className={`px-3 py-2 cursor-pointer ${theme.text} hover:${theme.button} `}
-                        >
-                            {suggestion}
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-};
-
-const ChartCard = ({ title, children, action }) => (
-    <div className="bg-gray-800/50 p-4 rounded-xl">
-        <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold text-amber-300 text-lg">{title}</h3>
-            {action}
-        </div>
-        <div className="h-64">
-            {children}
-        </div>
-    </div>
-);
 
 const BrowseByWrapperPanel = ({ cigars, navigate, theme, isCollapsed, onToggle }) => {
     // Calculate unique wrapper types and their counts
@@ -2190,7 +1910,7 @@ const AddHumidor = ({ navigate, db, appId, userId, theme }) => {
         try {
             const newHumidorData = {
                 ...formData,
-                image: formData.image || `https://placehold.co/600x400/3a2d27/ffffff?text=${formData.name.replace(/\s/g, '+') || 'New+Humidor'}`,
+                image: formData.image || `https://placehold.co/600x400/3a2d27/ffffff?font=playfair-display&text=${formData.name.replace(/\s/g, '+') || 'New+Humidor'}`,
                 goveeDeviceId: null,
                 goveeDeviceModel: null,
                 humidity: trackEnvironment ? Number(formData.humidity) : 70,
@@ -2224,7 +1944,7 @@ const AddHumidor = ({ navigate, db, appId, userId, theme }) => {
                     itemCategory="humidor"
                     itemType={formData.type}
                     theme={theme}
-                    currentImage={formData.image || `https://placehold.co/400x600/5a3825/ffffff?text=${formData.name.replace(/\s/g, '+') || 'Humidor+Image'}`}
+                    currentImage={formData.image || `https://placehold.co/400x600/5a3825/ffffff?font=playfair-display&text=${formData.name.replace(/\s/g, '+') || 'Humidor'}`}
                     currentPosition={formData.imagePosition || { x: 50, y: 50 }}
                     onImageAccept={(img, pos) => setFormData(prev => ({
                         ...prev,
@@ -2322,7 +2042,7 @@ const EditHumidor = ({ navigate, db, appId, userId, humidor, goveeApiKey, goveeD
             ...dataToSave,
             goveeDeviceId: formData.trackingMethod === 'manual' ? null : formData.goveeDeviceId,
             goveeDeviceModel: formData.trackingMethod === 'manual' ? null : formData.goveeDeviceModel,
-            image: formData.image || `https://placehold.co/600x400/3a2d27/ffffff?text=${formData.name.replace(/\s/g, '+') || 'Humidor'}`,
+            image: formData.image || `https://placehold.co/600x400/3a2d27/ffffff?font=playfair-display&text=${formData.name.replace(/\s/g, '+') || 'Humidor'}`,
         };
         await updateDoc(humidorRef, updatedHumidor);
         navigate('MyHumidor', { humidorId: humidor.id });
@@ -2706,7 +2426,7 @@ If you cannot determine a value, use "" or [] or 0. Only return the JSON object.
 
             <div className="relative">
                 {/* ...main MyHumidor content... */}
-                <img src={humidor.image || `https://placehold.co/600x400/3a2d27/ffffff?text=${humidor.name.replace(/\s/g, '+')}`} alt={humidor.name} className="w-full h-64 object-cover" />
+                <img src={humidor.image || `https://placehold.co/600x400/3a2d27/ffffff?font=playfair-display&text=${humidor.name.replace(/\s/g, '+')}`} alt={humidor.name} className="w-full h-64 object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
                 <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
                     <button onClick={() => navigate('HumidorsScreen')} className="p-2 bg-black/50 rounded-full">
@@ -2965,7 +2685,7 @@ Provide a brief, encouraging, and slightly personalized note about this cigar's 
             {isExportModalOpen && <ExportModal data={[cigar]} dataType="cigar" onClose={() => setIsExportModalOpen(false)} />}
 
             <div className="relative">
-                <img src={cigar.image || `https://placehold.co/400x600/5a3825/ffffff?text=${cigar.brand.replace(/\s/g, '+')}`} alt={cigar.name} className="w-full h-64 object-cover" />
+                <img src={cigar.image || `https://placehold.co/400x600/5a3825/ffffff?font=playfair-display&text=${cigar.brand.replace(/\s/g, '+')}`} alt={cigar.name} className="w-full h-64 object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
 
 
@@ -3260,7 +2980,7 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                 <SmartImageModal
                     itemName={formData.name}
                     theme={theme}
-                    currentImage={formData.image || `https://placehold.co/400x600/5a3825/ffffff?text=${formData.name.replace(/\s/g, '+') || 'Cigar+Image'}`}
+                    currentImage={formData.image || `https://placehold.co/400x600/5a3825/ffffff?font=playfair-display&text=${formData.name.replace(/\s/g, '+') || 'Cigar+Image'}`}
                     currentPosition={formData.imagePosition || { x: 50, y: 50 }}
                     onImageAccept={(img, pos) => setFormData(prev => ({
                         ...prev,
@@ -3617,7 +3337,7 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                 <SmartImageModal
                     itemName={formData.name}
                     theme={theme}
-                    currentImage={formData.image || `https://placehold.co/400x600/5a3825/ffffff?text=${formData.name.replace(/\s/g, '+') || 'Cigar+Image'}`}
+                    currentImage={formData.image || `https://placehold.co/400x600/5a3825/ffffff?font=playfair-display&text=${formData.name.replace(/\s/g, '+') || 'Cigar+Image'}`}
                     currentPosition={formData.imagePosition || { x: 50, y: 50 }}
                     onImageAccept={(img, pos) => setFormData(prev => ({
                         ...prev,
@@ -4415,153 +4135,6 @@ const AboutScreen = ({ navigate }) => {
                         <button onClick={() => showModal('terms')} className="text-amber-400 hover:underline text-sm">Terms of Service</button>
                     </div>
                 </div>
-            </div>
-        </div>
-    );
-};
-
-const ProfileScreen = ({ navigate, cigars, humidors, theme, userId, auth }) => {
-    const totalCigars = cigars.reduce((sum, c) => sum + c.quantity, 0);
-    const totalValue = cigars.reduce((acc, cigar) => acc + ((cigar.price || 0) * cigar.quantity), 0);
-    const uniqueCountries = useMemo(() => [...new Set(cigars.map(c => c.country).filter(Boolean))], [cigars]);
-    const [isAchievementsCollapsed, setIsAchievementsCollapsed] = useState(true);
-
-    // --- MOCK SUBSCRIPTION DATA ---
-    const subscription = {
-        plan: 'Premium',
-        status: 'Active',
-        renewsOn: 'August 14, 2025',
-        aiLookupsUsed: 27,
-        aiLookupsLimit: 100,
-    };
-    // --- END OF MOCK DATA ---
-
-    const achievementsList = useMemo(() => [
-        { id: 'collector_bronze', name: 'Bronze Collector', description: 'Collect 10+ cigars', icon: Box, check: (stats) => stats.totalCigars >= 10 },
-        { id: 'collector_silver', name: 'Silver Collector', description: 'Collect 50+ cigars', icon: Box, check: (stats) => stats.totalCigars >= 50 },
-        { id: 'collector_gold', name: 'Gold Collector', description: 'Collect 100+ cigars', icon: Box, check: (stats) => stats.totalCigars >= 100 },
-        { id: 'globetrotter_bronze', name: 'Globetrotter', description: 'Cigars from 3+ countries', icon: MapPin, check: (stats) => stats.uniqueCountries.length >= 3 },
-        { id: 'globetrotter_silver', name: 'World Traveler', description: 'Cigars from 5+ countries', icon: MapPin, check: (stats) => stats.uniqueCountries.length >= 5 },
-        { id: 'humidor_enthusiast', name: 'Humidor Enthusiast', description: 'Own 2+ humidors', icon: Database, check: (stats) => stats.humidors.length >= 2 },
-        { id: 'aficionado', name: 'Aficionado', description: 'Rate 10+ cigars', icon: Star, check: (stats) => stats.cigars.filter(c => c.userRating > 0).length >= 10 },
-        { id: 'high_roller', name: 'High Roller', description: 'Collection value over $500', icon: DollarSign, check: (stats) => stats.totalValue > 500 },
-    ], []);
-
-    const earnedAchievements = useMemo(() => {
-        const stats = { totalCigars, totalValue, uniqueCountries, humidors, cigars };
-        return achievementsList.map(ach => ({ ...ach, earned: ach.check(stats) }));
-    }, [cigars, humidors, totalCigars, totalValue, uniqueCountries, achievementsList]);
-
-    const user = auth?.currentUser;
-    const displayName = user?.displayName || "Cigar Aficionado";
-    const email = user?.email || "Anonymous";
-    const photoURL = user?.photoURL || "https://placehold.co/100x100/3a2d27/ffffff?text=User";
-    const memberSince = user?.metadata?.creationTime
-        ? new Date(user.metadata.creationTime).getFullYear()
-        : "2024";
-
-    const handleLogout = async () => {
-        if (auth) {
-            await auth.signOut();
-            window.location.reload();
-        }
-    };
-
-    const BadgeIcon = ({ achievement }) => (
-        <div className="flex flex-col items-center group relative">
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${achievement.earned ? 'bg-amber-500/20 border-amber-400' : 'bg-gray-700/50 border-gray-600 opacity-60'}`}>
-                <achievement.icon className={`w-8 h-8 ${achievement.earned ? 'text-amber-400' : 'text-gray-400'}`} />
-            </div>
-            <p className={`mt-2 text-xs text-center font-semibold ${achievement.earned ? 'text-white' : 'text-gray-500'}`}>{achievement.name}</p>
-            <div className="absolute bottom-full mb-2 w-48 p-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                {achievement.description}
-                {!achievement.earned && <span className="block text-gray-400">(Not earned yet)</span>}
-            </div>
-        </div>
-    );
-
-    const DollarSignIcon = (props) => (
-        <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
-    );
-
-    return (
-        <div className="p-4 pb-24">
-            <div id="pnlProfileHeader" className="flex items-center mb-6">
-                <button onClick={() => navigate('Settings')} className="p-2 -ml-2 mr-2"><ChevronLeft className="w-7 h-7 text-white" /></button>
-                <h1 className="text-3xl font-bold text-white">Profile</h1>
-            </div>
-            <div className="space-y-6">
-                {/* --- Profile Info Panel --- */}
-                <div id="pnlProfileInfo" className="flex flex-col items-center p-6 bg-gray-800/50 rounded-xl">
-                    <img src={photoURL} alt="User Avatar" className="w-24 h-24 rounded-full border-4 border-amber-400" />
-                    <h2 className="text-2xl font-bold text-white mt-4">{displayName}</h2>
-                    <p className="text-gray-400">{email}</p>
-                </div>
-                {/* --- Achievements Panel --- */}
-                <div id="pnlAchievements" className="bg-gray-800/50 rounded-xl overflow-hidden">
-                    <button
-                        onClick={() => setIsAchievementsCollapsed(!isAchievementsCollapsed)}
-                        className="w-full p-4 flex justify-between items-center"
-                    >
-                        <h3 className="font-bold text-amber-300 text-lg flex items-center">
-                            <Star className="w-5 h-5 mr-2" /> Achievements
-                        </h3>
-                        <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isAchievementsCollapsed ? '' : 'rotate-180'}`} />
-                    </button>
-                    {!isAchievementsCollapsed && (
-                        <div className="px-4 pb-4">
-                            <div className="grid grid-cols-4 gap-4">
-                                {earnedAchievements.map(ach => (
-                                    <BadgeIcon key={ach.id} achievement={ach} />
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-                {/* --- Subscription Panel --- */}
-                <div id="pnlSubscription" className="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 p-4 rounded-xl border border-amber-400/50 shadow-lg">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-bold text-amber-200 text-lg flex items-center">
-                            <Zap className="w-5 h-5 mr-2" /> Subscription
-                        </h3>
-                        <span className="px-3 py-1 text-xs font-bold text-black bg-amber-400 rounded-full uppercase">{subscription.plan}</span>
-                    </div>
-                    <div className="space-y-3 text-sm">
-                        <div className="flex justify-between">
-                            <span className="text-gray-300">Status:</span>
-                            <span className="font-semibold text-green-400">{subscription.status}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-300">Renews on:</span>
-                            <span className="font-semibold text-white">{subscription.renewsOn}</span>
-                        </div>
-                        <div>
-                            <div className="flex justify-between mb-1">
-                                <span className="text-gray-300">AI Lookups this month:</span>
-                                <span className="font-semibold text-white">{subscription.aiLookupsUsed} / {subscription.aiLookupsLimit}</span>
-                            </div>
-                            <div className="w-full bg-gray-700 rounded-full h-2">
-                                <div className="bg-amber-500 h-2 rounded-full" style={{ width: `${(subscription.aiLookupsUsed / subscription.aiLookupsLimit) * 100}%` }}></div>
-                            </div>
-                        </div>
-                    </div>
-                    {/* 
-                    for a direct link to your app’s subscription:
-                    https://play.google.com/store/account/subscriptions?sku=YOUR_SUBSCRIPTION_ID&package=YOUR_APP_PACKAGE 
-                    */}
-                    <button
-                        className="mt-4 w-full bg-amber-500 text-white font-bold py-2 rounded-lg hover:bg-amber-600 transition-colors"
-                        onClick={() => window.open('https://play.google.com/store/account/subscriptions', '_blank')}
-                    >
-                        Manage Subscription
-                    </button>
-                </div>
-                <button
-                    className="w-full flex items-center justify-center gap-2 bg-red-800/80 text-white font-bold py-3 rounded-lg hover:bg-red-700 transition-colors"
-                    onClick={handleLogout}
-                >
-                    <LogOut className="w-5 h-5" />Log Out
-                </button>
             </div>
         </div>
     );
