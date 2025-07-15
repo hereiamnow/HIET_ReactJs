@@ -388,8 +388,7 @@ const FilterSortModal = ({
     );
 };
 
-// (0709250) Used for Humidar Detail Refactor
-const HumidorActionMenu = ({ onEdit, onTakeReading, onExport, onDelete }) => {
+const HumidorActionMenu = ({ onEdit, onTakeReading, onExport, onDelete, onImport }) => {
     const [isOpen, setIsOpen] = useState(false);
     const menuRef = useRef(null);
 
@@ -425,6 +424,8 @@ const HumidorActionMenu = ({ onEdit, onTakeReading, onExport, onDelete }) => {
                 <div className="absolute top-full right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-30 overflow-hidden">
                     <MenuItem icon={Edit} text="Edit Humidor" onClick={onEdit} className="text-gray-200" />
                     <MenuItem icon={FileText} text="Take Manual Reading" onClick={onTakeReading} className="text-gray-200" />
+                    {/* --- New Import Cigars menu item --- */}
+                    <MenuItem icon={UploadCloud} text="Import Cigars" onClick={onImport} className="text-gray-200" />
                     <MenuItem icon={Download} text="Export Cigars" onClick={onExport} className="text-gray-200" />
                     <div className="border-t border-gray-700 my-1"></div>
                     <MenuItem icon={Trash2} text="Delete Humidor" onClick={onDelete} className="text-red-400 hover:bg-red-900/50" />
@@ -432,7 +433,7 @@ const HumidorActionMenu = ({ onEdit, onTakeReading, onExport, onDelete }) => {
             )}
         </div>
     );
-};
+}
 
 // ===================================================================================
 //  REUSABLE & CHILD COMPONENTS
@@ -2878,6 +2879,7 @@ If you cannot determine a value, use "" or [] or 0. Only return the JSON object.
                     <HumidorActionMenu
                         onEdit={() => navigate('EditHumidor', { humidorId: humidor.id })}
                         onTakeReading={() => setIsManualReadingModalOpen(true)}
+                        onImport={() => setIsExportModalOpen(false) || navigate('DataSync', { openImportModal: true, importHumidorId: humidor.id })}
                         onExport={() => setIsExportModalOpen(true)}
                         onDelete={() => setIsDeleteHumidorModalOpen(true)}
                     />
