@@ -1763,12 +1763,17 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
         const query = e.target.value;
         setSearchQuery(query);
         if (query.length > 1) {
-            const allSuggestions = cigars.map(c => c.brand).concat(cigars.map(c => c.name)).filter(name => name.toLowerCase().includes(query.toLowerCase()));
+            const allSuggestions = cigars.map(c => c.brand).concat(cigars.map(c => c.name)).filter(name => name && name.toLowerCase().includes(query.toLowerCase()));
             const uniqueSuggestions = [...new Set(allSuggestions)];
             setSuggestions(uniqueSuggestions.slice(0, 5));
         } else {
             setSuggestions([]);
         }
+    };
+
+    const handleClearSearch = () => {
+        setSearchQuery('');
+        setSuggestions([]);
     };
 
     const handleSuggestionClick = (suggestion) => {
@@ -1828,7 +1833,12 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
             <div className="relative mb-4">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input type="text" placeholder="Search all cigars..." value={searchQuery} onChange={handleSearchChange}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-full py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                    className="w-full bg-gray-800 border border-gray-700 rounded-full py-3 pl-12 pr-12 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                {searchQuery && (
+                    <button onClick={handleClearSearch} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
+                        <X className="w-5 h-5" />
+                    </button>
+                )}
                 {suggestions.length > 0 && (
                     <div className="absolute top-full left-0 right-0 bg-gray-700 border border-gray-600 rounded-b-xl mt-1 z-20 overflow-hidden">
                         {suggestions.map(suggestion => (
