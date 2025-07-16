@@ -1629,8 +1629,7 @@ const MyCollectionStatsCards = ({ totalCigars, totalValue, humidors, theme }) =>
     );
 };
 
-const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showStrengthPanel, showCountryPanel, showLiveEnvironment, showInventoryAnalysis, panelStates, setPanelStates }) => {
-    const [roxyTip, setRoxyTip] = useState('');
+const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showStrengthPanel, showCountryPanel, showLiveEnvironment, showInventoryAnalysis, panelStates, setPanelStates, dashboardPanelVisibility }) => {    const [roxyTip, setRoxyTip] = useState('');
     const [modalState, setModalState] = useState({ isOpen: false, content: '', isLoading: false });
     const [isBrowseByModeOpen, setIsBrowseByModeOpen] = useState(false);
     const [browseMode, setBrowseMode] = useState('');
@@ -1865,6 +1864,8 @@ const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showSt
                 {hasHumidors && showLiveEnvironment && <LiveEnvironmentPanel humidors={humidors} theme={theme} isCollapsed={panelStates.liveEnvironment} onToggle={() => handlePanelToggle('liveEnvironment')} />}
                 {/* Conditionally render InventoryAnalysisPanel if there are cigars and it's enabled in settings */}
                 {hasCigars && showInventoryAnalysis && <InventoryAnalysisPanel cigars={cigars} theme={theme} isCollapsed={panelStates.inventoryAnalysis} onToggle={() => handlePanelToggle('inventoryAnalysis')} />}
+                {/* Conditionally render the new InteractiveWorldMapPanel */}
+                {hasCigars && dashboardPanelVisibility.showWorldMap && <InteractiveWorldMapPanel cigars={cigars} navigate={navigate} theme={theme} isCollapsed={panelStates.worldMap} onToggle={() => handlePanelToggle('worldMap')} />}
                 {/* Conditionally render BrowseByWrapperPanel if there are cigars and it's enabled in settings */}
                 {hasCigars && showWrapperPanel && <BrowseByWrapperPanel cigars={cigars} navigate={navigate} theme={theme} isCollapsed={panelStates.wrapper} onToggle={() => handlePanelToggle('wrapper')} />}
                 {/* Conditionally render BrowseByStrengthPanel if there are cigars and it's enabled in settings */}
@@ -4016,7 +4017,13 @@ const DashboardSettingsScreen = ({ navigate, theme, dashboardPanelVisibility, se
                     label="Inventory Analysis"
                     isChecked={dashboardPanelVisibility.showInventoryAnalysis}
                     onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showInventoryAnalysis: !prev.showInventoryAnalysis }))}
-                />                <ToggleSwitch
+                />
+                <ToggleSwitch
+                    label="Interactive World Map"
+                    isChecked={dashboardPanelVisibility.showWorldMap}
+                    onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showWorldMap: !prev.showWorldMap }))}
+                />
+                <ToggleSwitch
                     label="Browse by Wrapper"
                     isChecked={dashboardPanelVisibility.showWrapperPanel}
                     onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showWrapperPanel: !prev.showWrapperPanel }))}
@@ -4036,43 +4043,61 @@ const DashboardSettingsScreen = ({ navigate, theme, dashboardPanelVisibility, se
     );
 };
 
-const FontsScreen = ({ navigate, selectedFont, setSelectedFont, theme }) => {
-    // Font Picker UI
-    const FontPicker = () => (
-        <div id="font-picker" className="mb-4">
-            <label className={`block text-sm font-bold mb-2 ${theme.text}`}>Font Style</label>
-            <select
-                value={selectedFont.label}
-                onChange={e => {
-                    const font = fontOptions.find(f => f.label === e.target.value);
+
+// Font Picker UI - Moved outside FontsScreen to prevent stale state issues
+const FontPicker = ({ selectedFont, setSelectedFont, theme }) => (
+    <div id="font-picker" className="mb-4">
+        <label className={`block text-sm font-bold mb-2 ${theme.text}`}>Font Style</label>
+        <select
+            value={selectedFont.label}
+            onChange={e => {
+                const font = fontOptions.find(f => f.label === e.target.value);
+                if (font) {
                     setSelectedFont(font);
+                }
+            }}
+            className={`w-full p-2 rounded border ${theme.inputBg} ${theme.text} ${theme.borderColor}`}
+        >
+            {fontOptions.map(font => (
+                <option key={font.label} value={font.label}>
+                    {font.label}
+                </option>
+            ))}
+        </select>
+        <div className="mt-4 p-4 border border-gray-700 rounded-lg bg-gray-900/50">
+            <h3
+                style={{
+                    fontFamily: selectedFont.heading,
+                    fontWeight: 700,
+                    fontSize: '1.25rem', // 20px
+                    color: theme.text === 'text-white' ? '#E5E7EB' : '#1F2937' // gray-200 or gray-800
                 }}
-                className={`w-full p-2 rounded border ${theme.inputBg} ${theme.text} ${theme.borderColor}`}
             >
-                {fontOptions.map(font => (
-                    <option key={font.label} value={font.label}>
-                        {font.label}
-                    </option>
-                ))}
-            </select>
-            <div className="mt-2">
-                <span
-                    style={{
-                        fontFamily: selectedFont.heading,
-                        fontWeight: 700,
-                        fontSize: 18,
-                        color: theme.text === 'text-white' ? '#fff' : undefined
-                    }}
-                >
-                    Heading Example
-                </span>
-                <br />
-                <span className={`text-xs ${theme.subtleText}`} style={{ fontFamily: selectedFont.body, color: theme.text === 'text-white' ? '#fff' : undefined }}>
-                    Body text example for preview.
-                </span>
-            </div>
+                Heading Example
+            </h3>
+            <p
+                className="text-base" // Use a standard body size for preview
+                style={{
+                    fontFamily: selectedFont.body,
+                    color: theme.text === 'text-white' ? '#D1D5DB' : '#374151' // gray-300 or gray-700
+                }}
+            >
+                This is an example of the body text. It will change as you select a different font combination from the dropdown menu above, giving you a live preview.
+            </p>
         </div>
-    );
+    </div>
+);
+
+
+const FontsScreen = ({ navigate, selectedFont, setSelectedFont, theme }) => {
+    // Local state for the font preview. Initialized with the currently active app font.
+    const [previewFont, setPreviewFont] = useState(selectedFont);
+
+    // Handler to save the selected preview font as the new app-wide font.
+    const handleSaveChanges = () => {
+        setSelectedFont(previewFont);
+        navigate('Settings'); // Go back to settings after saving.
+    };
 
     return (
         <div className="p-4 pb-24">
@@ -4083,11 +4108,27 @@ const FontsScreen = ({ navigate, selectedFont, setSelectedFont, theme }) => {
                 <h1 className="text-3xl font-bold text-white">Fonts</h1>
             </div>
             <div className="bg-gray-800/50 rounded-lg p-4">
-                <FontPicker />
+                {/* Pass the local preview state and its setter to the FontPicker */}
+                <FontPicker selectedFont={previewFont} setSelectedFont={setPreviewFont} theme={theme} />
             </div>
             <p className="mt-6 text-gray-400 text-sm">
                 Choose your preferred font combination for the app. This will change the look and feel of all text throughout Humidor Hub.
             </p>
+            {/* Save Changes Button */}
+            <div className="mt-6 flex gap-4">
+                <button
+                    onClick={handleSaveChanges}
+                    className={`w-full ${theme.primaryBg} ${theme.text === 'text-white' ? 'text-white' : 'text-black'} font-bold py-3 rounded-lg ${theme.hoverPrimaryBg} transition-colors`}
+                >
+                    Save Changes
+                </button>
+                <button
+                    onClick={() => navigate('Settings')}
+                    className={`w-full ${theme.button} ${theme.text} font-bold py-3 rounded-lg transition-colors`}
+                >
+                    Cancel
+                </button>
+            </div>
         </div>
     );
 };
@@ -4479,6 +4520,68 @@ const DeeperStatisticsScreen = ({ navigate, cigars, theme }) => {
         </div>
     );
 };
+
+const InteractiveWorldMapPanel = ({ cigars, navigate, theme, isCollapsed, onToggle }) => {
+    const countryCounts = useMemo(() => {
+        return cigars.reduce((acc, cigar) => {
+            const country = cigar.country || 'Unknown';
+            if (country !== 'Unknown') {
+                acc[country] = (acc[country] || 0) + cigar.quantity;
+            }
+            return acc;
+        }, {});
+    }, [cigars]);
+
+    const countries = [
+        { id: 'Cuba', name: 'Cuba', path: 'M211.8,175.5l-21.2-1.2l-11.2,4.2l-13.4,2.8l-12.3-0.6l-10.1,1.7l-12.3,5l-12.3,3.9l-10.1-0.6l-10.1,2.2l-9,2.2l-12.3-1.7l-11.2-5l-10.1-3.4l-10.1-1.7l-10.1,1.1l-9-1.1l-10.1-2.2l-10.1-2.2l-10.1-1.1l-10.1,0l-10.1,1.1l-10.1,2.2l-10.1,2.2l-10.1,1.1l-10.1,0l-10.1-1.1l-10.1-2.2l-10.1-2.2l-10.1-1.1l-10.1,0l-10.1,1.1l-10.1,2.2l-10.1,2.2l-10.1,1.1l-10.1,0l-10.1-1.1l-10.1-2.2l-10.1-2.2l-10.1-1.1l-10.1,0l-10.1,1.1l-10.1,2.2l-10.1,2.2l-10.1,1.1l-10.1,0l-10.1-1.1l-10.1-2.2l-10.1-2.2l-10.1-1.1l-10.1,0l-10.1,1.1l-10.1,2.2l-10.1,2.2l-10.1,1.1l-10.1,0l-10.1-1.1l-10.1-2.2l-10.1-2.2l-10.1-1.1l-10.1,0' },
+        { id: 'Dominican Republic', name: 'Dominican Republic', path: 'M247.2,185.7l-4.5-2.8l-3.4,1.7l-2.2,3.9l1.1,4.5l3.4,2.2l4.5-1.1l2.2-3.9V185.7z' },
+        { id: 'Honduras', name: 'Honduras', path: 'M183.9,198.5l-7.8-2.2l-5.6,2.2l-3.4,5.6l-1.1,7.8l2.2,5.6l5.6,3.4l7.8-1.1l5.6-4.5l2.2-6.7l-1.1-7.8L183.9,198.5z' },
+        { id: 'Nicaragua', name: 'Nicaragua', path: 'M189.5,212.5l-6.7-1.1l-5.6,3.4l-2.2,6.7l1.1,7.8l4.5,5.6l6.7,2.2l7.8-2.2l5.6-5.6l1.1-7.8l-2.2-6.7L189.5,212.5z' },
+        { id: 'Mexico', name: 'Mexico', path: 'M120,150 l-30,5 l-20,20 l-10,30 l20,15 l30,5 l20-10 l10-20z' },
+        { id: 'USA', name: 'USA', path: 'M50,50 l150,0 l20,50 l-50,50 l-120,0 l-20,-40z' },
+    ];
+
+    const handleCountryClick = (countryName) => {
+        if (countryCounts[countryName]) {
+            navigate('HumidorsScreen', { preFilterCountry: countryName });
+        }
+    };
+
+    return (
+        <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
+            <button onClick={onToggle} className="w-full p-4 flex justify-between items-center">
+                <h3 className="font-bold text-amber-300 text-lg flex items-center"><MapPin className="w-5 h-5 mr-2" /> World Map</h3>
+                <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
+            </button>
+            {!isCollapsed && (
+                <div className="p-4">
+                    <p className="text-sm text-gray-400 mb-4">Tap on a highlighted country to filter your collection by its origin.</p>
+                    <div className="relative w-full" style={{ paddingTop: '66.66%' }}>
+                        <svg className="absolute top-0 left-0 w-full h-full" viewBox="0 0 300 200">
+                            {countries.map(country => {
+                                const count = countryCounts[country.name] || 0;
+                                const hasCigars = count > 0;
+                                return (
+                                    <g key={country.id} onClick={() => handleCountryClick(country.name)} className={hasCigars ? 'cursor-pointer' : 'cursor-default'}>
+                                        <path
+                                            d={country.path}
+                                            className={`transition-all duration-300 ${hasCigars ? 'fill-amber-500 hover:fill-amber-400' : 'fill-gray-700'}`}
+                                            stroke="#111827"
+                                            strokeWidth="0.5"
+                                        >
+                                            <title>{country.name}{hasCigars ? `: ${count} cigar(s)` : ''}</title>
+                                        </path>
+                                    </g>
+                                );
+                            })}
+                        </svg>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
 
 const AboutScreen = ({ navigate }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -4956,11 +5059,12 @@ export default function App() {
     // This state will determine which panels are shown in the Dashboard.
     // It is initialized to show all panels by default, will be conditionally overridden in Dashboard component
     const [dashboardPanelVisibility, setDashboardPanelVisibility] = useState({
-        showWrapperPanel: true,
-        showStrengthPanel: true,
-        showCountryPanel: true,
+        showWrapperPanel: false,
+        showStrengthPanel: false,
+        showCountryPanel: false,
         showLiveEnvironment: true,
         showInventoryAnalysis: true,
+        showWorldMap: true,
     });
 
     // New state to manage the open/closed status of dashboard panels
@@ -4971,6 +5075,7 @@ export default function App() {
         wrapper: true,
         strength: true,
         country: true,
+        worldMap: true,
     });
 
     // Gemini TODO:Firebase state
@@ -5108,7 +5213,16 @@ export default function App() {
         // A `switch` statement is used to select the correct component.
         switch (screen) {
             case 'Dashboard':
-                return <Dashboard navigate={navigate} cigars={cigars} humidors={humidors} theme={theme} showWrapperPanel={dashboardPanelVisibility.showWrapperPanel} showStrengthPanel={dashboardPanelVisibility.showStrengthPanel} showCountryPanel={dashboardPanelVisibility.showCountryPanel} showLiveEnvironment={dashboardPanelVisibility.showLiveEnvironment} showInventoryAnalysis={dashboardPanelVisibility.showInventoryAnalysis} panelStates={dashboardPanelStates} setPanelStates={setDashboardPanelStates} />;
+                return <Dashboard navigate={navigate} cigars={cigars}
+                    humidors={humidors} theme={theme}
+                    showWrapperPanel={dashboardPanelVisibility.showWrapperPanel}
+                    showStrengthPanel={dashboardPanelVisibility.showStrengthPanel}
+                    showCountryPanel={dashboardPanelVisibility.showCountryPanel}
+                    showLiveEnvironment={dashboardPanelVisibility.showLiveEnvironment}
+                    showInventoryAnalysis={dashboardPanelVisibility.showInventoryAnalysis}
+                    panelStates={dashboardPanelStates}
+                    setPanelStates={setDashboardPanelStates}
+                    dashboardPanelVisibility={dashboardPanelVisibility} />;
             case 'HumidorsScreen':
                 return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} db={db} appId={appId} userId={userId} theme={theme} {...params} />;
             case 'MyHumidor':
