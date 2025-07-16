@@ -1262,6 +1262,7 @@ const BrowseByWrapperPanel = ({ cigars, navigate, theme, isCollapsed, onToggle }
             </button>
             {!isCollapsed && (
                 <div id="pnlContents" className="px-4 pb-4 space-y-2">
+                    {/* START CONTENTS HERE */}
                     {wrapperData.length > 0 ? (
                         wrapperData.map(({ wrapper, quantity }) => (
                             <button
@@ -1276,6 +1277,7 @@ const BrowseByWrapperPanel = ({ cigars, navigate, theme, isCollapsed, onToggle }
                     ) : (
                         <p className="text-gray-500 text-sm text-center py-4">No wrapper data available.</p>
                     )}
+                    {/* END CONTENTS HERE */}
                 </div>
             )}
         </div>
@@ -1312,6 +1314,7 @@ const BrowseByStrengthPanel = ({ cigars, navigate, theme, isCollapsed, onToggle 
             </button>
             {!isCollapsed && (
                 <div className="px-4 pb-4 space-y-2">
+                    {/* START CONTENTS HERE */}
                     {strengthData.length > 0 ? (
                         strengthData.map(({ label, quantity, filterValue }) => (
                             <button
@@ -1326,6 +1329,7 @@ const BrowseByStrengthPanel = ({ cigars, navigate, theme, isCollapsed, onToggle 
                     ) : (
                         <p className="text-gray-500 text-sm text-center py-4">No strength or flavored cigar data available.</p>
                     )}
+                    {/* END CONTENTS HERE */}
                 </div>
             )}
         </div>
@@ -1382,6 +1386,7 @@ const BrowseByCountryPanel = ({ cigars, navigate, theme, isCollapsed, onToggle }
             </button>
             {!isCollapsed && (
                 <div className="px-4 pb-4 space-y-2">
+                    {/* START CONTENTS HERE */}
                     {countryData.length > 0 ? (
                         countryData.map(({ label, quantity, filterValue }) => (
                             <button
@@ -1396,6 +1401,7 @@ const BrowseByCountryPanel = ({ cigars, navigate, theme, isCollapsed, onToggle }
                     ) : (
                         <p className="text-gray-500 text-sm text-center py-4">No country of origin data available.</p>
                     )}
+                    {/* END CONTENTS HERE */}
                 </div>
             )}
         </div>
@@ -1645,6 +1651,66 @@ const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showSt
         };
     }, [cigars]);
 
+    // --- Data for Browse By Panel ---
+    const wrapperData = useMemo(() => {
+        if (browseMode !== 'wrapper') return [];
+        const counts = cigars.reduce((acc, cigar) => {
+            const wrapper = cigar.wrapper || 'Unknown';
+            acc[wrapper] = (acc[wrapper] || 0) + cigar.quantity;
+            return acc;
+        }, {});
+        return Object.entries(counts)
+            .map(([wrapper, quantity]) => ({ wrapper, quantity }))
+            .sort((a, b) => a.wrapper.localeCompare(b.wrapper));
+    }, [cigars, browseMode]);
+
+    const strengthData = useMemo(() => {
+        if (browseMode !== 'strength') return [];
+        const strengthCategories = [
+            { label: 'Mild Cigars', filterValue: 'Mild' },
+            { label: 'Mild to Medium Cigars', filterValue: 'Mild-Medium' },
+            { label: 'Medium Cigars', filterValue: 'Medium' },
+            { label: 'Medium to Full Cigars', filterValue: 'Medium-Full' },
+            { label: 'Full Bodied Cigars', filterValue: 'Full' }
+        ];
+        const counts = strengthCategories.map(category => {
+            const quantity = cigars
+                .filter(cigar => cigar.strength === category.filterValue)
+                .reduce((sum, cigar) => sum + cigar.quantity, 0);
+            return { label: category.label, quantity, filterValue: category.filterValue };
+        });
+        return counts.filter(item => item.quantity > 0);
+    }, [cigars, browseMode]);
+
+    const countryData = useMemo(() => {
+        if (browseMode !== 'country') return [];
+        const countryCategories = [
+            { label: 'Dominican Cigars', filterValue: 'Dominican Republic' },
+            { label: 'Nicaraguan Cigars', filterValue: 'Nicaragua' },
+            { label: 'Honduran Cigars', filterValue: 'Honduras' },
+            { label: 'American Cigars', filterValue: 'USA' },
+            { label: 'Cuban Cigars', filterValue: 'Cuba' },
+            { label: 'Mexican Cigars', filterValue: 'Mexico' },
+            { label: 'Other Countries', filterValue: 'Other' }
+        ];
+        const counts = cigars.reduce((acc, cigar) => {
+            const country = cigar.country || 'Unknown';
+            const matchedCategory = countryCategories.find(cat => cat.filterValue.toLowerCase() === country.toLowerCase());
+            const key = matchedCategory ? matchedCategory.label : 'Other Countries';
+            acc[key] = (acc[key] || 0) + cigar.quantity;
+            return acc;
+        }, {});
+        return countryCategories
+            .map(category => ({
+                label: category.label,
+                quantity: counts[category.label] || 0,
+                filterValue: category.filterValue
+            }))
+            .filter(item => item.quantity > 0)
+            .sort((a, b) => a.label.localeCompare(b.label));
+    }, [cigars, browseMode]);
+    // --- End of Data for Browse By Panel ---
+
     // Function to call Gemini API for a collection summary.
     const handleSummarizeCollection = async () => {
         setModalState({ isOpen: true, content: '', isLoading: true });
@@ -1737,7 +1803,7 @@ const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showSt
 
             <div className="space-y-6">
 
-                {/* New: Browse by mode buttons */}
+                {/* Browse by mode buttons */}
                 <div className="flex justify-center gap-4">
                     <button id="btnBrowseByWrapper" onClick={() => handleBrowseByClick('wrapper')} className="p-3 bg-gray-800/50 border border-gray-700 rounded-full text-amber-300 hover:bg-gray-700 transition-colors">
                         <Leaf className="w-5 h-5" />
@@ -1808,16 +1874,44 @@ const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showSt
             </div>
 
             {isBrowseByModeOpen && (
-                <div id="pnlBrowseByMode" className="fixed bottom-20 left-0 right-0 bg-gray-900/80 backdrop-blur-sm p-4 z-40 border-t border-gray-700">
+                <div id="pnlBrowseByModePanel" className="fixed bottom-20 left-0 right-0 bg-gray-900/80 backdrop-blur-sm p-4 z-40 border-t border-gray-700">
                     <div className="max-w-md mx-auto">
                         <div className="flex justify-between items-center mb-4">
                             <h3 id="browseByMode" className="text-xl font-bold text-amber-400 flex items-center"><BrowseIcon className="w-5 h-5 mr-2" /> {currentBrowseConfig.title}</h3>
                             <button onClick={() => setIsBrowseByModeOpen(false)} className="text-amber-400 font-semibold">Done</button>
                         </div>
-                       <div className="mb-4">
-                            {/* {currentBrowseConfig.content} */}
-                            {/* Add content here */}
-                       </div>
+                        <div className="mb-4 max-h-64 overflow-y-auto space-y-2">
+                            {browseMode === 'wrapper' && wrapperData.map(({ wrapper, quantity }) => (
+                                <button
+                                    key={wrapper}
+                                    onClick={() => { navigate('HumidorsScreen', { preFilterWrapper: wrapper }); setIsBrowseByModeOpen(false); }}
+                                    className="w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors flex justify-between items-center"
+                                >
+                                    <span className="text-gray-300">{wrapper}</span>
+                                    <span className="text-gray-400">({quantity})</span>
+                                </button>
+                            ))}
+                            {browseMode === 'strength' && strengthData.map(({ label, quantity, filterValue }) => (
+                                <button
+                                    key={label}
+                                    onClick={() => { navigate('HumidorsScreen', { preFilterStrength: filterValue }); setIsBrowseByModeOpen(false); }}
+                                    className="w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors flex justify-between items-center"
+                                >
+                                    <span className="text-gray-300">{label}</span>
+                                    <span className="text-gray-400">({quantity})</span>
+                                </button>
+                            ))}
+                            {browseMode === 'country' && countryData.map(({ label, quantity, filterValue }) => (
+                                <button
+                                    key={label}
+                                    onClick={() => { navigate('HumidorsScreen', { preFilterCountry: filterValue }); setIsBrowseByModeOpen(false); }}
+                                    className="w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors flex justify-between items-center"
+                                >
+                                    <span className="text-gray-300">{label}</span>
+                                    <span className="text-gray-400">({quantity})</span>
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
             )}
