@@ -715,17 +715,29 @@ const ThemeModal = ({ currentTheme, setTheme, onClose }) => {
                     <button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                    {Object.values(themes).map(theme => (
+                    {Object.values(themes).map(themeOption => (
                         <button
-                            key={theme.name}
+                            key={themeOption.name}
                             onClick={() => {
-                                setTheme(theme);
+                                setTheme(themeOption);
                                 onClose();
                             }}
-                            className={`p-4 rounded-lg border-2 ${currentTheme.name === theme.name ? 'border-amber-400' : 'border-gray-600'} ${theme.bg}`}
+                            className={`p-4 rounded-lg border-2 ${currentTheme.name === themeOption.name ? 'border-amber-400' : 'border-gray-600'} ${themeOption.bg}`}
                         >
-                            <div className={`w-16 h-10 ${theme.card} rounded-md mb-2 border ${theme.borderColor}`}></div>
-                            <p className={`${theme.text} font-semibold text-sm`}>{theme.name}</p>
+                            <div className={`w-16 h-10 ${themeOption.card} rounded-md mb-2 border ${themeOption.borderColor}`}></div>
+                            <p className={`${themeOption.text} font-semibold text-sm`}>{themeOption.name}</p>
+                            {/* World Map color preview */}
+                            <div className="mt-2 flex gap-1 items-center justify-center">
+                                <span className="w-4 h-4 rounded-full border" style={{ background: themeOption.primaryBg || '#fbbf24', borderColor: themeOption.borderColor || '#d1d5db' }} title="Highlighted Country"></span>
+                                <span className="w-4 h-4 rounded-full border" style={{ background: themeOption.card || '#fde68a', borderColor: themeOption.borderColor || '#d1d5db' }} title="Cigar Country"></span>
+                                <span className="w-4 h-4 rounded-full border" style={{ background: '#f3f4f6', borderColor: themeOption.borderColor || '#d1d5db' }} title="Other Country"></span>
+                            </div>
+                            <div className="flex justify-center mt-1 text-xs text-gray-400 gap-1">
+                                <span>Map:</span>
+                                <span className="font-bold" style={{ color: themeOption.primaryBg || '#fbbf24' }}>●</span>
+                                <span className="font-bold" style={{ color: themeOption.card || '#fde68a' }}>●</span>
+                                <span className="font-bold" style={{ color: '#f3f4f6' }}>●</span>
+                            </div>
                         </button>
                     ))}
                 </div>
@@ -4607,10 +4619,16 @@ const InteractiveWorldMapPanel = ({ cigars, navigate, theme, isCollapsed, onTogg
 
     // Theme-based map colors
     const mapColors = {
-        highlighted: theme.primaryBg || "#fbbf24",
-        cigarCountry: theme.card || "#fde68a",
+        highlighted: theme.primaryBg && theme.primaryBg !== 'bg-gray-800/50'
+            ? theme.primaryBg.replace('bg-', '').replace('/50', '').replace('-', '')
+            : "#fbbf24", // fallback amber-300
+        cigarCountry: theme.card && theme.card !== 'bg-gray-800/50'
+            ? theme.card.replace('bg-', '').replace('/50', '').replace('-', '')
+            : "#fde68a", // fallback amber-200
         other: "#f3f4f6",
-        hover: theme.hoverPrimaryBg || "#f59e0b",
+        hover: theme.hoverPrimaryBg && theme.hoverPrimaryBg !== 'hover:bg-gray-700'
+            ? theme.hoverPrimaryBg.replace('hover:bg-', '').replace('/50', '').replace('-', '')
+            : "#f59e0b",
         border: "#d1d5db"
     };
 
@@ -4628,26 +4646,29 @@ const InteractiveWorldMapPanel = ({ cigars, navigate, theme, isCollapsed, onTogg
                     <p className="text-sm text-gray-400 mb-4">
                         Tap on a highlighted country to filter your collection by its origin.
                     </p>
-                    <div className="w-full" style={{ minHeight: 300 }}>
-                        {/* Zoom controls as icon buttons */}
-                        <div className="flex gap-4 mb-2 justify-end">
+                    <div className="w-full" style={{ minHeight: 300, position: "relative" }}>
+                        {/* Overlay zoom controls in bottom right */}
+                        <div
+                            className="absolute bottom-2 right-2 flex gap-2 z-10"
+                            style={{ pointerEvents: "auto" }}
+                        >
                             <button
                                 onClick={handleZoomOut}
-                                className="p-3 bg-gray-800/50 border border-gray-700 rounded-full text-amber-300 hover:bg-gray-700 transition-colors flex items-center justify-center"
+                                className="p-3 bg-gray-800/70 border border-gray-700 rounded-full text-amber-300 hover:bg-gray-700 transition-colors flex items-center justify-center shadow-lg"
                                 title="Zoom Out"
                             >
                                 <Minus className="w-5 h-5" />
                             </button>
                             <button
                                 onClick={handleZoomIn}
-                                className="p-3 bg-gray-800/50 border border-gray-700 rounded-full text-amber-300 hover:bg-gray-700 transition-colors flex items-center justify-center"
+                                className="p-3 bg-gray-800/70 border border-gray-700 rounded-full text-amber-300 hover:bg-gray-700 transition-colors flex items-center justify-center shadow-lg"
                                 title="Zoom In"
                             >
                                 <Plus className="w-5 h-5" />
                             </button>
                             <button
                                 onClick={handleReset}
-                                className="p-3 bg-gray-800/50 border border-gray-700 rounded-full text-amber-300 hover:bg-gray-700 transition-colors flex items-center justify-center"
+                                className="p-3 bg-gray-800/70 border border-gray-700 rounded-full text-amber-300 hover:bg-gray-700 transition-colors flex items-center justify-center shadow-lg"
                                 title="Reset"
                             >
                                 <Sparkles className="w-5 h-5" />
@@ -4662,7 +4683,7 @@ const InteractiveWorldMapPanel = ({ cigars, navigate, theme, isCollapsed, onTogg
                                 center={center}
                                 zoom={zoom}
                                 onMoveEnd={handleMoveEnd}
-                                minZoom={1}
+                                minZoom={3}
                                 maxZoom={8}
                             >
                                 <Geographies geography={geoUrl}>
