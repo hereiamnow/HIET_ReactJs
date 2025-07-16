@@ -50,7 +50,7 @@ import AutoCompleteInputField from './components/UI/AutoCompleteInputField';
 import ChartCard from './components/UI/ChartCard';
 import { getRatingColor } from './components/utils/getRatingColor';
 import { calculateAge } from './components/utils/calculateAge';
-import  ProfileScreen  from './components/Settings/ProfileScreen';
+import ProfileScreen from './components/Settings/ProfileScreen';
 
 const initialAuthToken = typeof window !== "undefined" && window.initialAuthToken ? window.initialAuthToken : null;
 
@@ -416,7 +416,7 @@ const DraggableImage = ({ src, position, onPositionChange }) => {
  */
 const ImagePreview = ({ image, position, onClick }) => {
     return (
-        <div className="group relative w-full h-64 rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 transition-colors hover:border-slate-400 hover:bg-slate-100 overflow-hidden">
+        <div className="group relative w-full h-64 border-1 bg-slate-50 transition-colors hover:border-slate-400 hover:bg-slate-100 overflow-hidden">
             {image ? (
                 <>
                     {/* This image just displays the saved position; it is not draggable itself. */}
@@ -530,11 +530,24 @@ const Gauge = ({ value, maxValue, label, unit, icon: Icon }) => {
     return (
         <div className="relative flex flex-col items-center justify-center w-40 h-40 sm:w-48 sm:h-48">
             <svg className="w-full h-full" viewBox="0 0 120 120">
-                <circle className="stroke-current text-gray-700" cx="60" cy="60" r="50" strokeWidth="10" fill="none" />
+                <circle
+                    className="stroke-current text-gray-700"
+                    cx="60"
+                    cy="60"
+                    r="50"
+                    strokeWidth="10"
+                    fill="none"
+                />
                 <circle
                     className={`transform -rotate-90 origin-center transition-all duration-500 ${ringColor}`}
-                    cx="60" cy="60" r="50" strokeWidth="10" fill="none"
-                    strokeDasharray="314" strokeDashoffset={314 - (percentage * 314)} strokeLinecap="round"
+                    cx="60"
+                    cy="60"
+                    r="50"
+                    strokeWidth="10"
+                    fill="none"
+                    strokeDasharray="314"
+                    strokeDashoffset={314 - (percentage * 314)}
+                    strokeLinecap="round"
                 />
             </svg>
             <div className="absolute flex flex-col items-center">
@@ -1040,10 +1053,12 @@ const ImageUploadModal = ({ isOpen, onClose, onImageAccept, itemName, initialIma
 
                         <div className="mb-4">
                             {activeTab === 'url' && (
-                                <div>
-                                    <input type="text" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://example.com/image.png" className={`flex-grow rounded-md border ${theme.borderColor} p-2 ${theme.inputBg} ${theme.text} focus:border-amber-500 focus:ring-amber-500`} />
-                                    <button onClick={() => { setPreview(imageUrl); setModalPosition({ x: 50, y: 50 }); }} className={`rounded-md ${theme.button} px-4 py-2 ${theme.text}`}>Preview</button>
-                                    <p className={`mt-2 text-xs ${theme.subtleText}`}>Here is a subtle description</p>
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <input type="text" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://example.com/image.png" className={`w-full flex-grow rounded-md border ${theme.borderColor} p-2 ${theme.inputBg} ${theme.text} focus:border-amber-500 focus:ring-amber-500`} />
+                                        <button onClick={() => { setPreview(imageUrl); setModalPosition({ x: 50, y: 50 }); }} className={`flex-shrink-0 rounded-md ${theme.button} px-4 py-2 ${theme.text}`}>Preview</button>
+                                    </div>
+                                    <p className={`text-xs ${theme.subtleText}`}>Paste a URL to an image and click "Preview".</p>
                                 </div>
                             )}
                             {activeTab === 'upload' && (
@@ -1246,7 +1261,7 @@ const BrowseByWrapperPanel = ({ cigars, navigate, theme, isCollapsed, onToggle }
                 <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
             </button>
             {!isCollapsed && (
-                <div className="px-4 pb-4 space-y-2">
+                <div id="pnlContents" className="px-4 pb-4 space-y-2">
                     {wrapperData.length > 0 ? (
                         wrapperData.map(({ wrapper, quantity }) => (
                             <button
@@ -1267,30 +1282,23 @@ const BrowseByWrapperPanel = ({ cigars, navigate, theme, isCollapsed, onToggle }
     );
 };
 
+{/* Panel for browsing cigars by strength */ }
 const BrowseByStrengthPanel = ({ cigars, navigate, theme, isCollapsed, onToggle }) => {
     const strengthCategories = useMemo(() => [
-        { label: 'Mellow Cigars', filterValue: 'Mild' },
-        { label: 'Mellow to Medium Cigars', filterValue: 'Mild-Medium' },
+        { label: 'Mild Cigars', filterValue: 'Mild' },
+        { label: 'Mild to Medium Cigars', filterValue: 'Mild-Medium' },
         { label: 'Medium Cigars', filterValue: 'Medium' },
         { label: 'Medium to Full Cigars', filterValue: 'Medium-Full' },
-        { label: 'Full Bodied Cigars', filterValue: 'Full' },
-        { label: 'Flavored Cigars', filterValue: 'Flavored' } // Special filter for cigars with flavor notes
+        { label: 'Full Bodied Cigars', filterValue: 'Full' }
     ], []);
 
     const strengthData = useMemo(() => {
         const counts = strengthCategories.map(category => {
             let quantity = 0;
-            if (category.filterValue === 'Flavored') {
-                // Sum quantities of all cigars that have at least one flavor note
-                quantity = cigars
-                    .filter(cigar => cigar.flavorNotes && cigar.flavorNotes.length > 0)
-                    .reduce((sum, cigar) => sum + cigar.quantity, 0);
-            } else {
-                // Sum quantities for a specific strength
-                quantity = cigars
-                    .filter(cigar => cigar.strength === category.filterValue)
-                    .reduce((sum, cigar) => sum + cigar.quantity, 0);
-            }
+            // Sum quantities for a specific strength
+            quantity = cigars
+                .filter(cigar => cigar.strength === category.filterValue)
+                .reduce((sum, cigar) => sum + cigar.quantity, 0);
             return { label: category.label, quantity, filterValue: category.filterValue };
         });
         return counts.filter(item => item.quantity > 0); // Only show categories with cigars
@@ -1331,7 +1339,14 @@ const BrowseByCountryPanel = ({ cigars, navigate, theme, isCollapsed, onToggle }
         { label: 'Honduran Cigars', filterValue: 'Honduras' },
         { label: 'American Cigars', filterValue: 'USA' },
         { label: 'Cuban Cigars', filterValue: 'Cuba' },
-        { label: 'Other Countries', filterValue: 'Other' }, // Catch-all for unlisted countries
+        { label: 'Mexican Cigars', filterValue: 'Mexico' },
+        { label: 'Peruvian Cigars', filterValue: 'Peru' },
+        { label: 'Ecuadorian Cigars', filterValue: 'Ecuador' },
+        { label: 'Colombian Cigars', filterValue: 'Colombia' },
+        { label: 'Brazilian Cigars', filterValue: 'Brazil' },
+        { label: 'Panamanian Cigars', filterValue: 'Panama' },
+        { label: 'Costa Rican Cigars', filterValue: 'Costa Rica' },
+        { label: 'Other Countries', filterValue: 'Other' } // Catch-all for unlisted countries
     ], []);
 
     const countryData = useMemo(() => {
@@ -1401,10 +1416,16 @@ const LiveEnvironmentPanel = ({ humidors, theme }) => {
             </button>
             {!isCollapsed && (
                 <div className="px-4 pb-4">
-                    <div className="flex justify-around items-center h-full py-4">
+
+
+
+                    <div id="pnlHumidor1" className="flex justify-around items-center h-full py-4">
                         <Gauge value={displayHumidity} maxValue={100} label="Humidity" unit="%" icon={Droplets} />
                         <Gauge value={displayTemp} maxValue={100} label="Temperature" unit="°F" icon={Thermometer} />
                     </div>
+
+
+
                 </div>
             )}
         </div>
@@ -1414,7 +1435,7 @@ const LiveEnvironmentPanel = ({ humidors, theme }) => {
 const InventoryAnalysisPanel = ({ cigars, theme, isCollapsed, onToggle }) => {
     const [chartViews, setChartViews] = useState({ brands: 'bar', countries: 'bar', strength: 'bar' });
 
-    const { topBrandsData, topCountriesData, strengthDistributionData } = useMemo(() => {
+    const { topBrandsData, topCountriesData, strengthDistributionData, totalBrandQuantity, totalCountryQuantity, totalStrengthQuantity } = useMemo(() => {
         const processChartData = (data, key) => {
             const groupedData = data.reduce((acc, cigar) => {
                 const groupKey = cigar[key] || 'Unknown';
@@ -1431,10 +1452,17 @@ const InventoryAnalysisPanel = ({ cigars, theme, isCollapsed, onToggle }) => {
         const topCountries = processChartData(cigars, 'country').slice(0, 5);
         const strengthDistribution = processChartData(cigars, 'strength');
 
+        const totalBrandQty = topBrands.reduce((sum, item) => sum + item.quantity, 0);
+        const totalCountryQty = topCountries.reduce((sum, item) => sum + item.quantity, 0);
+        const totalStrengthQty = strengthDistribution.reduce((sum, item) => sum + item.quantity, 0);
+
         return {
             topBrandsData: topBrands,
             topCountriesData: topCountries,
             strengthDistributionData: strengthDistribution,
+            totalBrandQuantity: totalBrandQty,
+            totalCountryQuantity: totalCountryQty,
+            totalStrengthQuantity: totalStrengthQty,
         };
     }, [cigars]);
 
@@ -1456,9 +1484,16 @@ const InventoryAnalysisPanel = ({ cigars, theme, isCollapsed, onToggle }) => {
 
         return (
             <text {...props} x={x} y={y} fill="#d1d5db" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={12}>
-                {`${name} (${(percent * 100).toFixed(0)}%)`}
+                {`${(percent * 100).toFixed(0)}%`}
             </text>
         );
+    };
+
+    // Formatter for the legend to show percentages
+    const legendFormatter = (value, entry, total) => {
+        const { quantity } = entry.payload;
+        const percent = total > 0 ? ((quantity / total) * 100).toFixed(0) : 0;
+        return `${value} (${percent}%)`;
     };
 
     return (
@@ -1484,10 +1519,22 @@ const InventoryAnalysisPanel = ({ cigars, theme, isCollapsed, onToggle }) => {
                         ) : (
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
-                                    <Pie data={topBrandsData} dataKey="quantity" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={true} label={renderCustomizedLabel}>
+                                    <Pie
+                                        data={topBrandsData}
+                                        dataKey="quantity"
+                                        nameKey="name"
+                                        cx="50%"
+                                        cy="50%"
+                                        paddingAngle={3}
+                                        innerRadius={60}
+                                        outerRadius={80}
+                                        labelLine={false}
+                                        label={renderCustomizedLabel}>
+
                                         {topBrandsData.map((entry, index) => <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />)}
                                     </Pie>
                                     <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }} />
+                                    <Legend formatter={(value, entry) => legendFormatter(value, entry, totalBrandQuantity)} wrapperStyle={{ fontSize: '12px' }} />
                                 </PieChart>
                             </ResponsiveContainer>
                         )}
@@ -1508,16 +1555,26 @@ const InventoryAnalysisPanel = ({ cigars, theme, isCollapsed, onToggle }) => {
                         ) : (
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
-                                    <Pie data={topCountriesData} dataKey="quantity" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={true} label={renderCustomizedLabel}>
+                                    <Pie
+                                        data={topCountriesData} dataKey="quantity"
+                                        nameKey="name"
+                                        cx="50%" cy="50%"
+                                        paddingAngle={3}
+                                        innerRadius={60}
+                                        outerRadius={80}
+                                        labelLine={false}
+                                        label={renderCustomizedLabel}>
                                         {topCountriesData.map((entry, index) => <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />)}
                                     </Pie>
-                                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }} />                                </PieChart>
+                                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }} />
+                                    <Legend formatter={(value, entry) => legendFormatter(value, entry, totalCountryQuantity)} wrapperStyle={{ fontSize: '12px' }} />
+                                </PieChart>
                             </ResponsiveContainer>
                         )}
                     </ChartCard>
 
                     <ChartCard
-                        title="Strength Distribution"
+                        title="Flavor Profile"
                         action={<button onClick={() => handleChartViewToggle('strength')} className={`p-1 rounded-full ${theme.button}`}>{chartViews.strength === 'bar' ? <PieChartIcon className="w-5 h-5" /> : <BarChart2 className="w-5 h-5" />}</button>}>
                         {chartViews.strength === 'bar' ? (
                             <ResponsiveContainer width="100%" height="100%">
@@ -1531,10 +1588,22 @@ const InventoryAnalysisPanel = ({ cigars, theme, isCollapsed, onToggle }) => {
                         ) : (
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
-                                    <Pie data={strengthDistributionData} dataKey="quantity" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={true} label={renderCustomizedLabel}>
+                                    <Pie
+                                        data={strengthDistributionData}
+                                        dataKey="quantity"
+                                        nameKey="name"
+                                        cx="50%"
+                                        cy="50%"
+                                        paddingAngle={2}
+                                        innerRadius={60}
+                                        outerRadius={80}
+                                        labelLine={false}
+                                        label={renderCustomizedLabel}>
                                         {strengthDistributionData.map((entry, index) => <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />)}
                                     </Pie>
-                                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }} />                                </PieChart>
+                                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }} />
+                                    <Legend formatter={(value, entry) => legendFormatter(value, entry, totalStrengthQuantity)} wrapperStyle={{ fontSize: '12px' }} />
+                                </PieChart>
                             </ResponsiveContainer>
                         )}
                     </ChartCard>
@@ -1557,6 +1626,8 @@ const MyCollectionStatsCards = ({ totalCigars, totalValue, humidors, theme }) =>
 const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showStrengthPanel, showCountryPanel, showLiveEnvironment, showInventoryAnalysis, panelStates, setPanelStates }) => {
     const [roxyTip, setRoxyTip] = useState('');
     const [modalState, setModalState] = useState({ isOpen: false, content: '', isLoading: false });
+    const [isBrowseByModeOpen, setIsBrowseByModeOpen] = useState(false);
+    const [browseMode, setBrowseMode] = useState('');
 
     useEffect(() => {
         // Pick a random tip from Roxy's corner on component mount.
@@ -1584,6 +1655,22 @@ const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showSt
         setModalState({ isOpen: true, content: result, isLoading: false });
     };
 
+    const handleBrowseByClick = (mode) => {
+        if (isBrowseByModeOpen && browseMode === mode) {
+            setIsBrowseByModeOpen(false);
+        } else if (isBrowseByModeOpen) {
+            setIsBrowseByModeOpen(false);
+            // Use a timeout to allow the panel to animate out before animating back in
+            setTimeout(() => {
+                setBrowseMode(mode);
+                setIsBrowseByModeOpen(true);
+            }, 150); // Adjust timing based on your animation duration
+        } else {
+            setBrowseMode(mode);
+            setIsBrowseByModeOpen(true);
+        }
+    };
+
     // Generic toggle handler for all panels
     const handlePanelToggle = (panelName) => {
         setPanelStates(prev => ({ ...prev, [panelName]: !prev[panelName] }));
@@ -1593,6 +1680,16 @@ const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showSt
     const hasHumidors = humidors && humidors.length > 0;
     // Determine if cigars are present
     const hasCigars = cigars && cigars.length > 0;
+
+    const browseByConfig = {
+        wrapper: { title: 'Browse by Wrapper', icon: Leaf },
+        strength: { title: 'Browse by Profile', icon: Cigarette },
+        country: { title: 'Browse by Country', icon: MapPin },
+        default: { title: 'Browse by', icon: Filter }
+    };
+
+    const currentBrowseConfig = browseByConfig[browseMode] || browseByConfig.default;
+    const BrowseIcon = currentBrowseConfig.icon;
 
     return (
         <div className="p-4 pb-24">
@@ -1639,6 +1736,20 @@ const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showSt
 
 
             <div className="space-y-6">
+
+                {/* New: Browse by mode buttons */}
+                <div className="flex justify-center gap-4">
+                    <button id="btnBrowseByWrapper" onClick={() => handleBrowseByClick('wrapper')} className="p-3 bg-gray-800/50 border border-gray-700 rounded-full text-amber-300 hover:bg-gray-700 transition-colors">
+                        <Leaf className="w-5 h-5" />
+                    </button>
+                    <button id="btnBrowseByStrength" onClick={() => handleBrowseByClick('strength')} className="p-3 bg-gray-800/50 border border-gray-700 rounded-full text-amber-300 hover:bg-gray-700 transition-colors">
+                        <Cigarette className="w-5 h-5" />
+                    </button>
+                    <button id="btnBrowseByCountry" onClick={() => handleBrowseByClick('country')} className="p-3 bg-gray-800/50 border border-gray-700 rounded-full text-amber-300 hover:bg-gray-700 transition-colors">
+                        <MapPin className="w-5 h-5" />
+                    </button>
+                </div>
+
                 {/* Existing Roxy's Corner panel */}
                 {/* TODO Refactor into a component named "RoxysCorner" */}
                 <div className="bg-amber-900/20 border border-amber-800 rounded-xl overflow-hidden">
@@ -1695,6 +1806,21 @@ const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showSt
                 {/* Conditionally render BrowseByCountryPanel if there are cigars and it's enabled in settings */}
                 {hasCigars && showCountryPanel && <BrowseByCountryPanel cigars={cigars} navigate={navigate} theme={theme} isCollapsed={panelStates.country} onToggle={() => handlePanelToggle('country')} />}
             </div>
+
+            {isBrowseByModeOpen && (
+                <div id="pnlBrowseByMode" className="fixed bottom-20 left-0 right-0 bg-gray-900/80 backdrop-blur-sm p-4 z-40 border-t border-gray-700">
+                    <div className="max-w-md mx-auto">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 id="browseByMode" className="text-xl font-bold text-amber-400 flex items-center"><BrowseIcon className="w-5 h-5 mr-2" /> {currentBrowseConfig.title}</h3>
+                            <button onClick={() => setIsBrowseByModeOpen(false)} className="text-amber-400 font-semibold">Done</button>
+                        </div>
+                       <div className="mb-4">
+                            {/* {currentBrowseConfig.content} */}
+                            {/* Add content here */}
+                       </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -1747,7 +1873,7 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
         }
     }, [preFilterStrength]);
 
-    // NEW: Effect to update activeCountryFilter when preFilterCountry prop changes - July 5, 2025 - 2:00:00 AM CDT
+    // Effect to update activeCountryFilter when preFilterCountry prop changes
     useEffect(() => {
         if (preFilterCountry) {
             setActiveCountryFilter(preFilterCountry);
@@ -1781,7 +1907,6 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
         setSuggestions([]);
     };
 
-    // Memoized filtered cigars, now including wrapper, strength, and country filters - July 5, 2025 - 2:00:00 AM CDT
     const filteredCigars = useMemo(() => {
         let currentCigars = cigars;
         if (searchQuery) {
@@ -1833,7 +1958,7 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
             <div className="relative mb-4">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input type="text" placeholder="Search all cigars..." value={searchQuery} onChange={handleSearchChange}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-full py-3 pl-12 pr-12 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                    className="w-full bg-gray-800 border border-gray-700 rounded-md py-3 pl-12 pr-12 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500" />
                 {searchQuery && (
                     <button onClick={handleClearSearch} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
                         <X className="w-5 h-5" />
@@ -1851,23 +1976,32 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
             </div>
 
             {activeWrapperFilter && (
-                <div className="flex justify-between items-center mb-4">
-                    <span>Filtering by: <span className="font-bold">{activeWrapperFilter} Wrapper</span></span>
-                    <button onClick={handleClearFilter} className="p-1 rounded-full hover:bg-amber-800 transition-colors"><X className="w-4 h-4" /></button>
+                <div className="flex justify-between items-center mb-4 bg-amber-900/20 border border-amber-800 rounded-lg p-3">
+                    <div>
+                        <span className="text-amber-200 text-sm">Filtering by: <span className="font-bold text-amber-100">{activeWrapperFilter} Wrapper</span></span>
+                        <p className="text-xs text-amber-300">Found {filteredCigars.length} matching cigars.</p>
+                    </div>
+                    <button onClick={handleClearFilter} className="p-1 rounded-full hover:bg-amber-800 transition-colors text-amber-300"><X className="w-4 h-4" /></button>
                 </div>
             )}
 
             {activeStrengthFilter && (
-                <div className="flex justify-between items-center mb-4">
-                    <span>Filtering by: <span className="font-bold">{activeStrengthFilter === 'Flavored' ? 'Flavored Cigars' : `${activeStrengthFilter} Strength`}</span></span>
-                    <button onClick={handleClearFilter} className="p-1 rounded-full hover:bg-amber-800 transition-colors"><X className="w-4 h-4" /></button>
+                <div className="flex justify-between items-center mb-4 bg-amber-900/20 border border-amber-800 rounded-lg p-3">
+                    <div>
+                        <span className="text-amber-200 text-sm">Filtering by: <span className="font-bold text-amber-100">{activeStrengthFilter === 'Flavored' ? 'Flavored Cigars' : `${activeStrengthFilter} Strength`}</span></span>
+                        <p className="text-xs text-amber-300">Found {filteredCigars.length} matching cigars.</p>
+                    </div>
+                    <button onClick={handleClearFilter} className="p-1 rounded-full hover:bg-amber-800 transition-colors text-amber-300"><X className="w-4 h-4" /></button>
                 </div>
             )}
 
             {activeCountryFilter && (
-                <div className="flex justify-between items-center mb-4">
-                    <span>Filtering by: <span className="font-bold">{activeCountryFilter === 'Other' ? 'Other Countries' : `${activeCountryFilter}`}</span></span>
-                    <button onClick={handleClearFilter} className="p-1 rounded-full hover:bg-amber-800 transition-colors"><X className="w-4 h-4" /></button>
+                <div className="flex justify-between items-center mb-4 bg-amber-900/20 border border-amber-800 rounded-lg p-3">
+                    <div>
+                        <span className="text-amber-200 text-sm">Filtering by: <span className="font-bold text-amber-100">{activeCountryFilter === 'Other' ? 'Other Countries' : `${activeCountryFilter}`}</span></span>
+                        <p className="text-xs text-amber-300">Found {filteredCigars.length} matching cigars.</p>
+                    </div>
+                    <button onClick={handleClearFilter} className="p-1 rounded-full hover:bg-amber-800 transition-colors text-amber-300"><X className="w-4 h-4" /></button>
                 </div>
             )}
 
@@ -1938,7 +2072,6 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
                 </>
             ) : (
                 <div className="flex flex-col gap-4">
-                    <p className="text-sm text-gray-400 px-2">Found {filteredCigars.length} matching cigars.</p>
                     {filteredCigars.map(cigar => (
                         <ListCigarCard key={cigar.id} cigar={cigar} navigate={navigate} />
                     ))}
@@ -1949,6 +2082,9 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
                     )}
                 </div>
             )}
+
+
+
         </div>
     );
 };
@@ -2235,7 +2371,7 @@ const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, the
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [isManualReadingModalOpen, setIsManualReadingModalOpen] = useState(false);
     const [isFilterSortModalOpen, setIsFilterSortModalOpen] = useState(false);
-    const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false); 
+    const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
     const [filters, setFilters] = useState({ brand: '', country: '', strength: '', flavorNotes: [] });
     const [sortBy, setSortBy] = useState('name');
     const [sortOrder, setSortOrder] = useState('asc');
@@ -2517,7 +2653,7 @@ If you cannot determine a value, use "" or [] or 0. Only return the JSON object.
                         onDelete={() => setIsDeleteHumidorModalOpen(true)}
                         onImport={() => navigate('DataSync')} // Navigate to DataSync for import options
                     />
-       
+
                 </div>
                 <div className="absolute bottom-0 p-4">
                     <h1 className="text-3xl font-bold text-white">{humidor.name}</h1>
@@ -2537,7 +2673,8 @@ If you cannot determine a value, use "" or [] or 0. Only return the JSON object.
                 {/* Search Bar */}
                 <div className="relative mb-4">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input type="text" placeholder="Search this humidor..." value={searchQuery} onChange={handleSearchChange} className="w-full bg-gray-800 border border-gray-700 rounded-full py-3 pl-12 pr-12 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                    <input type="text" placeholder="Search this humidor..." value={searchQuery} onChange={handleSearchChange}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md py-3 pl-12 pr-12 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500" />
                     {searchQuery && (
                         <button onClick={handleClearSearch} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
                             <X className="w-5 h-5" />
@@ -2857,10 +2994,8 @@ Provide a brief, encouraging, and slightly personalized note about this cigar's 
                         onEdit={() => navigate('EditCigar', { cigarId: cigar.id })}
                         onExport={() => setIsExportModalOpen(true)}
                         onDelete={() => setIsDeleteModalOpen(true)}
-                    />               
+                    />
                 </div>
-
-
 
                 {/* Title and Rating Badge */}
                 <div className="absolute bottom-0 p-4 w-full flex justify-between items-end">
@@ -2873,7 +3008,7 @@ Provide a brief, encouraging, and slightly personalized note about this cigar's 
             </div>
 
             <div className="p-4 space-y-6">
-                {/* Simplified Action Bar */}
+                {/* SMOKE THIS! Action Button */}
                 <button onClick={handleSmokeCigar} disabled={cigar.quantity === 0} className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-lg hover:bg-amber-600 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">
                     <Cigarette className="w-5 h-5" /> Smoke This ({cigar.quantity} in stock)
                 </button>
@@ -2884,13 +3019,11 @@ Provide a brief, encouraging, and slightly personalized note about this cigar's 
                     </div>
                 )}
 
-                {/* Updated Cigar Profile Panel */}
+                {/* Cigar Profile Panel */}
                 <div className="bg-gray-800/50 p-4 rounded-xl space-y-4">
 
                     <div className="flex justify-between items-center">
-            
                         <h3 className="font-bold text-amber-300 text-lg">Profile</h3>
-
                     </div>
 
                     <div className="grid grid-cols-2 gap-x-4 gap-y-3">
