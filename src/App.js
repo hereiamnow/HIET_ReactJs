@@ -29,6 +29,9 @@ import FirebaseAuthUI from './FirebaseAuthUI';// FirebaseUI component for handli
 // useState, useEffect, and useMemo are "hooks" that let us use state and other React features in functional components.
 import React, { useState, useEffect, useMemo, useRef } from 'react'; // Import useRef for flashing effect
 
+import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps";
+
+
 // lucide-react provides a set of clean, modern icons used throughout the app.
 import { ArrowUp, ArrowDown, MoreVertical, CheckSquare, AlertTriangle, BarChart2, Bell, Box, Calendar as CalendarIcon, Check, ChevronDown, ChevronLeft, Cigarette, Database, DollarSign, Download, Droplets, Edit, FileText, Filter, Info, LayoutGrid, Leaf, List, ListFilter, LoaderCircle, LogOut, MapPin, Minus, Move, Palette, PieChart as PieChartIcon, Plus, Search, Settings as SettingsIcon, Sparkles, Star, Tag, Thermometer, Trash2, Upload, UploadCloud, User, Wind, X, Zap, PencilRuler, FileUp, Trash, ClipboardPenLine, FileDown, Github, Bug } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -53,6 +56,20 @@ import { calculateAge } from './components/utils/calculateAge';
 import ProfileScreen from './components/Settings/ProfileScreen';
 
 const initialAuthToken = typeof window !== "undefined" && window.initialAuthToken ? window.initialAuthToken : null;
+
+
+const cigarCountries = [
+    "United States",
+    "Mexico",
+    "Cuba",
+    "Dominican Republic",
+    "Honduras",
+    "Nicaragua"
+];
+
+const geoUrl =
+    "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+
 
 // --- HELPER & UI COMPONENTS ---
 
@@ -4521,6 +4538,10 @@ const DeeperStatisticsScreen = ({ navigate, cigars, theme }) => {
     );
 };
 
+
+
+
+
 const InteractiveWorldMapPanel = ({ cigars, navigate, theme, isCollapsed, onToggle }) => {
     const countryCounts = useMemo(() => {
         return cigars.reduce((acc, cigar) => {
@@ -4532,56 +4553,169 @@ const InteractiveWorldMapPanel = ({ cigars, navigate, theme, isCollapsed, onTogg
         }, {});
     }, [cigars]);
 
-    const countries = [
-        { id: 'Cuba', name: 'Cuba', path: 'M211.8,175.5l-21.2-1.2l-11.2,4.2l-13.4,2.8l-12.3-0.6l-10.1,1.7l-12.3,5l-12.3,3.9l-10.1-0.6l-10.1,2.2l-9,2.2l-12.3-1.7l-11.2-5l-10.1-3.4l-10.1-1.7l-10.1,1.1l-9-1.1l-10.1-2.2l-10.1-2.2l-10.1-1.1l-10.1,0l-10.1,1.1l-10.1,2.2l-10.1,2.2l-10.1,1.1l-10.1,0l-10.1-1.1l-10.1-2.2l-10.1-2.2l-10.1-1.1l-10.1,0l-10.1,1.1l-10.1,2.2l-10.1,2.2l-10.1,1.1l-10.1,0l-10.1-1.1l-10.1-2.2l-10.1-2.2l-10.1-1.1l-10.1,0l-10.1,1.1l-10.1,2.2l-10.1,2.2l-10.1,1.1l-10.1,0l-10.1-1.1l-10.1-2.2l-10.1-2.2l-10.1-1.1l-10.1,0l-10.1,1.1l-10.1,2.2l-10.1,2.2l-10.1,1.1l-10.1,0l-10.1-1.1l-10.1-2.2l-10.1-2.2l-10.1-1.1l-10.1,0' },
-        { id: 'Dominican Republic', name: 'Dominican Republic', path: 'M247.2,185.7l-4.5-2.8l-3.4,1.7l-2.2,3.9l1.1,4.5l3.4,2.2l4.5-1.1l2.2-3.9V185.7z' },
-        { id: 'Honduras', name: 'Honduras', path: 'M183.9,198.5l-7.8-2.2l-5.6,2.2l-3.4,5.6l-1.1,7.8l2.2,5.6l5.6,3.4l7.8-1.1l5.6-4.5l2.2-6.7l-1.1-7.8L183.9,198.5z' },
-        { id: 'Nicaragua', name: 'Nicaragua', path: 'M189.5,212.5l-6.7-1.1l-5.6,3.4l-2.2,6.7l1.1,7.8l4.5,5.6l6.7,2.2l7.8-2.2l5.6-5.6l1.1-7.8l-2.2-6.7L189.5,212.5z' },
-        { id: 'Mexico', name: 'Mexico', path: 'M120,150 l-30,5 l-20,20 l-10,30 l20,15 l30,5 l20-10 l10-20z' },
-        { id: 'USA', name: 'USA', path: 'M50,50 l150,0 l20,50 l-50,50 l-120,0 l-20,-40z' },
-    ];
+    // Find the region with the most cigars (by country)
+    const topCountry = useMemo(() => {
+        let max = 0, top = "United States";
+        Object.entries(countryCounts).forEach(([country, count]) => {
+            if (count > max) {
+                max = count;
+                top = country;
+            }
+        });
+        return top;
+    }, [countryCounts]);
 
-    const handleCountryClick = (countryName) => {
-        if (countryCounts[countryName]) {
-            navigate('HumidorsScreen', { preFilterCountry: countryName });
+    // Map country names to approximate coordinates (longitude, latitude)
+    const countryCenters = {
+        "United States": [-98, 39],
+        "Mexico": [-102, 23],
+        "Cuba": [-79, 21],
+        "Dominican Republic": [-70.7, 19],
+        "Honduras": [-86.5, 15],
+        "Nicaragua": [-85, 12],
+        // Add more as needed
+    };
+
+    // Default center: top country or fallback to USA
+    const initialCenter = countryCenters[topCountry] || [-98, 39];
+    const initialZoom = 2.5; // More zoomed in than default
+
+    // State for zoom and position
+    const [zoom, setZoom] = useState(initialZoom);
+    const [center, setCenter] = useState(initialCenter);
+
+    // Handler for zoom controls
+    const handleZoomIn = () => setZoom(z => Math.min(z + 0.5, 8));
+    const handleZoomOut = () => setZoom(z => Math.max(z - 0.5, 1));
+    const handleReset = () => {
+        setZoom(initialZoom);
+        setCenter(initialCenter);
+    };
+
+    // Handler for dragging the map
+    const handleMoveEnd = (position) => {
+        // Defensive: Ensure position is an array [lng, lat]
+        if (Array.isArray(position) && position.length === 2 && typeof position[0] === "number" && typeof position[1] === "number") {
+            setCenter(position);
+        } else if (position && typeof position === "object" && "coordinates" in position && Array.isArray(position.coordinates)) {
+            setCenter(position.coordinates);
+        } else {
+            // fallback: do not update center
+            console.warn("Invalid center position from ZoomableGroup:", position);
         }
+    };
+
+    // Theme-based map colors
+    const mapColors = {
+        highlighted: theme.primaryBg || "#fbbf24",
+        cigarCountry: theme.card || "#fde68a",
+        other: "#f3f4f6",
+        hover: theme.hoverPrimaryBg || "#f59e0b",
+        border: "#d1d5db"
     };
 
     return (
         <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
             <button onClick={onToggle} className="w-full p-4 flex justify-between items-center">
-                <h3 className="font-bold text-amber-300 text-lg flex items-center"><MapPin className="w-5 h-5 mr-2" /> World Map</h3>
+                <h3 className="font-bold text-amber-300 text-lg flex items-center">
+                    <MapPin className="w-5 h-5 mr-2" /> World Map
+                </h3>
                 <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
             </button>
+
             {!isCollapsed && (
                 <div className="p-4">
-                    <p className="text-sm text-gray-400 mb-4">Tap on a highlighted country to filter your collection by its origin.</p>
-                    <div className="relative w-full" style={{ paddingTop: '66.66%' }}>
-                        <svg className="absolute top-0 left-0 w-full h-full" viewBox="0 0 300 200">
-                            {countries.map(country => {
-                                const count = countryCounts[country.name] || 0;
-                                const hasCigars = count > 0;
-                                return (
-                                    <g key={country.id} onClick={() => handleCountryClick(country.name)} className={hasCigars ? 'cursor-pointer' : 'cursor-default'}>
-                                        <path
-                                            d={country.path}
-                                            className={`transition-all duration-300 ${hasCigars ? 'fill-amber-500 hover:fill-amber-400' : 'fill-gray-700'}`}
-                                            stroke="#111827"
-                                            strokeWidth="0.5"
-                                        >
-                                            <title>{country.name}{hasCigars ? `: ${count} cigar(s)` : ''}</title>
-                                        </path>
-                                    </g>
-                                );
-                            })}
-                        </svg>
+                    <p className="text-sm text-gray-400 mb-4">
+                        Tap on a highlighted country to filter your collection by its origin.
+                    </p>
+                    <div className="w-full" style={{ minHeight: 300 }}>
+                        {/* Zoom controls as icon buttons */}
+                        <div className="flex gap-4 mb-2 justify-end">
+                            <button
+                                onClick={handleZoomOut}
+                                className="p-3 bg-gray-800/50 border border-gray-700 rounded-full text-amber-300 hover:bg-gray-700 transition-colors flex items-center justify-center"
+                                title="Zoom Out"
+                            >
+                                <Minus className="w-5 h-5" />
+                            </button>
+                            <button
+                                onClick={handleZoomIn}
+                                className="p-3 bg-gray-800/50 border border-gray-700 rounded-full text-amber-300 hover:bg-gray-700 transition-colors flex items-center justify-center"
+                                title="Zoom In"
+                            >
+                                <Plus className="w-5 h-5" />
+                            </button>
+                            <button
+                                onClick={handleReset}
+                                className="p-3 bg-gray-800/50 border border-gray-700 rounded-full text-amber-300 hover:bg-gray-700 transition-colors flex items-center justify-center"
+                                title="Reset"
+                            >
+                                <Sparkles className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <ComposableMap
+                            width={1000}
+                            height={350}
+                            style={{ width: "100%", height: "350px" }}
+                        >
+                            <ZoomableGroup
+                                center={center}
+                                zoom={zoom}
+                                onMoveEnd={handleMoveEnd}
+                                minZoom={1}
+                                maxZoom={8}
+                            >
+                                <Geographies geography={geoUrl}>
+                                    {({ geographies }) =>
+                                        geographies.map(geo => {
+                                            const countryName = geo.properties.name;
+                                            const isCigarCountry = cigarCountries.includes(countryName);
+                                            const hasCigars = countryCounts[countryName] > 0;
+                                            return (
+                                                <Geography
+                                                    key={geo.rsmKey}
+                                                    geography={geo}
+                                                    onClick={() => hasCigars && navigate('HumidorsScreen', { preFilterCountry: countryName })}
+                                                    style={{
+                                                        default: {
+                                                            fill: hasCigars
+                                                                ? mapColors.highlighted
+                                                                : isCigarCountry
+                                                                    ? mapColors.cigarCountry
+                                                                    : mapColors.other,
+                                                            outline: "none",
+                                                            cursor: hasCigars ? "pointer" : "default",
+                                                            stroke: mapColors.border,
+                                                            strokeWidth: 0.5
+                                                        },
+                                                        hover: {
+                                                            fill: hasCigars ? mapColors.hover : mapColors.cigarCountry,
+                                                            outline: "none",
+                                                            cursor: hasCigars ? "pointer" : "default"
+                                                        },
+                                                        pressed: {
+                                                            fill: mapColors.highlighted,
+                                                            outline: "none"
+                                                        }
+                                                    }}
+                                                >
+                                                    <title>
+                                                        {countryName}
+                                                        {hasCigars ? `: ${countryCounts[countryName]} cigar(s)` : ""}
+                                                    </title>
+                                                </Geography>
+                                            );
+                                        })
+                                    }
+                                </Geographies>
+                            </ZoomableGroup>
+                        </ComposableMap>
                     </div>
                 </div>
             )}
         </div>
     );
 };
-
 
 const AboutScreen = ({ navigate }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
