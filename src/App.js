@@ -726,17 +726,38 @@ const ThemeModal = ({ currentTheme, setTheme, onClose }) => {
                         >
                             <div className={`w-16 h-10 ${themeOption.card} rounded-md mb-2 border ${themeOption.borderColor}`}></div>
                             <p className={`${themeOption.text} font-semibold text-sm`}>{themeOption.name}</p>
-                            {/* World Map color preview */}
+                            {/* World Map color preview using explicit map colors */}
                             <div className="mt-2 flex gap-1 items-center justify-center">
-                                <span className="w-4 h-4 rounded-full border" style={{ background: themeOption.primaryBg || '#fbbf24', borderColor: themeOption.borderColor || '#d1d5db' }} title="Highlighted Country"></span>
-                                <span className="w-4 h-4 rounded-full border" style={{ background: themeOption.card || '#fde68a', borderColor: themeOption.borderColor || '#d1d5db' }} title="Cigar Country"></span>
-                                <span className="w-4 h-4 rounded-full border" style={{ background: '#f3f4f6', borderColor: themeOption.borderColor || '#d1d5db' }} title="Other Country"></span>
+                                <span
+                                    className="w-4 h-4 rounded-full border"
+                                    style={{
+                                        background: themeOption.mapHighlightedCountry || '#fbbf24',
+                                        borderColor: themeOption.mapBorder || '#d1d5db'
+                                    }}
+                                    title="Highlighted Country"
+                                ></span>
+                                <span
+                                    className="w-4 h-4 rounded-full border"
+                                    style={{
+                                        background: themeOption.mapCigarCountry || '#fde68a',
+                                        borderColor: themeOption.mapBorder || '#d1d5db'
+                                    }}
+                                    title="Cigar Country"
+                                ></span>
+                                <span
+                                    className="w-4 h-4 rounded-full border"
+                                    style={{
+                                        background: themeOption.mapOtherCountry || '#f3f4f6',
+                                        borderColor: themeOption.mapBorder || '#d1d5db'
+                                    }}
+                                    title="Other Country"
+                                ></span>
                             </div>
                             <div className="flex justify-center mt-1 text-xs text-gray-400 gap-1">
                                 <span>Map:</span>
-                                <span className="font-bold" style={{ color: themeOption.primaryBg || '#fbbf24' }}>●</span>
-                                <span className="font-bold" style={{ color: themeOption.card || '#fde68a' }}>●</span>
-                                <span className="font-bold" style={{ color: '#f3f4f6' }}>●</span>
+                                <span className="font-bold" style={{ color: themeOption.mapHighlightedCountry || '#fbbf24' }}>●</span>
+                                <span className="font-bold" style={{ color: themeOption.mapCigarCountry || '#fde68a' }}>●</span>
+                                <span className="font-bold" style={{ color: themeOption.mapOtherCountry || '#f3f4f6' }}>●</span>
                             </div>
                         </button>
                     ))}
@@ -4619,17 +4640,11 @@ const InteractiveWorldMapPanel = ({ cigars, navigate, theme, isCollapsed, onTogg
 
     // Theme-based map colors
     const mapColors = {
-        highlighted: theme.primaryBg && theme.primaryBg !== 'bg-gray-800/50'
-            ? theme.primaryBg.replace('bg-', '').replace('/50', '').replace('-', '')
-            : "#fbbf24", // fallback amber-300
-        cigarCountry: theme.card && theme.card !== 'bg-gray-800/50'
-            ? theme.card.replace('bg-', '').replace('/50', '').replace('-', '')
-            : "#fde68a", // fallback amber-200
-        other: "#f3f4f6",
-        hover: theme.hoverPrimaryBg && theme.hoverPrimaryBg !== 'hover:bg-gray-700'
-            ? theme.hoverPrimaryBg.replace('hover:bg-', '').replace('/50', '').replace('-', '')
-            : "#f59e0b",
-        border: "#d1d5db"
+        highlighted: theme.mapHighlightedCountry || "#fbbf24",
+        cigarCountry: theme.mapCigarCountry || "#fde68a",
+        other: theme.mapOtherCountry || "#f3f4f6",
+        hover: theme.mapHover || "#f59e0b",
+        border: theme.mapBorder || "#d1d5db"
     };
 
     return (
