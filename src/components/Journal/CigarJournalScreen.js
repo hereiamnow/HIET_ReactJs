@@ -1,9 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { BookText, Search, X } from 'lucide-react';
+import { BookText, Search, X, Trash2 } from 'lucide-react';
+import { doc, deleteDoc } from 'firebase/firestore';
 import JournalEntryCard from './JournalEntryCard';
 
 const CigarJournalScreen = ({ navigate, journalEntries, theme, db, appId, userId }) => {
+    const [entryToDelete, setEntryToDelete] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     const sortedEntries = useMemo(() => {
         return [...journalEntries].sort((a, b) => new Date(b.dateSmoked) - new Date(a.dateSmoked));
@@ -11,10 +14,14 @@ const CigarJournalScreen = ({ navigate, journalEntries, theme, db, appId, userId
 
     const filteredEntries = useMemo(() => {
         if (!searchQuery) return sortedEntries;
+        const lowercasedQuery = searchQuery.toLowerCase();
         return sortedEntries.filter(entry =>
-            entry.cigarName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            entry.cigarBrand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (entry.notes && entry.notes.toLowerCase().includes(searchQuery.toLowerCase()))
+            entry.cigarName.toLowerCase().includes(lowercasedQuery) ||
+            entry.cigarBrand.toLowerCase().includes(lowercasedQuery) ||
+            (entry.notes && entry.notes.toLowerCase().includes(lowercasedQuery)) ||
+            (entry.firstThirdNotes && entry.firstThirdNotes.toLowerCase().includes(lowercasedQuery)) ||
+            (entry.secondThirdNotes && entry.secondThirdNotes.toLowerCase().includes(lowercasedQuery)) ||
+            (entry.finalThirdNotes && entry.finalThirdNotes.toLowerCase().includes(lowercasedQuery))
         );
     }, [sortedEntries, searchQuery]);
 
@@ -22,11 +29,13 @@ const CigarJournalScreen = ({ navigate, journalEntries, theme, db, appId, userId
         navigate('AddEditJournalEntry', { cigarId: entry.cigarId, entryId: entry.id });
     };
 
-    const handleDelete = async (entryId) => {
-        if (window.confirm("Are you sure you want to delete this journal entry?")) {
-            const { doc, deleteDoc } = await import('firebase/firestore');
-            const entryRef = doc(db, 'artifacts', appId, 'users', userId, 'journalEntries', entryId);
-            await deleteDoc(entryRef);
+    const handleDelete = async () => {
+        if (entryToDelete) {
+            const docRef = doc(db, 'artifacts', appId, 'users', userId, 'journalEntries', entryToDelete.id);
+            await deleteDoc(docRef);
+            setIsDeleteModalOpen(false);
+            setEntryToDelete(null);
+            navigate('CigarJournal');
         }
     };
 
@@ -60,7 +69,10 @@ const CigarJournalScreen = ({ navigate, journalEntries, theme, db, appId, userId
                             key={entry.id}
                             entry={entry}
                             onEdit={handleEdit}
-                            onDelete={handleDelete}
+                            onDelete={() => {
+                                setEntryToDelete(entry);
+                                setIsDeleteModalOpen(true);
+                            }}
                             theme={theme}
                         />
                     ))
@@ -72,6 +84,43 @@ const CigarJournalScreen = ({ navigate, journalEntries, theme, db, appId, userId
                     </div>
                 )}
             </div>
+
+            {/* Delete Confirmation Modal */}
+            {isDeleteModalOpen && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100]" onClick={() => setIsDeleteModalOpen(false)}>
+                    <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-sm flex flex-col" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-2">
+                            <h3 className="text-xl font-bold text-red-400 flex items-center">
+                                <Trash2 className="w-5 h-5 mr-2" /> Delete Journal Entry
+                            </h3>
+                            <button onClick={() => setIsDeleteModalOpen(false)} className="text-gray-400 hover:text-white">&times;</button>
+                        </div>
+                        <p className="text-gray-300 mb-4">
+                            Are you sure you want to delete this journal entry? This action cannot be undone.
+                        </p>
+                        <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-gray-700">
+                            <button
+                                type="button"
+                                onClick={() => setIsDeleteModalOpen(false)}
+                                className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    await handleDelete();
+                                    setIsDeleteModalOpen(false);
+                                }}
+                                className="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors"
+                            >
+                                Confirm Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 };

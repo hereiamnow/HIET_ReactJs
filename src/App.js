@@ -55,6 +55,7 @@ import AddEditJournalEntry from './components/Journal/AddEditJournalEntry';
 import JournalEntryCard from './components/Journal/JournalEntryCard';
 import CigarJournalScreen from './components/Journal/CigarJournalScreen';
 
+// Initialize Firebase Authentication token
 const initialAuthToken = typeof window !== "undefined" && window.initialAuthToken ? window.initialAuthToken : null;
 
 // List of countries known for producing cigars, used in the app for filtering and categorization.
@@ -69,7 +70,6 @@ const cigarCountries = [
 
 // URL for the world map data used in the Map component.
 const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
-
 
 // --- HELPER & UI COMPONENTS ---
 
@@ -253,11 +253,6 @@ const FilterSortModal = ({
     );
 };
 
-
-
-
-
-
 /**
  * HumidorActionMenu is a dropdown menu for managing humidor actions.
  * It provides options to edit, take readings, export, delete, and import cigars.
@@ -309,7 +304,6 @@ const HumidorActionMenu = ({ onEdit, onTakeReading, onExport, onDelete, onImport
     );
 }
 
-
 /**
  * CigarActionMenu is a dropdown menu for managing cigar-specific actions.
  */
@@ -356,8 +350,6 @@ const CigarActionMenu = ({ onEdit, onExport, onDelete }) => {
         </div>
     );
 };
-
-
 
 // ===================================================================================
 //  REUSABLE & CHILD COMPONENTS
@@ -1142,10 +1134,6 @@ const ImageUploadModal = ({ isOpen, onClose, onImageAccept, itemName, initialIma
         </div>
     );
 };
-
-// ===================================================================================
-//  MAIN CONTROLLER COMPONENT
-// ===================================================================================
 
 /**
  * The main "Smart Image Modal" controller component. It orchestrates the child components.
@@ -4196,7 +4184,6 @@ const DashboardSettingsScreen = ({ navigate, theme, dashboardPanelVisibility, se
     );
 };
 
-
 // Font Picker UI - Moved outside FontsScreen to prevent stale state issues
 const FontPicker = ({ selectedFont, setSelectedFont, theme }) => (
     <div id="font-picker" className="mb-4">
@@ -4240,7 +4227,6 @@ const FontPicker = ({ selectedFont, setSelectedFont, theme }) => (
         </div>
     </div>
 );
-
 
 const FontsScreen = ({ navigate, selectedFont, setSelectedFont, theme }) => {
     // Local state for the font preview. Initialized with the currently active app font.
@@ -4673,10 +4659,6 @@ const DeeperStatisticsScreen = ({ navigate, cigars, theme }) => {
         </div>
     );
 };
-
-
-
-
 
 const InteractiveWorldMapPanel = ({ cigars, navigate, theme, isCollapsed, onToggle }) => {
     const countryCounts = useMemo(() => {
@@ -5355,6 +5337,7 @@ export default function App() {
         strength: true,
         country: true,
         worldMap: true,
+        agingWell: true
     });
 
     // Gemini TODO:Firebase state
@@ -5485,6 +5468,13 @@ export default function App() {
         }
     }, [db, userId]); // Dependencies for this effect.
 
+    // This effect runs whenever the `navigation` state changes.
+    // It is used to scroll the window to the top smoothly when navigating between screens.
+    // Scroll to top on navigation change
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [navigation]);
+
     // Function to handle navigation between screens.
     // It takes the screen name and any parameters to pass to that screen.
     const navigate = (screen, params = {}) => {
@@ -5525,8 +5515,7 @@ export default function App() {
                 return humidor ? <MyHumidor humidor={humidor} navigate={navigate} cigars={cigars} humidors={humidors} db={db} appId={appId} userId={userId} theme={theme} /> : <div>Humidor not found</div>;
             case 'CigarDetail':
                 const cigar = cigars.find(c => c.id === params.cigarId);
-                return cigar ? <CigarDetail cigar={cigar} navigate={navigate} db={db} appId={appId} userId={userId} /> : <div>Cigar not found</div>;
-            case 'AddCigar':
+                return cigar ? <CigarDetail cigar={cigar} navigate={navigate} db={db} appId={appId} userId={userId} journalEntries={journalEntries} /> : <div>Cigar not found</div>;            case 'AddCigar':
                 return <AddCigar navigate={navigate} db={db} appId={appId} userId={userId} humidorId={params.humidorId} theme={theme} />;
             case 'EditCigar':
                 const cigarToEdit = cigars.find(c => c.id === params.cigarId);
