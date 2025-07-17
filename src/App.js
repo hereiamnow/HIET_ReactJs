@@ -580,13 +580,13 @@ const Gauge = ({ value, maxValue, label, unit, icon: Icon }) => {
  * StatCard component for displaying a single statistic on the dashboard.
  */
 const StatCard = ({ title, value, icon: Icon, theme }) => (
-    <div className={`${theme.card} p-3 rounded-xl flex items-center space-x-3 w-full min-w-0`}>
+    <div className={`${theme.card} p-3 rounded-md  flex items-center space-x-3 w-full min-w-0`}>
         {Icon && (
             <div className="p-2 rounded-lg flex-shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}>
                 <Icon className={`w-6 h-6 ${theme.primary}`} />
             </div>
         )}
-        <div className="flex flex-col min-w-0">
+        <div className="flex flex-col min-w-0 ">
             <p className={`${theme.subtleText} text-xs truncate`}>{title}</p>
             <p className={`${theme.text} font-bold text-lg truncate`}>{value}</p>
         </div>
@@ -1669,9 +1669,63 @@ const InventoryAnalysisPanel = ({ cigars, theme, isCollapsed, onToggle }) => {
     );
 };
 
+/**
+ * AgingWellPanel - Shows cigars that have been aging for over a year.
+ * Highlights "Ready to Smoke" or "Perfectly Aged" cigars.
+ */
+const AgingWellPanel = ({ cigars, navigate, theme, isCollapsed, onToggle }) => {
+    // Filter cigars aged over 1 year (365 days)
+    const agedCigars = useMemo(() => {
+        return cigars
+            .filter(cigar => {
+                // Only include cigars with a valid dateAdded
+                if (!cigar.dateAdded) return false;
+                const ageInDays = calculateAge(cigar.dateAdded, true); // Get age in days
+                return ageInDays >= 365; // Check if age is 1 year or more
+            })
+            .sort((a, b) => new Date(a.dateAdded) - new Date(b.dateAdded)); // Sort oldest first
+    }, [cigars]);
+
+    return (
+        <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
+            <button onClick={onToggle} className="w-full p-4 flex justify-between items-center">
+                <h3 className="font-bold text-amber-300 text-lg flex items-center">
+                    <CalendarIcon className="w-5 h-5 mr-2" /> Aging Well / From the Cellar
+                </h3>
+                <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
+            </button>
+            {!isCollapsed && (
+                <div className="px-4 pb-4 space-y-2">
+                    {agedCigars.length > 0 ? (
+                        agedCigars.map(cigar => (
+                            <button
+                                key={cigar.id}
+                                onClick={() => navigate('CigarDetail', { cigarId: cigar.id })}
+                                className="w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors flex justify-between items-center"
+                            >
+                                <div>
+                                    <span className="text-white font-semibold">{cigar.brand} {cigar.name}</span>
+                                    <span className="block text-xs text-gray-400">
+                                        Aging: {calculateAge(cigar.dateAdded)} {cigar.dateAdded ? `(Since ${formatDate(cigar.dateAdded)})` : ''}
+                                    </span>
+                                </div>
+                                <span className="text-green-400 font-bold text-xs">
+                                    {calculateAge(cigar.dateAdded, true) >= 730 ? "Perfectly Aged" : "Ready to Smoke"}
+                                </span>
+                            </button>
+                        ))
+                    ) : (
+                        <p className="text-gray-500 text-sm text-center py-4">No cigars have been aging for over a year.</p>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
 const MyCollectionStatsCards = ({ totalCigars, totalValue, humidors, theme }) => {
     return (
-        <div id="my-collection-stats" className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+        <div id="my-collection-stats" className="grid grid-cols-3 sm:grid-cols-3 gap-2 mb-6">
             <StatCard title="Total Cigars" value={totalCigars} theme={theme} />
             <StatCard title="Est. Value" value={`$${totalValue.toFixed(2)}`} theme={theme} />
             <StatCard title="Humidors" value={humidors.length} theme={theme} />
@@ -1909,6 +1963,17 @@ const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showSt
                         </div>
                     )}
                 </div>
+
+                {hasCigars && dashboardPanelVisibility.showAgingWellPanel && (
+                    <AgingWellPanel
+                        cigars={cigars}
+                        navigate={navigate}
+                        theme={theme}
+                        isCollapsed={panelStates.agingWell}
+                        onToggle={() => handlePanelToggle('agingWell')}
+                    />
+                )}
+
 
                 {/* Conditionally render LiveEnvironmentPanel if there are humidors and it's enabled in settings */}
                 {hasHumidors && showLiveEnvironment && <LiveEnvironmentPanel humidors={humidors} theme={theme} isCollapsed={panelStates.liveEnvironment} onToggle={() => handlePanelToggle('liveEnvironment')} />}
@@ -4088,6 +4153,11 @@ const DashboardSettingsScreen = ({ navigate, theme, dashboardPanelVisibility, se
                     isChecked={dashboardPanelVisibility.showCountryPanel}
                     onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showCountryPanel: !prev.showCountryPanel }))}
                 />
+                <ToggleSwitch
+                    label="Aging Well / From the Cellar"
+                    isChecked={dashboardPanelVisibility.showAgingWellPanel}
+                    onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showAgingWellPanel: !prev.showAgingWellPanel }))}
+                />
             </div>
         </div>
     );
@@ -4658,7 +4728,7 @@ const InteractiveWorldMapPanel = ({ cigars, navigate, theme, isCollapsed, onTogg
 
             {!isCollapsed && (
                 <div className="p-4">
-                    <p className="text-sm text-gray-400 mb-4">
+                    <p className="text-sm text-gray-400 mb-1">
                         Tap on a highlighted country to filter your collection by its origin.
                     </p>
                     <div className="w-full" style={{ minHeight: 300, position: "relative" }}>
@@ -4725,7 +4795,11 @@ const InteractiveWorldMapPanel = ({ cigars, navigate, theme, isCollapsed, onTogg
                                                             strokeWidth: 0.5
                                                         },
                                                         hover: {
-                                                            fill: hasCigars ? mapColors.hover : mapColors.cigarCountry,
+                                                            fill: hasCigars
+                                                                ? mapColors.hover
+                                                                : isCigarCountry
+                                                                    ? mapColors.cigarCountry
+                                                                    : mapColors.other, // do not highlight if no cigars
                                                             outline: "none",
                                                             cursor: hasCigars ? "pointer" : "default"
                                                         },
@@ -5235,6 +5309,7 @@ export default function App() {
         showLiveEnvironment: true,
         showInventoryAnalysis: true,
         showWorldMap: true,
+        showAgingWellPanel: true,
     });
 
     // New state to manage the open/closed status of dashboard panels
