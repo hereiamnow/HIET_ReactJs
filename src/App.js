@@ -10,13 +10,10 @@
 // Next Suggestions:
 // - Implement drag-and-drop reordering for the dashboard panels on desktop.
 // - Persist the user's custom panel order to local storage.
-// - Implement full Firebase authentication flow (sign-up, login, password reset).
 // - Enhance error handling with user-friendly messages for all API calls and database operations.
 // - Add more robust input validation for all forms.
 // - Give the user the option to reset the date when moving cigars to a new humidor.
-// - Add font support in ThemeModal for custom fonts. Serif and sans-serif fonts.
 // - Implement a "Cigar of the Day" feature that highlights a random cigar from the user's collection each day picked by Roxy.
-// - Add a "Cigar Journal" feature where users can log their smoking experiences, notes, and ratings for each cigar.
 // - Implement Firebase Storage integration for image uploads.
 
 // Firebase configuration and initialization.
@@ -28,12 +25,12 @@ import FirebaseAuthUI from './FirebaseAuthUI';// FirebaseUI component for handli
 // React is the main library for building the user interface.
 // useState, useEffect, and useMemo are "hooks" that let us use state and other React features in functional components.
 import React, { useState, useEffect, useMemo, useRef } from 'react'; // Import useRef for flashing effect
-
+// react-simple-maps provides a set of components for rendering maps.
 import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps";
 
 
 // lucide-react provides a set of clean, modern icons used throughout the app.
-import { ArrowUp, ArrowDown, MoreVertical, CheckSquare, AlertTriangle, BarChart2, Bell, Box, Calendar as CalendarIcon, Check, ChevronDown, ChevronLeft, Cigarette, Database, DollarSign, Download, Droplets, Edit, FileText, Filter, Info, LayoutGrid, Leaf, List, ListFilter, LoaderCircle, LogOut, MapPin, Minus, Move, Palette, PieChart as PieChartIcon, Plus, Search, Settings as SettingsIcon, Sparkles, Star, Tag, Thermometer, Trash2, Upload, UploadCloud, User, Wind, X, Zap, PencilRuler, FileUp, Trash, ClipboardPenLine, FileDown, Github, Bug } from 'lucide-react';
+import { ArrowUp, ArrowDown, MoreVertical, CheckSquare, AlertTriangle, BarChart2, Bell, Box, Calendar as CalendarIcon, Check, ChevronDown, ChevronLeft, Cigarette, Database, DollarSign, Download, Droplets, Edit, FileText, Filter, Info, LayoutGrid, Leaf, List, ListFilter, LoaderCircle, LogOut, MapPin, Minus, Move, Palette, PieChart as PieChartIcon, Plus, Search, Settings as SettingsIcon, Sparkles, Star, Tag, Thermometer, Trash2, Upload, UploadCloud, User, Wind, X, Zap, PencilRuler, FileUp, Trash, ClipboardPenLine, FileDown, Github, Bug, BookText } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import Papa from 'papaparse'; // Import papaparse for CSV parsing and exporting.
 // Import Firebase libraries for database and authentication
@@ -54,10 +51,13 @@ import ChartCard from './components/UI/ChartCard';
 import { getRatingColor } from './components/utils/getRatingColor';
 import { calculateAge } from './components/utils/calculateAge';
 import ProfileScreen from './components/Settings/ProfileScreen';
+import AddEditJournalEntry from './components/Journal/AddEditJournalEntry';
+import JournalEntryCard from './components/Journal/JournalEntryCard';
+import CigarJournalScreen from './components/Journal/CigarJournalScreen';
 
 const initialAuthToken = typeof window !== "undefined" && window.initialAuthToken ? window.initialAuthToken : null;
 
-
+// List of countries known for producing cigars, used in the app for filtering and categorization.
 const cigarCountries = [
     "United States",
     "Mexico",
@@ -67,8 +67,8 @@ const cigarCountries = [
     "Nicaragua"
 ];
 
-const geoUrl =
-    "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+// URL for the world map data used in the Map component.
+const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
 
 // --- HELPER & UI COMPONENTS ---
@@ -600,8 +600,9 @@ const BottomNav = ({ activeScreen, navigate, theme }) => {
     const navItems = [
         { name: 'Dashboard', icon: BarChart2 },
         { name: 'HumidorsScreen', icon: Box },
+        { name: 'CigarJournal', icon: BookText },
         { name: 'Alerts', icon: Bell },
-        { name: 'Settings', icon: SettingsIcon }, // Use SettingsIcon here
+        { name: 'Settings', icon: SettingsIcon }
     ];
 
     return (
@@ -610,7 +611,7 @@ const BottomNav = ({ activeScreen, navigate, theme }) => {
                 <button key={item.name} onClick={() => navigate(item.name)}
                     className={`flex flex-col items-center justify-center w-1/4 transition-colors duration-300 ${activeScreen === item.name ? theme.primary : theme.subtleText}`}>
                     <item.icon className="w-7 h-7 mb-1" />
-                    <span className="text-xs font-medium">{item.name === 'HumidorsScreen' ? 'My Humidors' : item.name}</span>
+                    <span className="text-xs font-medium">{item.name === 'HumidorsScreen' ? 'My Humidors' : item.name === 'CigarJournal' ? 'Journal' : item.name}</span>
                 </button>
             ))}
         </div>
@@ -3106,7 +3107,7 @@ If you cannot determine a value, use "" or [] or 0. Only return the JSON object.
     );
 };
 
-const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
+const CigarDetail = ({ cigar, navigate, db, appId, userId, journalEntries }) => {
     const [modalState, setModalState] = useState({ isOpen: false, type: null, content: '', isLoading: false });
     const [isFlavorModalOpen, setIsFlavorModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -3114,13 +3115,19 @@ const CigarDetail = ({ cigar, navigate, db, appId, userId }) => {
     const [isRoxyOpen, setIsRoxyOpen] = useState(false);
     const [showSmokeConfirmation, setShowSmokeConfirmation] = useState(false);
 
+    const journalEntriesForCigar = useMemo(() => {
+        return journalEntries
+            .filter(entry => entry.cigarId === cigar.id)
+            .sort((a, b) => new Date(b.dateSmoked) - new Date(a.dateSmoked));
+    }, [journalEntries, cigar.id]);
+
     const handleSmokeCigar = async () => {
         if (cigar.quantity > 0) {
             const newQuantity = cigar.quantity - 1;
             const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
             await updateDoc(cigarRef, { quantity: newQuantity });
-            setShowSmokeConfirmation(true); // Show confirmation message
-            setTimeout(() => setShowSmokeConfirmation(false), 3000); // Hide after 3 seconds
+            // Navigate to log the experience
+            navigate('AddEditJournalEntry', { cigarId: cigar.id });
         }
     };
 
@@ -3220,7 +3227,7 @@ Provide a brief, encouraging, and slightly personalized note about this cigar's 
             <div className="p-4 space-y-6">
                 {/* SMOKE THIS! Action Button */}
                 <button onClick={handleSmokeCigar} disabled={cigar.quantity === 0} className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-lg hover:bg-amber-600 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">
-                    <Cigarette className="w-5 h-5" /> Smoke This ({cigar.quantity} in stock)
+                    <Cigarette className="w-5 h-5" /> Log This Smoke ({cigar.quantity} in stock)
                 </button>
                 {showSmokeConfirmation && (
                     <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
@@ -3271,6 +3278,32 @@ Provide a brief, encouraging, and slightly personalized note about this cigar's 
                         </div>
                     </div>
                 </div>
+
+                {/* Journal History Panel */}
+                <div className="bg-gray-800/50 p-4 rounded-xl space-y-4">
+                    <h3 className="font-bold text-amber-300 text-lg flex items-center"><BookText className="w-5 h-5 mr-2" /> Journal History</h3>
+                    {journalEntriesForCigar.length > 0 ? (
+                        <div className="space-y-4">
+                            {journalEntriesForCigar.map(entry => (
+                                <JournalEntryCard
+                                    key={entry.id}
+                                    entry={entry}
+                                    theme={{ card: 'bg-gray-800' }}
+                                    onEdit={() => navigate('AddEditJournalEntry', { cigarId: cigar.id, entryId: entry.id })}
+                                    onDelete={async (entryId) => {
+                                        if (window.confirm("Delete this entry?")) {
+                                            const entryRef = doc(db, 'artifacts', appId, 'users', userId, 'journalEntries', entryId);
+                                            await deleteDoc(entryRef);
+                                        }
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-sm text-gray-500">No journal entries for this cigar yet. Smoke one to add an entry!</p>
+                    )}
+                </div>
+
 
                 {/* Roxy's Corner Collapsible Panel */}
                 <div className="bg-amber-900/20 border border-amber-800 rounded-xl overflow-hidden">
@@ -5293,6 +5326,7 @@ export default function App() {
     const [navigation, setNavigation] = useState({ screen: 'Dashboard', params: {} });
     const [cigars, setCigars] = useState([]);
     const [humidors, setHumidors] = useState([]);
+    const [journalEntries, setJournalEntries] = useState([]);
     const [theme, setTheme] = useState(themes["Humidor Hub"]);
     const [goveeApiKey, setGoveeApiKey] = useState('');
     const [goveeDevices, setGoveeDevices] = useState([]);
@@ -5426,11 +5460,27 @@ export default function App() {
                 setIsLoading(false);
             });
 
+            // Set up a real-time listener for the 'journalEntries' collection.
+            const journalEntriesCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'journalEntries');
+            const unsubscribeJournalEntries = onSnapshot(journalEntriesCollectionRef, (snapshot) => {
+                const entriesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setJournalEntries(entriesData);
+            }, (error) => {
+                console.error("Error fetching journal entries:", error);
+            });
+
+
+
             // This is a cleanup function. When the component unmounts (or `db`/`userId` changes),
             // it will detach the listeners to prevent memory leaks.
             return () => {
+                console.log("Cleaning up Firestore listeners...");
                 unsubscribeHumidors();
+                console.log("Unsubscribing from humidors updates.");
                 unsubscribeCigars();
+                console.log("Unsubscribing from cigars updates.");
+                unsubscribeJournalEntries();
+                console.log("Unsubscribing from journal entries updates.");
             };
         }
     }, [db, userId]); // Dependencies for this effect.
@@ -5492,8 +5542,15 @@ export default function App() {
             case 'EditHumidor':
                 const humidorToEdit = humidors.find(h => h.id === params.humidorId);
                 return humidorToEdit ? <EditHumidor navigate={navigate} db={db} appId={appId} userId={userId} humidor={humidorToEdit} goveeApiKey={goveeApiKey} goveeDevices={goveeDevices} theme={theme} /> : <div>Humidor not found</div>;
+            case 'CigarJournal':
+                return <CigarJournalScreen navigate={navigate} journalEntries={journalEntries} theme={theme} db={db} appId={appId} userId={userId} />;
+            case 'AddEditJournalEntry':
+                const cigarForJournal = cigars.find(c => c.id === params.cigarId);
+                const entryToEdit = journalEntries.find(e => e.id === params.entryId);
+                return cigarForJournal ? <AddEditJournalEntry navigate={navigate} db={db} appId={appId} userId={userId} cigar={cigarForJournal} existingEntry={entryToEdit} theme={theme} /> : <div>Cigar not found for journal entry.</div>;
             case 'DashboardSettings':
                 return <DashboardSettingsScreen navigate={navigate} theme={theme} dashboardPanelVisibility={dashboardPanelVisibility} setDashboardPanelVisibility={setDashboardPanelVisibility} />;
+            
             case 'DeeperStatistics':
                 return <DeeperStatisticsScreen navigate={navigate} cigars={cigars} theme={theme} />;
             case 'Integrations':
