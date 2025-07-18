@@ -1,6 +1,3 @@
 {
-    "editor.fontSize": 9,
-    "terminal.integrated.fontSize": 9,
-    "chat.editor.fontSize": 9,
-    "scm.inputFontSize": 9
+    "java.configuration.updateBuildConfiguration": "automatic"
 }
