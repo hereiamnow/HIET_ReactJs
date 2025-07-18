@@ -48,8 +48,7 @@ import InputField from './components/UI/InputField';
 import TextAreaField from './components/UI/TextAreaField';
 import AutoCompleteInputField from './components/UI/AutoCompleteInputField';
 import ChartCard from './components/UI/ChartCard';
-import { getRatingColor } from './components/utils/getRatingColor';
-import { calculateAge } from './components/utils/calculateAge';
+import { getRatingColor, calculateAge, downloadFile, generateAiImage, getFlavorTagColor, parseHumidorSize, formatDate } from './components/utils';
 import ProfileScreen from './components/Settings/ProfileScreen';
 import AddEditJournalEntry from './components/Journal/AddEditJournalEntry';
 import JournalEntryCard from './components/Journal/JournalEntryCard';
@@ -73,85 +72,9 @@ const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
 // --- HELPER & UI COMPONENTS ---
 
-/**
- * A helper function to trigger a file download in the browser.
- * This is used for exporting data.
- */
-const downloadFile = ({ data, fileName, fileType }) => {
-    const blob = new Blob([data], { type: fileType });
-    const a = document.createElement('a');
-    a.download = fileName;
-    a.href = window.URL.createObjectURL(blob);
-    const clickEvt = new MouseEvent('click', {
-        view: window,
-        bubbles: true,
-        cancelable: true,
-    });
-    a.dispatchEvent(clickEvt);
-    a.remove();
-};
 
-/**
- * Generates an image using the Gemini (Imagen 3) API.
- * @param {string} itemName - The name of the item to generate an image for.
- * @param {string} [itemCategory] - The category of the item (e.g., 'cigar', 'humidor').
- * @param {string} [itemType] - The specific type of the item (e.g., 'Desktop Humidor').
- * @returns {Promise<string>} A promise that resolves to a base64 image data URL.
- */
-const generateAiImage = async (itemName, itemCategory, itemType) => {
-    // This prompt is sent to the AI to guide the image generation.
-    let prompt;
-    if (itemCategory === 'humidor') {
-        prompt = `A professional, high-quality, photorealistic image of a ${itemType || ''} ${itemName} humidor, suitable for a product catalog. The background should be clean and simple, focusing on the product.`;
-    } else {
-        // Default prompt for cigars or other items
-        prompt = `A professional, high-quality, photorealistic image of a ${itemName}, suitable for a product catalog. The background should be clean and simple, focusing on the product.`;
-    }
 
-    // The payload is the data structure required by the Gemini API endpoint.
-    const payload = {
-        instances: [{ prompt: prompt }],
-        parameters: { "sampleCount": 1 }
-    };
 
-    const apiKey = firebaseConfigExport.apiKey;
-    const projectId = firebaseConfigExport.projectId;
-
-    const apiUrl = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/imagen-3.0-generate-002:predict`;
-
-    try {
-        // We use a try/catch block to handle potential network errors.
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}` // Use Bearer token for authentication
-            },
-            body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-            // If the API returns an error status (e.g., 400, 500), we throw an error.
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
-
-        if (result.predictions && result.predictions.length > 0 && result.predictions[0].bytesBase64Encoded) {
-            // The API returns the image as a base64 string. We format it into a data URL
-            // that can be used directly in an <img> src attribute.
-            return `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
-        } else {
-            // This case handles a successful API call that doesn't return the expected image data.
-            console.error("AI image generation failed:", result);
-            return `https://placehold.co/600x400/ef4444/ffffff?font=playfair-display&text=Generation+Failed`;
-        }
-    } catch (error) {
-        // This catches network errors or the error thrown above.
-        console.error("Error calling Gemini API:", error);
-        return `https://placehold.co/600x400/ef4444/ffffff?font=playfair-display&text=Error`;
-    }
-};
 
 /** 
  * FilterSortModal is a modal component for filtering and sorting cigars.
@@ -460,72 +383,9 @@ const ImagePreview = ({ image, position, onClick }) => {
     );
 };
 
-/**
- * A helper function to determine the color of a flavor tag based on the note.
- * This makes the UI more visually interesting and informative.
- */
-const getFlavorTagColor = (note) => {
-    const lowerNote = note.toLowerCase();
-    switch (lowerNote) {
-        // Earthy/Woody
-        case 'earthy': case 'woody': case 'leather': case 'oak': case 'toasted':
-            return 'bg-yellow-900/50 text-yellow-200 border border-yellow-800';
 
-        // Sweet
-        case 'almond': case 'caramel': case 'chocolate': case 'coconut':
-        case 'honey': case 'maple': case 'molasses': case 'raisin':
-        case 'sweet': case 'vanilla':
-            return 'bg-amber-700/60 text-amber-100 border border-amber-600';
 
-        // Spicy
-        case 'anise': case 'cardamom': case 'cinnamon': case 'clove':
-        case 'ginger': case 'pepper': case 'paprika': case 'saffron':
-        case 'spicy':
-            return 'bg-red-800/60 text-red-200 border border-red-700';
 
-        // Fruity
-        case 'black cherry': case 'candle wax': case 'citrus':
-        case 'floral': case 'fruity': case 'mint': case 'toasted bread':
-            return 'bg-purple-800/60 text-purple-200 border border-purple-700';
-
-        // Creamy/Nutty
-        case 'buttery': case 'creamy': case 'nutty': case 'smoky':
-            return 'bg-orange-900/60 text-orange-200 border border-orange-800';
-
-        // Other
-        case 'charred': case 'coffee':
-            return 'bg-yellow-950/60 text-yellow-100 border border-yellow-900';
-
-        // Default case for unrecognized notes
-        default:
-            return 'bg-gray-700 text-gray-200 border border-gray-600';
-    }
-};
-
-/**
- * A helper function to parse the numerical capacity from a humidor's size string.
- * e.g., "150-count" -> 150
- */
-const parseHumidorSize = (sizeString) => {
-    if (!sizeString || typeof sizeString !== 'string') return 0;
-    const match = sizeString.match(/\d+/); // Find the first sequence of digits
-    return match ? parseInt(match[0], 10) : 0;
-};
-
-/**
- * Formats an ISO date string into a more readable format (e.g., "July 5, 2025").
- */
-const formatDate = (isoString) => {
-    if (!isoString) return 'N/A';
-    const date = new Date(isoString);
-    // Add timeZone to prevent off-by-one day errors
-    return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        timeZone: 'UTC'
-    });
-};
 
 /**
  * Gauge component for displaying humidity and temperature.
@@ -1058,7 +918,8 @@ const ImageUploadModal = ({ isOpen, onClose, onImageAccept, itemName, initialIma
         setIsGenerating(true);
         setPreview('');
 
-        const generatedImage = await generateAiImage(itemName, itemCategory, itemType); setPreview(generatedImage);
+        const generatedImage = await generateAiImage(itemName, itemCategory, itemType, firebaseConfigExport);
+        setPreview(generatedImage);
         setModalPosition({ x: 50, y: 50 }); // Reset position for new AI images.
 
         setIsGenerating(false);
@@ -1722,7 +1583,8 @@ const MyCollectionStatsCards = ({ totalCigars, totalValue, humidors, theme }) =>
     );
 };
 
-const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showStrengthPanel, showCountryPanel, showLiveEnvironment, showInventoryAnalysis, panelStates, setPanelStates, dashboardPanelVisibility }) => {    const [roxyTip, setRoxyTip] = useState('');
+const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showStrengthPanel, showCountryPanel, showLiveEnvironment, showInventoryAnalysis, panelStates, setPanelStates, dashboardPanelVisibility }) => {
+    const [roxyTip, setRoxyTip] = useState('');
     const [modalState, setModalState] = useState({ isOpen: false, content: '', isLoading: false });
     const [isBrowseByModeOpen, setIsBrowseByModeOpen] = useState(false);
     const [browseMode, setBrowseMode] = useState('');
@@ -5515,7 +5377,7 @@ export default function App() {
                 return humidor ? <MyHumidor humidor={humidor} navigate={navigate} cigars={cigars} humidors={humidors} db={db} appId={appId} userId={userId} theme={theme} /> : <div>Humidor not found</div>;
             case 'CigarDetail':
                 const cigar = cigars.find(c => c.id === params.cigarId);
-                return cigar ? <CigarDetail cigar={cigar} navigate={navigate} db={db} appId={appId} userId={userId} journalEntries={journalEntries} /> : <div>Cigar not found</div>;            case 'AddCigar':
+                return cigar ? <CigarDetail cigar={cigar} navigate={navigate} db={db} appId={appId} userId={userId} journalEntries={journalEntries} /> : <div>Cigar not found</div>; case 'AddCigar':
                 return <AddCigar navigate={navigate} db={db} appId={appId} userId={userId} humidorId={params.humidorId} theme={theme} />;
             case 'EditCigar':
                 const cigarToEdit = cigars.find(c => c.id === params.cigarId);
@@ -5539,7 +5401,7 @@ export default function App() {
                 return cigarForJournal ? <AddEditJournalEntry navigate={navigate} db={db} appId={appId} userId={userId} cigar={cigarForJournal} existingEntry={entryToEdit} theme={theme} /> : <div>Cigar not found for journal entry.</div>;
             case 'DashboardSettings':
                 return <DashboardSettingsScreen navigate={navigate} theme={theme} dashboardPanelVisibility={dashboardPanelVisibility} setDashboardPanelVisibility={setDashboardPanelVisibility} />;
-            
+
             case 'DeeperStatistics':
                 return <DeeperStatisticsScreen navigate={navigate} cigars={cigars} theme={theme} />;
             case 'Integrations':
