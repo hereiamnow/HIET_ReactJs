@@ -70,6 +70,19 @@ import { downloadFile, generateAiImage } from './utils/fileUtils';
 import { getFlavorTagColor } from './utils/colorUtils';
 import { parseHumidorSize, formatDate } from './utils/formatUtils';
 
+// Import extracted modal components
+import GeminiModal from './components/Modals/Content/GeminiModal';
+import ThemeModal from './components/Modals/Content/ThemeModal';
+import FlavorNotesModal from './components/Modals/Forms/FlavorNotesModal';
+import ManualReadingModal from './components/Modals/Forms/ManualReadingModal';
+import ImageUploadModal from './components/Modals/Forms/ImageUploadModal';
+import MoveCigarsModal from './components/Modals/Actions/MoveCigarsModal';
+import DeleteHumidorModal from './components/Modals/Actions/DeleteHumidorModal';
+import DeleteCigarsModal from './components/Modals/Actions/DeleteCigarsModal';
+import ImportCsvModal from './components/Modals/Data/ImportCsvModal';
+import ExportModal from './components/Modals/Data/ExportModal';
+import SmartImageModal from './components/Modals/Composite/SmartImageModal';
+
 // Initialize Firebase Authentication token
 const initialAuthToken = typeof window !== "undefined" && window.initialAuthToken ? window.initialAuthToken : null;
 
@@ -86,7 +99,6 @@ const cigarCountries = [
 // URL for the world map data used in the Map component.
 const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
-// --- HELPER & UI COMPONENTS ---
 
 
 
@@ -96,10 +108,6 @@ const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
 
 
-// ===================================================================================
-//  REUSABLE & CHILD COMPONENTS
-//  These are the building blocks for our main feature.
-// ===================================================================================
 
 
 
@@ -107,562 +115,7 @@ const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
 
 
-/**
- * GeminiModal is a pop-up used to display content fetched from the Gemini API.
- */
-const GeminiModal = ({ title, content, isLoading, onClose }) => (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100]" onClick={onClose}>
-        <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold text-amber-400 flex items-center"><Sparkles className="w-5 h-5 mr-2" /> {title}</h3>
-                {isLoading ? (
-                    <LoaderCircle className="w-6 h-6 text-amber-500 animate-spin" />
-                ) : (
-                    <button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button>
-                )}
-            </div>
-            {isLoading ? (
-                <div className="flex flex-col items-center justify-center h-48">
-                    <LoaderCircle className="w-12 h-12 text-amber-500 animate-spin" />
-                    <p className="mt-4 text-gray-300">Consulting the experts...</p>
-                </div>
-            ) : (
-                <div className="text-gray-300 whitespace-pre-wrap font-light text-sm leading-relaxed max-h-96 overflow-y-auto">{content}</div>
-            )}
-        </div>
-    </div>
-);
 
-/**
- * FlavorNotesModal is a pop-up for editing the flavor notes of a cigar.
- */
-const FlavorNotesModal = ({ cigar, db, appId, userId, onClose, setSelectedNotes: updateParentNotes }) => {
-    const [selectedNotes, setSelectedNotes] = useState(cigar?.flavorNotes || []);
-
-    const handleToggleNote = (note) => {
-        setSelectedNotes(prev => {
-            const newNotes = prev.includes(note) ? prev.filter(n => n !== note) : [...prev, note];
-            updateParentNotes(newNotes); // Update parent's state immediately
-            return newNotes;
-        });
-    };
-
-    const handleSave = async () => {
-        // This function is only called when the modal's internal save button is clicked.
-        // For AddEditCigarModal, we update parent's state directly on toggle.
-        // For CigarDetail, we would save to Firestore here.
-        if (cigar?.id) { // Only save to Firestore if it's an existing cigar from CigarDetail
-            const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
-            await updateDoc(cigarRef, { flavorNotes: selectedNotes });
-        }
-        onClose();
-    };
-
-    return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100]" onClick={onClose}>
-            <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-sm flex flex-col" onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-amber-400 flex items-center"><Tag className="w-5 h-5 mr-2" /> Edit Flavor Notes</h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button>
-                </div>
-                <div className="flex-grow overflow-y-auto max-h-72 mb-4 pr-2">
-                    <div className="flex flex-wrap gap-2">
-                        {allFlavorNotes.map(note => {
-                            const isSelected = selectedNotes.includes(note);
-                            return (
-                                <button
-                                    key={note}
-                                    type="button" // Important to prevent form submission
-                                    onClick={() => handleToggleNote(note)}
-                                    className={`text-xs font-semibold px-2.5 py-1.5 rounded-full transition-all duration-200 ${getFlavorTagColor(note)} ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-800' : ''}`}
-                                >
-                                    {note}
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-                {cigar?.id && ( // Only show save button if editing an existing cigar (from CigarDetail)
-                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-700">
-                        <button type="button" onClick={onClose} className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors">Cancel</button>
-                        <button type="button" onClick={handleSave} className="bg-amber-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-amber-600 transition-colors">Save</button>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-};
-
-/**
- * ThemeModal is a pop-up for selecting a new app theme.
- */
-const ThemeModal = ({ currentTheme, setTheme, onClose }) => {
-    return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100]" onClick={onClose}>
-            <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-sm flex flex-col" onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-amber-400 flex items-center"><Palette className="w-5 h-5 mr-2" /> Select Theme</h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                    {Object.values(themes).map(themeOption => (
-                        <button
-                            key={themeOption.name}
-                            onClick={() => {
-                                setTheme(themeOption);
-                                onClose();
-                            }}
-                            className={`p-4 rounded-lg border-2 ${currentTheme.name === themeOption.name ? 'border-amber-400' : 'border-gray-600'} ${themeOption.bg}`}
-                        >
-                            <div className={`w-16 h-10 ${themeOption.card} rounded-md mb-2 border ${themeOption.borderColor}`}></div>
-                            <p className={`${themeOption.text} font-semibold text-sm`}>{themeOption.name}</p>
-                            {/* World Map color preview using explicit map colors */}
-                            <div className="mt-2 flex gap-1 items-center justify-center">
-                                <span
-                                    className="w-4 h-4 rounded-full border"
-                                    style={{
-                                        background: themeOption.mapHighlightedCountry || '#fbbf24',
-                                        borderColor: themeOption.mapBorder || '#d1d5db'
-                                    }}
-                                    title="Highlighted Country"
-                                ></span>
-                                <span
-                                    className="w-4 h-4 rounded-full border"
-                                    style={{
-                                        background: themeOption.mapCigarCountry || '#fde68a',
-                                        borderColor: themeOption.mapBorder || '#d1d5db'
-                                    }}
-                                    title="Cigar Country"
-                                ></span>
-                                <span
-                                    className="w-4 h-4 rounded-full border"
-                                    style={{
-                                        background: themeOption.mapOtherCountry || '#f3f4f6',
-                                        borderColor: themeOption.mapBorder || '#d1d5db'
-                                    }}
-                                    title="Other Country"
-                                ></span>
-                            </div>
-                            <div className="flex justify-center mt-1 text-xs text-gray-400 gap-1">
-                                <span>Map:</span>
-                                <span className="font-bold" style={{ color: themeOption.mapHighlightedCountry || '#fbbf24' }}>●</span>
-                                <span className="font-bold" style={{ color: themeOption.mapCigarCountry || '#fde68a' }}>●</span>
-                                <span className="font-bold" style={{ color: themeOption.mapOtherCountry || '#f3f4f6' }}>●</span>
-                            </div>
-                        </button>
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-/**
- * MoveCigarsModal is a pop-up for moving selected cigars to another humidor.
- */
-const MoveCigarsModal = ({ onClose, onMove, destinationHumidors, theme }) => {
-    const [selectedHumidorId, setSelectedHumidorId] = useState(destinationHumidors[0]?.id || '');
-
-    const handleMove = () => {
-        if (selectedHumidorId) {
-            onMove(selectedHumidorId);
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100]" onClick={onClose}>
-            <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-sm flex flex-col" onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-amber-400 flex items-center"><Move className="w-5 h-5 mr-2" /> Move Cigars</h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button>
-                </div>
-                <div className="space-y-4">
-                    <p className="text-sm text-gray-400">Select the destination humidor for the selected cigars.</p>
-                    <div>
-                        <label className="text-sm font-medium text-gray-300 mb-1 block">Move to</label>
-                        <select
-                            value={selectedHumidorId}
-                            onChange={(e) => setSelectedHumidorId(e.target.value)}
-                            className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white"
-                        >
-                            {destinationHumidors.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-                        </select>
-                    </div>
-                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-700">
-                        <button onClick={onClose} className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors">Cancel</button>
-                        <button onClick={handleMove} disabled={!selectedHumidorId} className="bg-amber-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-amber-600 transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed">
-                            Move
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-/**
- * A modal for confirming the deletion of a humidor.
- */
-const DeleteHumidorModal = ({ isOpen, onClose, onConfirm, humidor, cigarsInHumidor, otherHumidors }) => {
-    const [deleteAction, setDeleteAction] = useState('move');
-    const [destinationHumidorId, setDestinationHumidorId] = useState(otherHumidors[0]?.id || '');
-
-    useEffect(() => {
-        if (isOpen) {
-            setDeleteAction(otherHumidors.length > 0 ? 'move' : 'deleteAll');
-            setDestinationHumidorId(otherHumidors[0]?.id || '');
-        }
-    }, [isOpen, otherHumidors]);
-
-    if (!isOpen) return null;
-
-    const hasCigars = cigarsInHumidor.length > 0;
-    const hasOtherHumidors = otherHumidors.length > 0;
-
-    const handleConfirm = () => {
-        onConfirm({
-            action: hasCigars ? deleteAction : 'deleteEmpty',
-            destinationHumidorId: deleteAction === 'move' ? destinationHumidorId : null,
-        });
-    };
-
-    const exportToCsv = () => {
-        let headers = ['id,name,brand,line,shape,isBoxPress,length_inches,ring_gauge,Size,Country of Origin,wrapper,binder,filler,strength,flavorNotes,rating,userRating,price,quantity,image,shortDescription,description'];
-        let usersCsv = cigarsInHumidor.reduce((acc, cigar) => {
-            const { id, name, brand, line = '', shape, isBoxPress = false, length_inches = 0, ring_gauge = 0, size, country, wrapper, binder, filler, strength, flavorNotes, rating, userRating = 0, quantity, price, image = '', shortDescription = '', description = '' } = cigar;
-            acc.push([
-                id, name, brand, line, shape, isBoxPress ? 'TRUE' : 'FALSE', length_inches, ring_gauge, size, country, wrapper, binder, filler, strength, `"${(flavorNotes || []).join(';')}"`, rating, userRating, price, quantity, image, shortDescription, description
-            ].join(','));
-            return acc;
-        }, []);
-        downloadFile({
-            data: [...headers, ...usersCsv].join('\n'),
-            fileName: `${humidor.name}_export.csv`,
-            fileType: 'text/csv',
-        });
-    };
-
-    const exportToJson = () => {
-        downloadFile({
-            data: JSON.stringify(cigarsInHumidor, null, 2),
-            fileName: `${humidor.name}_export.json`,
-            fileType: 'application/json',
-        });
-    };
-
-    return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100]" onClick={onClose}>
-            <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-md flex flex-col" onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-xl font-bold text-red-400 flex items-center"><AlertTriangle className="w-5 h-5 mr-2" /> Delete Humidor</h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button>
-                </div>
-                <p className="text-gray-300 mb-4">Are you sure you want to delete <span className="font-bold text-white">"{humidor.name}"</span>?</p>
-
-                {hasCigars && (
-                    <div className="space-y-4">
-                        <div className="bg-red-900/40 border border-red-700 p-3 rounded-lg">
-                            <p className="text-sm text-red-200">This humidor contains <span className="font-bold">{cigarsInHumidor.length}</span> cigar(s). Please choose what to do with them.</p>
-                        </div>
-
-                        <div className="space-y-2">
-                            {hasOtherHumidors && (
-                                <label className={`flex items-center p-3 rounded-lg cursor-pointer ${deleteAction === 'move' ? 'bg-amber-600/30 border-amber-500' : 'bg-gray-700/50 border-gray-600'} border`}>
-                                    <input type="radio" name="deleteAction" value="move" checked={deleteAction === 'move'} onChange={(e) => setDeleteAction(e.target.value)} className="hidden" />
-                                    <Move className="w-5 h-5 mr-3 text-amber-400" />
-                                    <div>
-                                        <p className="font-bold text-white">Move Cigars</p>
-                                        <p className="text-xs text-gray-300">Move cigars to another humidor.</p>
-                                    </div>
-                                </label>
-                            )}
-                            <label className={`flex items-center p-3 rounded-lg cursor-pointer ${deleteAction === 'export' ? 'bg-amber-600/30 border-amber-500' : 'bg-gray-700/50 border-gray-600'} border`}>
-                                <input type="radio" name="deleteAction" value="export" checked={deleteAction === 'export'} onChange={(e) => setDeleteAction(e.target.value)} className="hidden" />
-                                <Download className="w-5 h-5 mr-3 text-amber-400" />
-                                <div>
-                                    <p className="font-bold text-white">Export and Delete</p>
-                                    <p className="text-xs text-gray-300">Save cigar data to a file, then delete.</p>
-                                </div>
-                            </label>
-                            <label className={`flex items-center p-3 rounded-lg cursor-pointer ${deleteAction === 'deleteAll' ? 'bg-red-600/30 border-red-500' : 'bg-gray-700/50 border-gray-600'} border`}>
-                                <input type="radio" name="deleteAction" value="deleteAll" checked={deleteAction === 'deleteAll'} onChange={(e) => setDeleteAction(e.target.value)} className="hidden" />
-                                <Trash2 className="w-5 h-5 mr-3 text-red-400" />
-                                <div>
-                                    <p className="font-bold text-white">Delete Everything</p>
-                                    <p className="text-xs text-gray-300">Permanently delete humidor and all cigars inside.</p>
-                                </div>
-                            </label>
-                        </div>
-
-                        {deleteAction === 'move' && hasOtherHumidors && (
-                            <div className="pl-4 border-l-2 border-amber-500 ml-3">
-                                <label className="text-sm font-medium text-gray-300 mb-1 block">Destination Humidor</label>
-                                <select value={destinationHumidorId} onChange={(e) => setDestinationHumidorId(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white">
-                                    {otherHumidors.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-                                </select>
-                            </div>
-                        )}
-                        {deleteAction === 'export' && (
-                            <div className="pl-4 border-l-2 border-amber-500 ml-3 flex gap-2">
-                                <button type="button" onClick={exportToCsv} className="flex-1 text-sm flex items-center justify-center gap-2 bg-green-600/80 text-white font-bold py-2 rounded-lg hover:bg-green-700 transition-colors">Export CSV</button>
-                                <button type="button" onClick={exportToJson} className="flex-1 text-sm flex items-center justify-center gap-2 bg-blue-600/80 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition-colors">Export JSON</button>
-                            </div>
-                        )}
-                        {deleteAction === 'deleteAll' && (
-                            <div className="pl-4 border-l-2 border-red-500 ml-3 text-sm text-red-300">
-                                This action cannot be undone. All associated cigar data will be lost forever.
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-gray-700">
-                    <button type="button" onClick={onClose} className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors">Cancel</button>
-                    <button type="button" onClick={handleConfirm} disabled={deleteAction === 'move' && !destinationHumidorId} className="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors disabled:bg-red-800 disabled:cursor-not-allowed">
-                        Confirm
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-/**
- * A modal for confirming the deletion of multiple selected cigars.
- * FIX: This component now accepts a 'count' prop to display a dynamic message.
- */
-const DeleteCigarsModal = ({ isOpen, onClose, onConfirm, count }) => {
-    if (!isOpen) return null;
-
-    return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100]" onClick={onClose}>
-            <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-sm flex flex-col" onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-xl font-bold text-red-400 flex items-center"><AlertTriangle className="w-5 h-5 mr-2" /> Delete {count > 1 ? 'Cigars' : 'Cigar'}</h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button>
-                </div>
-                <p className="text-gray-300 mb-4">Are you sure you want to delete the selected {count > 1 ? `${count} cigars` : 'cigar'}? This action cannot be undone.</p>
-
-                <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-gray-700">
-                    <button type="button" onClick={onClose} className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors">Cancel</button>
-                    <button type="button" onClick={onConfirm} className="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors">
-                        Confirm Delete
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-/**
- * A modal for manually inputting temperature and humidity readings for a humidor.
- */
-const ManualReadingModal = ({ isOpen, onClose, onSave, initialTemp, initialHumidity }) => {
-    const [temp, setTemp] = useState(initialTemp);
-    const [humidity, setHumidity] = useState(initialHumidity);
-
-    if (!isOpen) return null;
-
-    const handleSave = () => {
-        onSave(parseFloat(temp), parseFloat(humidity));
-        onClose();
-    };
-
-    return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100]" onClick={onClose}>
-            <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-sm flex flex-col" onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-amber-400 flex items-center"><Thermometer className="w-5 h-5 mr-2" /> Take Manual Reading</h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button>
-                </div>
-                <div className="space-y-4">
-                    <div>
-                        <label className="text-sm font-medium text-gray-300 mb-1 block">Temperature (°F)</label>
-                        <input
-                            type="number"
-                            value={temp}
-                            onChange={(e) => setTemp(e.target.value)}
-                            className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-                            placeholder="e.g., 68"
-                        />
-                    </div>
-                    <div>
-                        <label className="text-sm font-medium text-gray-300 mb-1 block">Humidity (%)</label>
-                        <input
-                            type="number"
-                            value={humidity}
-                            onChange={(e) => setHumidity(e.target.value)}
-                            className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-                            placeholder="e.g., 70"
-                        />
-                    </div>
-                </div>
-                <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-gray-700">
-                    <button type="button" onClick={onClose} className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors">Cancel</button>
-                    <button type="button" onClick={handleSave} className="bg-amber-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-amber-600 transition-colors">Save Reading</button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-/**
- * The modal dialog for choosing and editing an image.
- * @param {object} props - The component's props.
- */
-const ImageUploadModal = ({ isOpen, onClose, onImageAccept, itemName, initialImage, initialPosition, theme, itemCategory, itemType }) => {
-    const [activeTab, setActiveTab] = useState('url');
-    const [imageUrl, setImageUrl] = useState('');
-    const [preview, setPreview] = useState('');
-    const [isGenerating, setIsGenerating] = useState(false);
-    const fileInputRef = useRef(null);
-
-    // This state manages the position of the image *inside the modal*.
-    const [modalPosition, setModalPosition] = useState(initialPosition);
-
-    // When the modal opens, this effect syncs its state with the main form's state.
-    useEffect(() => {
-        if (isOpen) {
-            setPreview(initialImage || '');
-            setModalPosition(initialPosition || { x: 50, y: 50 });
-            setImageUrl(initialImage || ''); // <-- Set the URL field to the current image
-        }
-    }, [isOpen, initialImage, initialPosition]);
-
-    // When switching to the "Paste URL" tab, update the imageUrl field to match the current image.
-    useEffect(() => {
-        if (activeTab === 'url') {
-            setImageUrl(preview || initialImage || '');
-        }
-    }, [activeTab, preview, initialImage]);
-
-    if (!isOpen) return null; // Don't render the modal if it's not open.
-
-    const handleFileChange = (event) => {
-        const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setPreview(reader.result);
-                setModalPosition({ x: 50, y: 50 }); // Reset position for new uploads.
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const handleAiGenerate = async () => {
-        if (!itemName || isGenerating) return;
-        setIsGenerating(true);
-        setPreview('');
-
-        const generatedImage = await generateAiImage(itemName, itemCategory, itemType); setPreview(generatedImage);
-        setModalPosition({ x: 50, y: 50 }); // Reset position for new AI images.
-
-        setIsGenerating(false);
-    };
-
-    // When saving, pass both the image URL and its final position back to the App.
-    const handleSave = () => {
-        if (preview) {
-            onImageAccept(preview, modalPosition);
-            onClose();
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4" onClick={onClose}>
-            <div className={`w-full max-w-md rounded-lg ${theme.card} p-6 shadow-xl border-none`} onClick={(e) => e.stopPropagation()}>
-                <div className={`mb-4 flex items-center justify-between border-b ${theme.borderColor} pb-4`}>
-                    <h2 className={`text-2xl font-semibold ${theme.text}`}>Choose an Image</h2>
-                    <button onClick={onClose} className={`text-3xl ${theme.subtleText} hover:${theme.text}`}>&times;</button>
-                </div>
-
-                <div>
-                    <div className={`mb-6 flex h-64 items-center justify-center rounded-lg border ${theme.borderColor} ${theme.inputBg} p-2 overflow-hidden`}>
-                        {isGenerating && <div className={`${theme.subtleText}`}>Generating your image...</div>}
-                        {preview && !isGenerating && <DraggableImage src={preview} position={modalPosition} onPositionChange={setModalPosition} />}
-                        {!preview && !isGenerating && <div className={`${theme.subtleText} text-center`}>Image preview will appear here</div>}
-                    </div>
-
-                    <div>
-                        <div className={`mb-6 flex space-x-2 border-b ${theme.borderColor}`}>
-                            <button onClick={() => setActiveTab('url')} className={`px-4 py-2 text-sm font-medium ${activeTab === 'url' ? `border-b-2 ${theme.primary} ${theme.text}` : `${theme.subtleText}`}`}>Paste URL</button>
-                            <button onClick={() => setActiveTab('upload')} className={`px-4 py-2 text-sm font-medium ${activeTab === 'upload' ? `border-b-2 ${theme.primary} ${theme.text}` : `${theme.subtleText}`}`}>Upload Image</button>
-                            <button onClick={() => setActiveTab('ai')} className={`px-4 py-2 text-sm font-medium ${activeTab === 'ai' ? 'border-b-2 border-purple-500 text-purple-300' : `${theme.subtleText}`}`}>Generate with AI</button>
-                        </div>
-
-                        <div className="mb-4">
-                            {activeTab === 'url' && (
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2">
-                                        <input type="text" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://example.com/image.png" className={`w-full flex-grow rounded-md border ${theme.borderColor} p-2 ${theme.inputBg} ${theme.text} focus:border-amber-500 focus:ring-amber-500`} />
-                                        <button onClick={() => { setPreview(imageUrl); setModalPosition({ x: 50, y: 50 }); }} className={`flex-shrink-0 rounded-md ${theme.button} px-4 py-2 ${theme.text}`}>Preview</button>
-                                    </div>
-                                    <p className={`text-xs ${theme.subtleText}`}>Paste a URL to an image and click "Preview".</p>
-                                </div>
-                            )}
-                            {activeTab === 'upload' && (
-                                <div>
-                                    <button onClick={() => fileInputRef.current.click()} className={`rounded-md ${theme.button} px-4 py-2 ${theme.text}`}>Choose File from Device</button>
-                                    <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
-                                    <p className={`mt-2 text-xs ${theme.subtleText}`}>For larger files, pasting a URL is recommended for better performance.</p>
-                                </div>
-                            )}
-                            {activeTab === 'ai' && (
-                                <div>
-                                    <button onClick={handleAiGenerate} disabled={isGenerating} className="rounded-md bg-purple-600 px-4 py-2 text-white transition-colors hover:bg-purple-700 disabled:cursor-wait disabled:bg-purple-400 flex items-center justify-center">
-                                        {isGenerating ? (
-                                            <><svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Generating...</>
-                                        ) : `Generate Image for "${itemName || 'Item'}"`}
-                                    </button>
-                                    <p className={`mt-2 text-xs ${theme.subtleText}`}>Uses generative AI to create a unique image based on the item's name.</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                <div className={`mt-6 flex justify-end border-t ${theme.borderColor} pt-4`}>
-                    <button onClick={handleSave} disabled={!preview || isGenerating} className="rounded-md bg-green-600 px-6 py-2 text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-slate-400">
-                        Accept Image
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-/**
- * The main "Smart Image Modal" controller component. It orchestrates the child components.
- * @param {object} props - The component's props.
- */
-const SmartImageModal = ({ itemName, currentImage, currentPosition, onImageAccept, theme, itemCategory, itemType }) => {
-    // State to control whether the modal dialog is visible.
-    const [isModalOpen, setIsModalOpen] = useState(false);
-
-    return (
-        <>
-            {/* The visible part of the component on the form. */}
-            <ImagePreview
-                image={currentImage}
-                position={currentPosition}
-                onClick={() => setIsModalOpen(true)} // Clicking it opens the modal.
-            />
-            {/* The modal itself. It's only rendered when isModalOpen is true. */}
-            <ImageUploadModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)} // The modal can close itself.
-                onImageAccept={onImageAccept} // Passes the save function down to the modal.
-                itemName={itemName} // Passes the item name for context
-                itemCategory={itemCategory} // Passes the item category for context
-                itemType={itemType} // Passes the item type for context
-                initialImage={currentImage}// Passes the current image to the modal
-                initialPosition={currentPosition} // Passes the current image and position to the modal
-                theme={theme} // Pass the current theme for consistent styling
-            />
-        </>
-    );
-};
 
 /**
  * Asynchronous function to make a POST request to the Gemini API.
@@ -1219,7 +672,8 @@ const MyCollectionStatsCards = ({ totalCigars, totalValue, humidors, theme }) =>
     );
 };
 
-const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showStrengthPanel, showCountryPanel, showLiveEnvironment, showInventoryAnalysis, panelStates, setPanelStates, dashboardPanelVisibility }) => {    const [roxyTip, setRoxyTip] = useState('');
+const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showStrengthPanel, showCountryPanel, showLiveEnvironment, showInventoryAnalysis, panelStates, setPanelStates, dashboardPanelVisibility }) => {
+    const [roxyTip, setRoxyTip] = useState('');
     const [modalState, setModalState] = useState({ isOpen: false, content: '', isLoading: false });
     const [isBrowseByModeOpen, setIsBrowseByModeOpen] = useState(false);
     const [browseMode, setBrowseMode] = useState('');
@@ -5012,7 +4466,7 @@ export default function App() {
                 return humidor ? <MyHumidor humidor={humidor} navigate={navigate} cigars={cigars} humidors={humidors} db={db} appId={appId} userId={userId} theme={theme} /> : <div>Humidor not found</div>;
             case 'CigarDetail':
                 const cigar = cigars.find(c => c.id === params.cigarId);
-                return cigar ? <CigarDetail cigar={cigar} navigate={navigate} db={db} appId={appId} userId={userId} journalEntries={journalEntries} /> : <div>Cigar not found</div>;            case 'AddCigar':
+                return cigar ? <CigarDetail cigar={cigar} navigate={navigate} db={db} appId={appId} userId={userId} journalEntries={journalEntries} /> : <div>Cigar not found</div>; case 'AddCigar':
                 return <AddCigar navigate={navigate} db={db} appId={appId} userId={userId} humidorId={params.humidorId} theme={theme} />;
             case 'EditCigar':
                 const cigarToEdit = cigars.find(c => c.id === params.cigarId);
@@ -5036,7 +4490,7 @@ export default function App() {
                 return cigarForJournal ? <AddEditJournalEntry navigate={navigate} db={db} appId={appId} userId={userId} cigar={cigarForJournal} existingEntry={entryToEdit} theme={theme} /> : <div>Cigar not found for journal entry.</div>;
             case 'DashboardSettings':
                 return <DashboardSettingsScreen navigate={navigate} theme={theme} dashboardPanelVisibility={dashboardPanelVisibility} setDashboardPanelVisibility={setDashboardPanelVisibility} />;
-            
+
             case 'DeeperStatistics':
                 return <DeeperStatisticsScreen navigate={navigate} cigars={cigars} theme={theme} />;
             case 'Integrations':
