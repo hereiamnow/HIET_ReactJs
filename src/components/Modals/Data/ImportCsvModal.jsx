@@ -18,7 +18,7 @@ import { writeBatch, collection, doc } from 'firebase/firestore';
 import Papa from 'papaparse';
 
 // Import field definitions from constants
-import { APP_HUMIDOR_FIELDS, APP_CIGAR_FIELDS } from '../../constants/fieldDefinitions';
+import { APP_HUMIDOR_FIELDS, APP_CIGAR_FIELDS } from '../../../constants/fieldDefinitions';
 
 const ImportCsvModal = ({ dataType, data, db, appId, userId, onClose, humidors, navigate, onSwitchType }) => {
     const [step, setStep] = useState('selectFile');

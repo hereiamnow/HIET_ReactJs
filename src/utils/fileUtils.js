@@ -45,41 +45,43 @@ export const generateAiImage = async (itemName, itemCategory, itemType) => {
         parameters: { "sampleCount": 1 }
     };
 
-    const apiKey = firebaseConfigExport.apiKey;
+    // Note: Image generation requires a proper Google Cloud service account token
+    // For now, we'll disable this feature and return a placeholder
+    console.warn("AI image generation is disabled - requires proper Google Cloud authentication");
+    return `https://placehold.co/600x400/6b7280/ffffff?font=playfair-display&text=${encodeURIComponent(itemName)}`;
+
+    /* 
+    // Uncomment and configure when you have proper Google Cloud authentication
+    const apiKey = process.env.REACT_APP_GOOGLE_CLOUD_TOKEN; // This should be a service account token
     const projectId = firebaseConfigExport.projectId;
 
     const apiUrl = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/imagen-3.0-generate-002:predict`;
 
     try {
-        // We use a try/catch block to handle potential network errors.
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}` // Use Bearer token for authentication
+                'Authorization': `Bearer ${apiKey}`
             },
             body: JSON.stringify(payload)
         });
 
         if (!response.ok) {
-            // If the API returns an error status (e.g., 400, 500), we throw an error.
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const result = await response.json();
 
         if (result.predictions && result.predictions.length > 0 && result.predictions[0].bytesBase64Encoded) {
-            // The API returns the image as a base64 string. We format it into a data URL
-            // that can be used directly in an <img> src attribute.
             return `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
         } else {
-            // This case handles a successful API call that doesn't return the expected image data.
             console.error("AI image generation failed:", result);
             return `https://placehold.co/600x400/ef4444/ffffff?font=playfair-display&text=Generation+Failed`;
         }
     } catch (error) {
-        // This catches network errors or the error thrown above.
         console.error("Error calling Gemini API:", error);
         return `https://placehold.co/600x400/ef4444/ffffff?font=playfair-display&text=Error`;
     }
+    */
 };

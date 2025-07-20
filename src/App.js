@@ -112,8 +112,8 @@ async function callGeminiAPI(prompt, responseSchema = null) {
     // Prepare the conversation history for the API. It starts with the user's prompt.
     let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
 
-    // Retrieve the API key from environment variables for security. This prevents hardcoding sensitive keys in the source code.
-    const apiKey = firebaseConfigExport.apiKey;
+    // Retrieve the Gemini API key from environment variables for security. This prevents hardcoding sensitive keys in the source code.
+    const apiKey = process.env.REACT_APP_GEMINI_API_KEY || firebaseConfigExport.apiKey;
 
     // Construct the full URL for the specific Gemini API model endpoint.
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
