@@ -125,12 +125,6 @@ const cigarCountries = [
 // URL for the world map data used in the Map component.
 const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
-
-
-
-
-
-
 // const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showStrengthPanel, showCountryPanel, showLiveEnvironment, showInventoryAnalysis, panelStates, setPanelStates, dashboardPanelVisibility }) => {
 //     const [roxyTip, setRoxyTip] = useState('');
 //     const [modalState, setModalState] = useState({ isOpen: false, content: '', isLoading: false });
@@ -968,7 +962,6 @@ const EditHumidor = ({ navigate, db, appId, userId, humidor, goveeApiKey, goveeD
     );
 };
 
-
 const CigarDetail = ({ cigar, navigate, db, appId, userId, journalEntries }) => {
     const [modalState, setModalState] = useState({ isOpen: false, type: null, content: '', isLoading: false });
     const [isFlavorModalOpen, setIsFlavorModalOpen] = useState(false);
@@ -1073,6 +1066,7 @@ Provide a brief, encouraging, and slightly personalized note about this cigar's 
                         onEdit={() => navigate('EditCigar', { cigarId: cigar.id })}
                         onExport={() => setIsExportModalOpen(true)}
                         onDelete={() => setIsDeleteModalOpen(true)}
+                        onAddJournal={() => navigate('AddEditJournalEntry', { cigarId: cigar.id })}
                     />
                 </div>
 
@@ -2058,7 +2052,6 @@ const DashboardSettingsScreen = ({ navigate, theme, dashboardPanelVisibility, se
     );
 };
 
-// Font Picker UI - Moved outside FontsScreen to prevent stale state issues
 const FontPicker = ({ selectedFont, setSelectedFont, theme }) => (
     <div id="font-picker" className="mb-4">
         <label className={`block text-sm font-bold mb-2 ${theme.text}`}>Font Style</label>
@@ -2533,10 +2526,6 @@ const DeeperStatisticsScreen = ({ navigate, cigars, theme }) => {
         </div>
     );
 };
-
-
-
-
 
 export default function App() {
     const [navigation, setNavigation] = useState({ screen: 'Dashboard', params: {} });

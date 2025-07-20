@@ -53,11 +53,11 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
     // Filter and sort cigars
     const filteredCigars = useMemo(() => {
         let filtered = cigars.filter(cigar => {
-            const matchesSearch = !searchQuery || 
+            const matchesSearch = !searchQuery ||
                 cigar.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 cigar.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 cigar.wrapper?.toLowerCase().includes(searchQuery.toLowerCase());
-            
+
             const matchesBrand = !filters.brand || cigar.brand?.toLowerCase().includes(filters.brand.toLowerCase());
             const matchesWrapper = !filters.wrapper || cigar.wrapper === filters.wrapper;
             const matchesStrength = !filters.strength || cigar.strength === filters.strength;
@@ -65,14 +65,14 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
             const matchesRating = (cigar.rating || 0) >= filters.minRating;
             const matchesPrice = (cigar.price || 0) <= filters.maxPrice;
 
-            return matchesSearch && matchesBrand && matchesWrapper && matchesStrength && 
-                   matchesCountry && matchesRating && matchesPrice;
+            return matchesSearch && matchesBrand && matchesWrapper && matchesStrength &&
+                matchesCountry && matchesRating && matchesPrice;
         });
 
         // Sort cigars
         filtered.sort((a, b) => {
             let aValue, bValue;
-            
+
             switch (filters.sortBy) {
                 case 'name':
                     aValue = a.name || '';
@@ -128,7 +128,7 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
         setSearchQuery('');
     };
 
-    const activeFiltersCount = Object.values(filters).filter(value => 
+    const activeFiltersCount = Object.values(filters).filter(value =>
         value !== '' && value !== 0 && value !== 1000 && value !== 'name' && value !== 'asc'
     ).length + (searchQuery ? 1 : 0);
 
@@ -156,7 +156,7 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
                         className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-amber-500"
                     />
                 </div>
-                
+
                 {/* Search Suggestions */}
                 {suggestions.length > 0 && (
                     <div className="absolute top-full left-0 right-0 bg-gray-800 border border-gray-700 rounded-lg mt-1 z-10">
@@ -243,8 +243,8 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
             ) : (
                 <div className="text-center py-12">
                     <div className="text-gray-400 mb-4">
-                        {searchQuery || activeFiltersCount > 0 ? 
-                            'No cigars match your search criteria.' : 
+                        {searchQuery || activeFiltersCount > 0 ?
+                            'No cigars match your search criteria.' :
                             'No cigars in your collection yet.'
                         }
                     </div>

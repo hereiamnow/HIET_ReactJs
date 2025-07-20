@@ -7,9 +7,9 @@
  * @param {Function} props.onDelete - Function to handle delete action
  */
 import React, { useState, useEffect, useRef } from 'react';
-import { MoreVertical, PencilRuler, FileUp, Trash } from 'lucide-react';
+import { MoreVertical, PencilRuler, FileUp, Trash, BookOpen } from 'lucide-react';
 
-const CigarActionMenu = ({ onEdit, onExport, onDelete }) => {
+const CigarActionMenu = ({ onEdit, onExport, onDelete, onAddJournal }) => {
     const [isOpen, setIsOpen] = useState(false);
     const menuRef = useRef(null);
 
@@ -43,6 +43,8 @@ const CigarActionMenu = ({ onEdit, onExport, onDelete }) => {
             </button>
             {isOpen && (
                 <div className="absolute top-full right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-30 overflow-hidden">
+                    <MenuItem icon={BookOpen} text="Add Journal" onClick={onAddJournal} className="text-gray-200" />
+                    <div className="border-t border-gray-700 my-1"></div>
                     <MenuItem icon={PencilRuler} text="Edit this Cigar" onClick={onEdit} className="text-gray-200" />
                     <MenuItem icon={FileUp} text="Export this Cigar" onClick={onExport} className="text-gray-200" />
                     <div className="border-t border-gray-700 my-1"></div>
