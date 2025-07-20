@@ -1,3 +1,9 @@
+// File: FirebaseAuthUI.js
+// Project: Humidor Hub
+// Author: Shawn Miller (hereiamnow@gmail.com)
+// Date: July 7, 2025
+// Time: 10:24 PM CDT
+
 import React, { useState } from 'react';
 import {
     getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,

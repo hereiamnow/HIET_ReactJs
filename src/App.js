@@ -1,7 +1,7 @@
 // File: App.js
 // Project: Humidor Hub
 // Author: Shawn Miller (hereiamnow@gmail.com)
-// Date: July 9, 2025
+// Date: July 20, 2025
 // Time: 10:01 PM CDT
 
 // Description of Changes:
@@ -67,10 +67,34 @@ import Gauge from './components/UI/Gauge';
 import StatCard from './components/UI/StatCard';
 import BottomNav from './components/Navigation/BottomNav';
 
+// Import drawer components
+import {
+    BrowseByWrapperDrawer,
+    BrowseByStrengthDrawer,
+    BrowseByCountryDrawer,
+    InteractiveWorldMapDrawer
+} from './components/Drawers';
+
+// Import panel components
+import {
+    LiveEnvironmentPanel,
+    InventoryAnalysisPanel,
+    MyCollectionStatsCards,
+    AgingWellPanel
+} from './components/Panels';
+
+// Import screens
+import Dashboard from './screens/Dashboard';
+import MyHumidor from './screens/MyHumidor';
+
 // Import utilities
 import { downloadFile, generateAiImage } from './utils/fileUtils';
 import { getFlavorTagColor } from './utils/colorUtils';
 import { parseHumidorSize, formatDate } from './utils/formatUtils';
+
+// Import services
+import { callGeminiAPI } from './services/geminiService';
+import { fetchGoveeDevices } from './services/goveeService';
 
 // Import modal components
 import GeminiModal from './components/Modals/Content/GeminiModal';
@@ -102,1044 +126,313 @@ const cigarCountries = [
 const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
 
-/**
- * Asynchronous function to make a POST request to the Gemini API.
- * @param {string} prompt - The text prompt to send to the Gemini API.
- * @param {object|null} responseSchema - An optional schema to tell the API to return a structured JSON object.
- * @returns {Promise<string|object>} A promise that resolves to the text response from the API, or a parsed JSON object if a schema was provided.
- */
-async function callGeminiAPI(prompt, responseSchema = null) {
-    // Prepare the conversation history for the API. It starts with the user's prompt.
-    let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
 
-    // Retrieve the Gemini API key from environment variables for security. This prevents hardcoding sensitive keys in the source code.
-    const apiKey = process.env.REACT_APP_GEMINI_API_KEY || firebaseConfigExport.apiKey;
 
-    // Construct the full URL for the specific Gemini API model endpoint.
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
-    // Create the main payload (the data we send) for the API request.
-    const payload = { contents: chatHistory };
 
-    // If a `responseSchema` is provided, it means we want a structured JSON response.
-    // This block adds the necessary configuration to the payload to enforce the JSON output format.
-    if (responseSchema) {
-        payload.generationConfig = {
-            responseMimeType: "application/json",
-            responseSchema: responseSchema
-        };
-    }
 
-    // Use a try...catch block to handle potential network errors (e.g., user is offline) during the API call.
-    try {
-        // Make the actual network request to the Gemini API using the 'fetch' function.
-        // It's a POST request, and we send the payload as a JSON string.
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        // Check if the API call was successful. `response.ok` is true for statuses like 200.
-        if (!response.ok) {
-            // If the response is not okay (e.g., 400 or 500 error), we parse the error details and log them.
-            const errorBody = await response.json();
-            console.error("Gemini API HTTP Error:", response.status, errorBody);
-            // Return a user-friendly error message.
-            return `API Error: Something went wrong (${response.status}).`;
-        }
-
-        // If the call was successful, parse the JSON data from the response body.
-        const result = await response.json();
-
-        // Navigate through the nested structure of the API response to find the generated text.
-        if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
-            let textResult = result.candidates[0].content.parts[0].text;
-
-            // If we were expecting a JSON object (because a schema was sent)...
-            if (responseSchema) {
-                try {
-                    // First, try to parse the entire text as JSON. This is the ideal case.
-                    return JSON.parse(textResult);
-                } catch (jsonError) {
-                    // If direct parsing fails, it might be because the API wrapped the JSON in a markdown code block (e.g., ```json{...}```).
-                    // This regex looks for that pattern and extracts the JSON content from between the backticks.
-                    const jsonMatch = textResult.match(/```(json)?\s*([\s\S]*?)\s*```/);
-                    if (jsonMatch && jsonMatch[2]) {
-                        try {
-                            // If a match is found, try to parse the extracted content.
-                            return JSON.parse(jsonMatch[2]);
-                        } catch (nestedJsonError) {
-                            // If even this fails, log the error and the text that failed to parse.
-                            console.error("Failed to parse extracted JSON from Gemini API:", nestedJsonError, "Extracted text:", jsonMatch[2]);
-                            return `Failed to parse structured response: ${nestedJsonError.message}. Raw: ${textResult.substring(0, 100)}...`;
-                        }
-                    }
-                    // If no markdown block is found, log the original parsing error and the raw text.
-                    console.error("Failed to parse JSON from Gemini API:", jsonError, "Raw text:", textResult);
-                    return `Failed to parse structured response: ${jsonError.message}. Raw: ${textResult.substring(0, 100)}...`;
-                }
-            }
-            // If no schema was provided, just return the plain text response.
-            return textResult;
-        } else {
-            // Handle cases where the API call was successful but returned no content.
-            console.error("Gemini API response was empty or unexpected:", result);
-            return "The API returned an empty or unexpected response.";
-        }
-    } catch (error) {
-        // This catches any network-level errors (e.g., failed to fetch).
-        console.error("Error calling Gemini API:", error);
-        return `An unexpected error occurred: ${error.message}.`;
-    }
-}
-
-/**
- * Simulates fetching a list of Govee devices.
- */
-async function fetchGoveeDevices(apiKey) {
-    console.log(`Simulating Govee device fetch with API Key: ${apiKey}`);
-    return new Promise(resolve => {
-        setTimeout(() => {
-            if (apiKey && apiKey.startsWith('TEST_KEY')) {
-                resolve([
-                    { device: 'AA:BB:CC:DD:EE:F1', model: 'H5075', deviceName: 'Office Humidor Sensor' },
-                    { device: 'AA:BB:CC:DD:EE:F2', model: 'H5074', deviceName: 'Travel Case Sensor' },
-                    { device: 'AA:BB:CC:DD:EE:F3', model: 'H5100', deviceName: 'Living Room Sensor' },
-                ]);
-            } else {
-                resolve([]);
-            }
-        }, 1500);
-    });
-}
-
-const BrowseByWrapperDrawer = ({ cigars, navigate, theme, isCollapsed, onToggle }) => {
-    // Calculate unique wrapper types and their counts
-    const wrapperData = useMemo(() => {
-        const counts = cigars.reduce((acc, cigar) => {
-            const wrapper = cigar.wrapper || 'Unknown'; // Handle cigars without a wrapper defined
-            acc[wrapper] = (acc[wrapper] || 0) + cigar.quantity;
-            return acc;
-        }, {});
-        // Convert to an array of objects for easier mapping and sorting
-        return Object.entries(counts)
-            .map(([wrapper, quantity]) => ({ wrapper, quantity }))
-            .sort((a, b) => a.wrapper.localeCompare(b.wrapper)); // Sort alphabetically by wrapper name
-    }, [cigars]);
-
-    return (
-        <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
-            <button onClick={onToggle} className="w-full p-4 flex justify-between items-center">
-                <h3 className="font-bold text-amber-300 text-lg flex items-center"><Leaf className="w-5 h-5 mr-2" /> Browse by Wrapper</h3>
-                <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
-            </button>
-            {!isCollapsed && (
-                <div id="pnlContents" className="px-4 pb-4 space-y-2">
-                    {/* START CONTENTS HERE */}
-                    {wrapperData.length > 0 ? (
-                        wrapperData.map(({ wrapper, quantity }) => (
-                            <button
-                                key={wrapper}
-                                onClick={() => navigate('HumidorsScreen', { preFilterWrapper: wrapper })}
-                                className="w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors flex justify-between items-center"
-                            >
-                                <span className="text-gray-300">{wrapper}</span>
-                                <span className="text-gray-400">({quantity})</span>
-                            </button>
-                        ))
-                    ) : (
-                        <p className="text-gray-500 text-sm text-center py-4">No wrapper data available.</p>
-                    )}
-                    {/* END CONTENTS HERE */}
-                </div>
-            )}
-        </div>
-    );
-};
-
-const BrowseByStrengthDrawer = ({ cigars, navigate, theme, isCollapsed, onToggle }) => {
-    const strengthCategories = useMemo(() => [
-        { label: 'Mild Cigars', filterValue: 'Mild' },
-        { label: 'Mild to Medium Cigars', filterValue: 'Mild-Medium' },
-        { label: 'Medium Cigars', filterValue: 'Medium' },
-        { label: 'Medium to Full Cigars', filterValue: 'Medium-Full' },
-        { label: 'Full Bodied Cigars', filterValue: 'Full' }
-    ], []);
-
-    const strengthData = useMemo(() => {
-        const counts = strengthCategories.map(category => {
-            let quantity = 0;
-            // Sum quantities for a specific strength
-            quantity = cigars
-                .filter(cigar => cigar.strength === category.filterValue)
-                .reduce((sum, cigar) => sum + cigar.quantity, 0);
-            return { label: category.label, quantity, filterValue: category.filterValue };
-        });
-        return counts.filter(item => item.quantity > 0); // Only show categories with cigars
-    }, [cigars, strengthCategories]);
-
-    return (
-        <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
-            <button onClick={onToggle} className="w-full p-4 flex justify-between items-center">
-                <h3 className="font-bold text-amber-300 text-lg flex items-center"><Cigarette className="w-5 h-5 mr-2" /> Browse by Profile</h3>
-                <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
-            </button>
-            {!isCollapsed && (
-                <div className="px-4 pb-4 space-y-2">
-                    {/* START CONTENTS HERE */}
-                    {strengthData.length > 0 ? (
-                        strengthData.map(({ label, quantity, filterValue }) => (
-                            <button
-                                key={label}
-                                onClick={() => navigate('HumidorsScreen', { preFilterStrength: filterValue })}
-                                className="w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors flex justify-between items-center"
-                            >
-                                <span className="text-gray-300">{label}</span>
-                                <span className="text-gray-400">({quantity})</span>
-                            </button>
-                        ))
-                    ) : (
-                        <p className="text-gray-500 text-sm text-center py-4">No strength or flavored cigar data available.</p>
-                    )}
-                    {/* END CONTENTS HERE */}
-                </div>
-            )}
-        </div>
-    );
-};
-
-const BrowseByCountryDrawer = ({ cigars, navigate, theme, isCollapsed, onToggle }) => {
-    const countryCategories = useMemo(() => [
-        { label: 'Dominican Cigars', filterValue: 'Dominican Republic' },
-        { label: 'Nicaraguan Cigars', filterValue: 'Nicaragua' },
-        { label: 'Honduran Cigars', filterValue: 'Honduras' },
-        { label: 'American Cigars', filterValue: 'USA' },
-        { label: 'Cuban Cigars', filterValue: 'Cuba' },
-        { label: 'Mexican Cigars', filterValue: 'Mexico' },
-        { label: 'Peruvian Cigars', filterValue: 'Peru' },
-        { label: 'Ecuadorian Cigars', filterValue: 'Ecuador' },
-        { label: 'Colombian Cigars', filterValue: 'Colombia' },
-        { label: 'Brazilian Cigars', filterValue: 'Brazil' },
-        { label: 'Panamanian Cigars', filterValue: 'Panama' },
-        { label: 'Costa Rican Cigars', filterValue: 'Costa Rica' },
-        { label: 'Other Countries', filterValue: 'Other' } // Catch-all for unlisted countries
-    ], []);
-
-    const countryData = useMemo(() => {
-        const counts = cigars.reduce((acc, cigar) => {
-            const country = cigar.country || 'Unknown';
-            const matchedCategory = countryCategories.find(cat => cat.filterValue.toLowerCase() === country.toLowerCase());
-
-            if (matchedCategory) {
-                acc[matchedCategory.label] = (acc[matchedCategory.label] || 0) + cigar.quantity;
-            } else {
-                acc['Other Countries'] = (acc['Other Countries'] || 0) + cigar.quantity;
-            }
-            return acc;
-        }, {});
-
-        // Map back to the original category labels, including those with zero count if desired,
-        // but here we filter to only show categories with actual cigars.
-        return countryCategories
-            .map(category => ({
-                label: category.label,
-                quantity: counts[category.label] || 0,
-                filterValue: category.filterValue
-            }))
-            .filter(item => item.quantity > 0)
-            .sort((a, b) => a.label.localeCompare(b.label)); // Sort alphabetically by label
-    }, [cigars, countryCategories]);
-
-    return (
-        <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
-            <button onClick={onToggle} className="w-full p-4 flex justify-between items-center">
-                <h3 className="font-bold text-amber-300 text-lg flex items-center"><MapPin className="w-5 h-5 mr-2" /> Browse by Country of Origin</h3>
-                <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
-            </button>
-            {!isCollapsed && (
-                <div className="px-4 pb-4 space-y-2">
-                    {/* START CONTENTS HERE */}
-                    {countryData.length > 0 ? (
-                        countryData.map(({ label, quantity, filterValue }) => (
-                            <button
-                                key={label}
-                                onClick={() => navigate('HumidorsScreen', { preFilterCountry: filterValue })}
-                                className="w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors flex justify-between items-center"
-                            >
-                                <span className="text-gray-300">{label}</span>
-                                <span className="text-gray-400">({quantity})</span>
-                            </button>
-                        ))
-                    ) : (
-                        <p className="text-gray-500 text-sm text-center py-4">No country of origin data available.</p>
-                    )}
-                    {/* END CONTENTS HERE */}
-                </div>
-            )}
-        </div>
-    );
-};
-
-const InteractiveWorldMapDrawer = ({ cigars, navigate, theme, isCollapsed, onToggle }) => {
-    const countryCounts = useMemo(() => {
-        return cigars.reduce((acc, cigar) => {
-            const country = cigar.country || 'Unknown';
-            if (country !== 'Unknown') {
-                acc[country] = (acc[country] || 0) + cigar.quantity;
-            }
-            return acc;
-        }, {});
-    }, [cigars]);
-
-    // Find the region with the most cigars (by country)
-    const topCountry = useMemo(() => {
-        let max = 0, top = "United States";
-        Object.entries(countryCounts).forEach(([country, count]) => {
-            if (count > max) {
-                max = count;
-                top = country;
-            }
-        });
-        return top;
-    }, [countryCounts]);
-
-    // Map country names to approximate coordinates (longitude, latitude)
-    const countryCenters = {
-        "United States": [-98, 39],
-        "Mexico": [-102, 23],
-        "Cuba": [-79, 21],
-        "Dominican Republic": [-70.7, 19],
-        "Honduras": [-86.5, 15],
-        "Nicaragua": [-85, 12],
-        // Add more as needed
-    };
-
-    // Default center: top country or fallback to USA
-    const initialCenter = countryCenters[topCountry] || [-98, 39];
-    const initialZoom = 2.5; // More zoomed in than default
-
-    // State for zoom and position
-    const [zoom, setZoom] = useState(initialZoom);
-    const [center, setCenter] = useState(initialCenter);
-
-    // Handler for zoom controls
-    const handleZoomIn = () => setZoom(z => Math.min(z + 0.5, 8));
-    const handleZoomOut = () => setZoom(z => Math.max(z - 0.5, 1));
-    const handleReset = () => {
-        setZoom(initialZoom);
-        setCenter(initialCenter);
-    };
-
-    // Handler for dragging the map
-    const handleMoveEnd = (position) => {
-        // Defensive: Ensure position is an array [lng, lat]
-        if (Array.isArray(position) && position.length === 2 && typeof position[0] === "number" && typeof position[1] === "number") {
-            setCenter(position);
-        } else if (position && typeof position === "object" && "coordinates" in position && Array.isArray(position.coordinates)) {
-            setCenter(position.coordinates);
-        } else {
-            // fallback: do not update center
-            console.warn("Invalid center position from ZoomableGroup:", position);
-        }
-    };
-
-    // Theme-based map colors
-    const mapColors = {
-        highlighted: theme.mapHighlightedCountry || "#fbbf24",
-        cigarCountry: theme.mapCigarCountry || "#fde68a",
-        other: theme.mapOtherCountry || "#f3f4f6",
-        hover: theme.mapHover || "#f59e0b",
-        border: theme.mapBorder || "#d1d5db"
-    };
-
-    return (
-        <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
-            <button onClick={onToggle} className="w-full p-4 flex justify-between items-center">
-                <h3 className="font-bold text-amber-300 text-lg flex items-center">
-                    <MapPin className="w-5 h-5 mr-2" /> World Map
-                </h3>
-                <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
-            </button>
-
-            {!isCollapsed && (
-                <div className="p-4">
-                    <p className="text-sm text-gray-400 mb-1">
-                        Tap on a highlighted country to filter your collection by its origin.
-                    </p>
-                    <div className="w-full" style={{ minHeight: 300, position: "relative" }}>
-                        {/* Overlay zoom controls in bottom right */}
-                        <div
-                            className="absolute bottom-2 right-2 flex gap-2 z-10"
-                            style={{ pointerEvents: "auto" }}
-                        >
-                            <button
-                                onClick={handleZoomOut}
-                                className="p-3 bg-gray-800/70 border border-gray-700 rounded-full text-amber-300 hover:bg-gray-700 transition-colors flex items-center justify-center shadow-lg"
-                                title="Zoom Out"
-                            >
-                                <Minus className="w-5 h-5" />
-                            </button>
-                            <button
-                                onClick={handleZoomIn}
-                                className="p-3 bg-gray-800/70 border border-gray-700 rounded-full text-amber-300 hover:bg-gray-700 transition-colors flex items-center justify-center shadow-lg"
-                                title="Zoom In"
-                            >
-                                <Plus className="w-5 h-5" />
-                            </button>
-                            <button
-                                onClick={handleReset}
-                                className="p-3 bg-gray-800/70 border border-gray-700 rounded-full text-amber-300 hover:bg-gray-700 transition-colors flex items-center justify-center shadow-lg"
-                                title="Reset"
-                            >
-                                <Sparkles className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <ComposableMap
-                            width={1000}
-                            height={350}
-                            style={{ width: "100%", height: "350px" }}
-                        >
-                            <ZoomableGroup
-                                center={center}
-                                zoom={zoom}
-                                onMoveEnd={handleMoveEnd}
-                                minZoom={3}
-                                maxZoom={8}
-                            >
-                                <Geographies geography={geoUrl}>
-                                    {({ geographies }) =>
-                                        geographies.map(geo => {
-                                            const countryName = geo.properties.name;
-                                            const isCigarCountry = cigarCountries.includes(countryName);
-                                            const hasCigars = countryCounts[countryName] > 0;
-                                            return (
-                                                <Geography
-                                                    key={geo.rsmKey}
-                                                    geography={geo}
-                                                    onClick={() => hasCigars && navigate('HumidorsScreen', { preFilterCountry: countryName })}
-                                                    style={{
-                                                        default: {
-                                                            fill: hasCigars
-                                                                ? mapColors.highlighted
-                                                                : isCigarCountry
-                                                                    ? mapColors.cigarCountry
-                                                                    : mapColors.other,
-                                                            outline: "none",
-                                                            cursor: hasCigars ? "pointer" : "default",
-                                                            stroke: mapColors.border,
-                                                            strokeWidth: 0.5
-                                                        },
-                                                        hover: {
-                                                            fill: hasCigars
-                                                                ? mapColors.hover
-                                                                : isCigarCountry
-                                                                    ? mapColors.cigarCountry
-                                                                    : mapColors.other, // do not highlight if no cigars
-                                                            outline: "none",
-                                                            cursor: hasCigars ? "pointer" : "default"
-                                                        },
-                                                        pressed: {
-                                                            fill: mapColors.highlighted,
-                                                            outline: "none"
-                                                        }
-                                                    }}
-                                                >
-                                                    <title>
-                                                        {countryName}
-                                                        {hasCigars ? `: ${countryCounts[countryName]} cigar(s)` : ""}
-                                                    </title>
-                                                </Geography>
-                                            );
-                                        })
-                                    }
-                                </Geographies>
-                            </ZoomableGroup>
-                        </ComposableMap>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
-
-const LiveEnvironmentPanel = ({ humidors, theme }) => {
-    const [isCollapsed, setIsCollapsed] = useState(true);
-    const firstHumidor = humidors[0];
-    const displayTemp = firstHumidor ? firstHumidor.temp : 0;
-    const displayHumidity = firstHumidor ? firstHumidor.humidity : 0;
-
-    return (
-        <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
-            <button onClick={() => setIsCollapsed(!isCollapsed)} className="w-full p-4 flex justify-between items-center">
-                <h3 className="font-bold text-amber-300 text-lg flex items-center"><Thermometer className="w-5 h-5 mr-2" /> Live Environment</h3>
-                <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
-            </button>
-            {!isCollapsed && (
-                <div className="px-4 pb-4">
-
-
-
-                    <div id="pnlHumidor1" className="flex justify-around items-center h-full py-4">
-                        <Gauge value={displayHumidity} maxValue={100} label="Humidity" unit="%" icon={Droplets} />
-                        <Gauge value={displayTemp} maxValue={100} label="Temperature" unit="°F" icon={Thermometer} />
-                    </div>
-
-
-
-                </div>
-            )}
-        </div>
-    );
-};
-
-const InventoryAnalysisPanel = ({ cigars, theme, isCollapsed, onToggle }) => {
-    const [chartViews, setChartViews] = useState({ brands: 'bar', countries: 'bar', strength: 'bar' });
-
-    const { topBrandsData, topCountriesData, strengthDistributionData, totalBrandQuantity, totalCountryQuantity, totalStrengthQuantity } = useMemo(() => {
-        const processChartData = (data, key) => {
-            const groupedData = data.reduce((acc, cigar) => {
-                const groupKey = cigar[key] || 'Unknown';
-                acc[groupKey] = (acc[groupKey] || 0) + cigar.quantity;
-                return acc;
-            }, {});
-
-            return Object.keys(groupedData)
-                .map(name => ({ name, quantity: groupedData[name] }))
-                .sort((a, b) => b.quantity - a.quantity);
-        };
-
-        const topBrands = processChartData(cigars, 'brand').slice(0, 5);
-        const topCountries = processChartData(cigars, 'country').slice(0, 5);
-        const strengthDistribution = processChartData(cigars, 'strength');
-
-        const totalBrandQty = topBrands.reduce((sum, item) => sum + item.quantity, 0);
-        const totalCountryQty = topCountries.reduce((sum, item) => sum + item.quantity, 0);
-        const totalStrengthQty = strengthDistribution.reduce((sum, item) => sum + item.quantity, 0);
-
-        return {
-            topBrandsData: topBrands,
-            topCountriesData: topCountries,
-            strengthDistributionData: strengthDistribution,
-            totalBrandQuantity: totalBrandQty,
-            totalCountryQuantity: totalCountryQty,
-            totalStrengthQuantity: totalStrengthQty,
-        };
-    }, [cigars]);
-
-    const handleChartViewToggle = (chartName) => {
-        setChartViews(prev => ({
-            ...prev,
-            [chartName]: prev[chartName] === 'bar' ? 'pie' : 'bar'
-        }));
-    };
-
-    const PIE_COLORS = ['#f59e0b', '#3b82f6', '#84cc16', '#ef4444', '#a855f7'];
-
-    // Custom label renderer for Pie Charts
-    const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name, ...props }) => {
-        const RADIAN = Math.PI / 180;
-        const radius = outerRadius + 15; // Position label outside the pie
-        const x = cx + radius * Math.cos(-midAngle * RADIAN);
-        const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-        return (
-            <text {...props} x={x} y={y} fill="#d1d5db" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={12}>
-                {`${(percent * 100).toFixed(0)}%`}
-            </text>
-        );
-    };
-
-    // Formatter for the legend to show percentages
-    const legendFormatter = (value, entry, total) => {
-        const { quantity } = entry.payload;
-        const percent = total > 0 ? ((quantity / total) * 100).toFixed(0) : 0;
-        return `${value} (${percent}%)`;
-    };
-
-    return (
-        <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
-            <button onClick={onToggle} className="w-full p-4 flex justify-between items-center">
-                <h3 className="font-bold text-amber-300 text-lg flex items-center"><BarChart2 className="w-5 h-5 mr-2" /> Inventory Analysis</h3>
-                <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
-            </button>
-            {!isCollapsed && (
-                <div className="p-4 space-y-6">
-                    <ChartCard
-                        title="Top 5 Brands"
-                        action={<button onClick={() => handleChartViewToggle('brands')} className={`p-1 rounded-full ${theme.button}`}>{chartViews.brands === 'bar' ? <PieChartIcon className="w-5 h-5" /> : <BarChart2 className="w-5 h-5" />}</button>}>
-                        {chartViews.brands === 'bar' ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={topBrandsData} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-                                    <XAxis type="number" hide />
-                                    <YAxis dataKey="name" type="category" width={80} tick={{ fill: '#d1d5db' }} tickLine={false} axisLine={false} />
-                                    <Tooltip cursor={{ fill: 'rgba(255, 255, 255, 0.1)' }} contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }} />
-                                    <Bar dataKey="quantity" fill="#f59e0b" barSize={20} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        ) : (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={topBrandsData}
-                                        dataKey="quantity"
-                                        nameKey="name"
-                                        cx="50%"
-                                        cy="50%"
-                                        paddingAngle={3}
-                                        innerRadius={60}
-                                        outerRadius={80}
-                                        labelLine={false}
-                                        label={renderCustomizedLabel}>
-
-                                        {topBrandsData.map((entry, index) => <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />)}
-                                    </Pie>
-                                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }} />
-                                    <Legend formatter={(value, entry) => legendFormatter(value, entry, totalBrandQuantity)} wrapperStyle={{ fontSize: '12px' }} />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        )}
-                    </ChartCard>
-
-                    <ChartCard
-                        title="Top 5 Countries"
-                        action={<button onClick={() => handleChartViewToggle('countries')} className={`p-1 rounded-full ${theme.button}`}>{chartViews.countries === 'bar' ? <PieChartIcon className="w-5 h-5" /> : <BarChart2 className="w-5 h-5" />}</button>}>
-                        {chartViews.countries === 'bar' ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={topCountriesData} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-                                    <XAxis type="number" hide />
-                                    <YAxis dataKey="name" type="category" width={80} tick={{ fill: '#d1d5db' }} tickLine={false} axisLine={false} />
-                                    <Tooltip cursor={{ fill: 'rgba(255, 255, 255, 0.1)' }} contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }} />
-                                    <Bar dataKey="quantity" fill="#3b82f6" barSize={20} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        ) : (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={topCountriesData} dataKey="quantity"
-                                        nameKey="name"
-                                        cx="50%" cy="50%"
-                                        paddingAngle={3}
-                                        innerRadius={60}
-                                        outerRadius={80}
-                                        labelLine={false}
-                                        label={renderCustomizedLabel}>
-                                        {topCountriesData.map((entry, index) => <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />)}
-                                    </Pie>
-                                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }} />
-                                    <Legend formatter={(value, entry) => legendFormatter(value, entry, totalCountryQuantity)} wrapperStyle={{ fontSize: '12px' }} />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        )}
-                    </ChartCard>
-
-                    <ChartCard
-                        title="Flavor Profile"
-                        action={<button onClick={() => handleChartViewToggle('strength')} className={`p-1 rounded-full ${theme.button}`}>{chartViews.strength === 'bar' ? <PieChartIcon className="w-5 h-5" /> : <BarChart2 className="w-5 h-5" />}</button>}>
-                        {chartViews.strength === 'bar' ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={strengthDistributionData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                                    <XAxis dataKey="name" tick={{ fill: '#d1d5db' }} tickLine={false} axisLine={false} angle={-45} textAnchor="end" height={60} />
-                                    <YAxis tick={{ fill: '#d1d5db' }} tickLine={false} axisLine={false} />
-                                    <Tooltip cursor={{ fill: 'rgba(255, 255, 255, 0.1)' }} contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }} />
-                                    <Bar dataKey="quantity" fill="#84cc16" />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        ) : (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={strengthDistributionData}
-                                        dataKey="quantity"
-                                        nameKey="name"
-                                        cx="50%"
-                                        cy="50%"
-                                        paddingAngle={2}
-                                        innerRadius={60}
-                                        outerRadius={80}
-                                        labelLine={false}
-                                        label={renderCustomizedLabel}>
-                                        {strengthDistributionData.map((entry, index) => <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />)}
-                                    </Pie>
-                                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563' }} />
-                                    <Legend formatter={(value, entry) => legendFormatter(value, entry, totalStrengthQuantity)} wrapperStyle={{ fontSize: '12px' }} />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        )}
-                    </ChartCard>
-                </div>
-            )}
-        </div>
-    );
-};
-
-/**
- * AgingWellPanel - Shows cigars that have been aging for over a year.
- * Highlights "Ready to Smoke" or "Perfectly Aged" cigars.
- */
-const AgingWellPanel = ({ cigars, navigate, theme, isCollapsed, onToggle }) => {
-    // Filter cigars aged over 1 year (365 days)
-    const agedCigars = useMemo(() => {
-        return cigars
-            .filter(cigar => {
-                // Only include cigars with a valid dateAdded
-                if (!cigar.dateAdded) return false;
-                const ageInDays = calculateAge(cigar.dateAdded, true); // Get age in days
-                return ageInDays >= 365; // Check if age is 1 year or more
-            })
-            .sort((a, b) => new Date(a.dateAdded) - new Date(b.dateAdded)); // Sort oldest first
-    }, [cigars]);
-
-    return (
-        <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
-            <button onClick={onToggle} className="w-full p-4 flex justify-between items-center">
-                <h3 className="font-bold text-amber-300 text-lg flex items-center">
-                    <CalendarIcon className="w-5 h-5 mr-2" /> Aging Well / From the Cellar
-                </h3>
-                <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
-            </button>
-            {!isCollapsed && (
-                <div className="px-4 pb-4 space-y-2">
-                    {agedCigars.length > 0 ? (
-                        agedCigars.map(cigar => (
-                            <button
-                                key={cigar.id}
-                                onClick={() => navigate('CigarDetail', { cigarId: cigar.id })}
-                                className="w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors flex justify-between items-center"
-                            >
-                                <div>
-                                    <span className="text-white font-semibold">{cigar.brand} {cigar.name}</span>
-                                    <span className="block text-xs text-gray-400">
-                                        Aging: {calculateAge(cigar.dateAdded)} {cigar.dateAdded ? `(Since ${formatDate(cigar.dateAdded)})` : ''}
-                                    </span>
-                                </div>
-                                <span className="text-green-400 font-bold text-xs">
-                                    {calculateAge(cigar.dateAdded, true) >= 730 ? "Perfectly Aged" : "Ready to Smoke"}
-                                </span>
-                            </button>
-                        ))
-                    ) : (
-                        <p className="text-gray-500 text-sm text-center py-4">No cigars have been aging for over a year.</p>
-                    )}
-                </div>
-            )}
-        </div>
-    );
-};
-
-const MyCollectionStatsCards = ({ totalCigars, totalValue, humidors, theme }) => {
-    return (
-        <div id="my-collection-stats" className="grid grid-cols-3 sm:grid-cols-3 gap-2 mb-6">
-            <StatCard title="Total Cigars" value={totalCigars} theme={theme} />
-            <StatCard title="Est. Value" value={`$${totalValue.toFixed(2)}`} theme={theme} />
-            <StatCard title="Humidors" value={humidors.length} theme={theme} />
-        </div>
-    );
-};
-
-const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showStrengthPanel, showCountryPanel, showLiveEnvironment, showInventoryAnalysis, panelStates, setPanelStates, dashboardPanelVisibility }) => {
-    const [roxyTip, setRoxyTip] = useState('');
-    const [modalState, setModalState] = useState({ isOpen: false, content: '', isLoading: false });
-    const [isBrowseByModeOpen, setIsBrowseByModeOpen] = useState(false);
-    const [browseMode, setBrowseMode] = useState('');
-
-    useEffect(() => {
-        // Pick a random tip from Roxy's corner on component mount.
-        setRoxyTip(roxysTips[Math.floor(Math.random() * roxysTips.length)]);
-    }, []);
-
-    // Memoized calculation for chart data and statistics.
-    const { totalValue, totalCigars } = useMemo(() => {
-        const value = cigars.reduce((acc, cigar) => acc + (cigar.price * cigar.quantity), 0);
-        const count = cigars.reduce((sum, c) => sum + c.quantity, 0);
-
-        return {
-            totalValue: value,
-            totalCigars: count
-        };
-    }, [cigars]);
-
-    // --- Data for Browse By Panel ---
-    const wrapperData = useMemo(() => {
-        if (browseMode !== 'wrapper') return [];
-        const counts = cigars.reduce((acc, cigar) => {
-            const wrapper = cigar.wrapper || 'Unknown';
-            acc[wrapper] = (acc[wrapper] || 0) + cigar.quantity;
-            return acc;
-        }, {});
-        return Object.entries(counts)
-            .map(([wrapper, quantity]) => ({ wrapper, quantity }))
-            .sort((a, b) => a.wrapper.localeCompare(b.wrapper));
-    }, [cigars, browseMode]);
-
-    const strengthData = useMemo(() => {
-        if (browseMode !== 'strength') return [];
-        const strengthCategories = [
-            { label: 'Mild Cigars', filterValue: 'Mild' },
-            { label: 'Mild to Medium Cigars', filterValue: 'Mild-Medium' },
-            { label: 'Medium Cigars', filterValue: 'Medium' },
-            { label: 'Medium to Full Cigars', filterValue: 'Medium-Full' },
-            { label: 'Full Bodied Cigars', filterValue: 'Full' }
-        ];
-        const counts = strengthCategories.map(category => {
-            const quantity = cigars
-                .filter(cigar => cigar.strength === category.filterValue)
-                .reduce((sum, cigar) => sum + cigar.quantity, 0);
-            return { label: category.label, quantity, filterValue: category.filterValue };
-        });
-        return counts.filter(item => item.quantity > 0);
-    }, [cigars, browseMode]);
-
-    const countryData = useMemo(() => {
-        if (browseMode !== 'country') return [];
-        const countryCategories = [
-            { label: 'Dominican Cigars', filterValue: 'Dominican Republic' },
-            { label: 'Nicaraguan Cigars', filterValue: 'Nicaragua' },
-            { label: 'Honduran Cigars', filterValue: 'Honduras' },
-            { label: 'American Cigars', filterValue: 'USA' },
-            { label: 'Cuban Cigars', filterValue: 'Cuba' },
-            { label: 'Mexican Cigars', filterValue: 'Mexico' },
-            { label: 'Other Countries', filterValue: 'Other' }
-        ];
-        const counts = cigars.reduce((acc, cigar) => {
-            const country = cigar.country || 'Unknown';
-            const matchedCategory = countryCategories.find(cat => cat.filterValue.toLowerCase() === country.toLowerCase());
-            const key = matchedCategory ? matchedCategory.label : 'Other Countries';
-            acc[key] = (acc[key] || 0) + cigar.quantity;
-            return acc;
-        }, {});
-        return countryCategories
-            .map(category => ({
-                label: category.label,
-                quantity: counts[category.label] || 0,
-                filterValue: category.filterValue
-            }))
-            .filter(item => item.quantity > 0)
-            .sort((a, b) => a.label.localeCompare(b.label));
-    }, [cigars, browseMode]);
-    // --- End of Data for Browse By Panel ---
-
-    // Function to call Gemini API for a collection summary.
-    const handleSummarizeCollection = async () => {
-        setModalState({ isOpen: true, content: '', isLoading: true });
-        const inventorySummary = cigars.map(c => `${c.quantity}x ${c.brand} ${c.name} (${c.strength}, from ${c.country})`).join('\n');
-        const prompt = `You are an expert tobacconist. I am providing you with my current cigar inventory. Please provide a brief, narrative summary of my collection's character. What are the dominant trends in terms of strength, brand, and country of origin? What does my collection say about my tasting preferences? My inventory is:\n\n${inventorySummary}`;
-
-        const result = await callGeminiAPI(prompt);
-        setModalState({ isOpen: true, content: result, isLoading: false });
-    };
-
-    const handleBrowseByClick = (mode) => {
-        if (isBrowseByModeOpen && browseMode === mode) {
-            setIsBrowseByModeOpen(false);
-        } else if (isBrowseByModeOpen) {
-            setIsBrowseByModeOpen(false);
-            // Use a timeout to allow the panel to animate out before animating back in
-            setTimeout(() => {
-                setBrowseMode(mode);
-                setIsBrowseByModeOpen(true);
-            }, 150); // Adjust timing based on your animation duration
-        } else {
-            setBrowseMode(mode);
-            setIsBrowseByModeOpen(true);
-        }
-    };
-
-    // Generic toggle handler for all panels
-    const handlePanelToggle = (panelName) => {
-        setPanelStates(prev => ({ ...prev, [panelName]: !prev[panelName] }));
-    };
-
-    // Determine if humidors are present
-    const hasHumidors = humidors && humidors.length > 0;
-    // Determine if cigars are present
-    const hasCigars = cigars && cigars.length > 0;
-
-    const browseByConfig = {
-        wrapper: { title: 'Browse by Wrapper', icon: Leaf },
-        strength: { title: 'Browse by Profile', icon: Cigarette },
-        country: { title: 'Browse by Country', icon: MapPin },
-        default: { title: 'Browse by', icon: Filter }
-    };
-
-    const currentBrowseConfig = browseByConfig[browseMode] || browseByConfig.default;
-    const BrowseIcon = currentBrowseConfig.icon;
-
-    return (
-        <div className="p-4 pb-24">
-            {modalState.isOpen && <GeminiModal title="Collection Summary" content={modalState.content} isLoading={modalState.isLoading} onClose={() => setModalState({ isOpen: false, content: '', isLoading: false })} />}
-            <h1 className={`text-3xl font-bold ${theme.text} mb-2`}>Dashboard</h1>
-            <p className={`${theme.subtleText} mb-6`}>Your collection's live overview.</p>
-
-            {hasHumidors && (
-                <MyCollectionStatsCards
-                    totalCigars={totalCigars}
-                    totalValue={totalValue}
-                    humidors={humidors}
-                    theme={theme}
-                />
-            )}
-
-            {/* New: Roxy's Tips panel when no humidors are present */}
-            {!hasHumidors && (
-                <div className="bg-amber-900/20 border border-amber-800 rounded-xl p-4 mb-6 text-center">
-                    <h3 className="font-bold text-amber-300 text-lg flex items-center justify-center mb-3">
-                        <Wind className="w-5 h-5 mr-2" /> Roxy's Tips!
-                    </h3>
-                    <p className="text-amber-200 text-sm mb-4">
-                        Looks like your humidor collection is empty! Add your first humidor and some cigars to get insightful analytics on your dashboard.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-3">
-                        <button
-                            onClick={() => navigate('AddHumidor')}
-                            className="flex-1 flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-2 rounded-lg hover:bg-amber-600 transition-colors"
-                        >
-                            <Plus className="w-4 h-4" /> Add Humidor
-                        </button>
-                        {/* Disable Add Cigar if no humidors exist to put them in */}
-                        <button
-                            disabled={true}
-                            title="Add a humidor first to add cigars"
-                            className="flex-1 flex items-center justify-center gap-2 bg-gray-700 text-gray-500 font-bold py-2 rounded-lg cursor-not-allowed"
-                        >
-                            <Cigarette className="w-4 h-4" /> Add Cigar
-                        </button>
-                    </div>
-                </div>
-            )}
-
-
-            <div className="space-y-6">
-
-                {/* Browse by mode buttons */}
-                <div className="flex justify-center gap-4">
-                    <button id="btnBrowseByWrapper" onClick={() => handleBrowseByClick('wrapper')} className="p-3 bg-gray-800/50 border border-gray-700 rounded-full text-amber-300 hover:bg-gray-700 transition-colors">
-                        <Leaf className="w-5 h-5" />
-                    </button>
-                    <button id="btnBrowseByStrength" onClick={() => handleBrowseByClick('strength')} className="p-3 bg-gray-800/50 border border-gray-700 rounded-full text-amber-300 hover:bg-gray-700 transition-colors">
-                        <Cigarette className="w-5 h-5" />
-                    </button>
-                    <button id="btnBrowseByCountry" onClick={() => handleBrowseByClick('country')} className="p-3 bg-gray-800/50 border border-gray-700 rounded-full text-amber-300 hover:bg-gray-700 transition-colors">
-                        <MapPin className="w-5 h-5" />
-                    </button>
-                </div>
-
-                {/* Existing Roxy's Corner panel */}
-                {/* TODO Refactor into a component named "RoxysCorner" */}
-                <div className="bg-amber-900/20 border border-amber-800 rounded-xl overflow-hidden">
-                    <button onClick={() => handlePanelToggle('roxy')} className="w-full p-4 flex justify-between items-center">
-                        <h3 className="font-bold text-amber-300 text-lg flex items-center"><Wind className="w-5 h-5 mr-2" /> Roxy's Corner</h3>
-                        <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${!panelStates.roxy ? 'rotate-180' : ''}`} />
-                    </button>
-                    {!panelStates.roxy && (
-                        <div className="px-4 pb-4">
-                            {/* New: Friendly message when humidors exist but no cigars */}
-                            {hasHumidors && !hasCigars ? (
-                                <div className="text-amber-200 text-sm mb-4">
-                                    <p className="mb-3">Woof! Your humidors are looking a bit empty. Add some cigars or move them here to get personalized insights and organize your collection!</p>
-                                    <div className="flex flex-col sm:flex-row gap-3">
-                                        <button
-                                            // Pass the ID of the first humidor if available, otherwise null.
-                                            // The AddCigar screen should handle the case of no humidor selected.
-                                            onClick={() => navigate('AddCigar', { humidorId: humidors.length > 0 ? humidors[0].id : null })}
-                                            className="flex-1 flex items-center justify-center gap-2 bg-amber-500/20 border border-amber-500 text-amber-300 font-bold py-2 rounded-lg hover:bg-amber-500/30 transition-colors"
-                                        >
-                                            <Plus className="w-4 h-4" /> Add Cigar
-                                        </button>
-                                        <button
-                                            onClick={() => navigate('HumidorsScreen')}
-                                            className="flex-1 flex items-center justify-center gap-2 bg-sky-500/20 border border-sky-500 text-sky-300 font-bold py-2 rounded-lg hover:bg-sky-500/30 transition-colors"
-                                        >
-                                            <Move className="w-4 h-4" /> Manage & Move
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <>
-                                    <p className="text-amber-200 text-sm">{roxyTip}</p>
-                                    {/* Conditionally render "Ask Roxy for a Summary" if there are cigars */}
-                                    {hasCigars && (
-                                        <button onClick={handleSummarizeCollection} className="mt-4 w-full flex items-center justify-center bg-purple-600/20 border border-purple-500 text-purple-300 font-bold py-2 rounded-lg hover:bg-purple-600/30 transition-colors">
-                                            <Sparkles className="w-5 h-5 mr-2" /> Ask Roxy for a Summary
-                                        </button>
-                                    )}
-                                </>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                {hasCigars && dashboardPanelVisibility.showAgingWellPanel && (
-                    <AgingWellPanel
-                        cigars={cigars}
-                        navigate={navigate}
-                        theme={theme}
-                        isCollapsed={panelStates.agingWell}
-                        onToggle={() => handlePanelToggle('agingWell')}
-                    />
-                )}
-
-
-                {/* Conditionally render LiveEnvironmentPanel if there are humidors and it's enabled in settings */}
-                {hasHumidors && showLiveEnvironment && <LiveEnvironmentPanel humidors={humidors} theme={theme} isCollapsed={panelStates.liveEnvironment} onToggle={() => handlePanelToggle('liveEnvironment')} />}
-                {/* Conditionally render InventoryAnalysisPanel if there are cigars and it's enabled in settings */}
-                {hasCigars && showInventoryAnalysis && <InventoryAnalysisPanel cigars={cigars} theme={theme} isCollapsed={panelStates.inventoryAnalysis} onToggle={() => handlePanelToggle('inventoryAnalysis')} />}
-                {/* Conditionally render the new InteractiveWorldMapDrawer */}
-                {hasCigars && dashboardPanelVisibility.showWorldMap && <InteractiveWorldMapDrawer cigars={cigars} navigate={navigate} theme={theme} isCollapsed={panelStates.worldMap} onToggle={() => handlePanelToggle('worldMap')} />}
-                {/* Conditionally render BrowseByWrapperDrawer if there are cigars and it's enabled in settings */}
-                {hasCigars && showWrapperPanel && <BrowseByWrapperDrawer cigars={cigars} navigate={navigate} theme={theme} isCollapsed={panelStates.wrapper} onToggle={() => handlePanelToggle('wrapper')} />}
-                {/* Conditionally render BrowseByStrengthDrawer if there are cigars and it's enabled in settings */}
-                {hasCigars && showStrengthPanel && <BrowseByStrengthDrawer cigars={cigars} navigate={navigate} theme={theme} isCollapsed={panelStates.strength} onToggle={() => handlePanelToggle('strength')} />}
-                {/* Conditionally render BrowseByCountryDrawer if there are cigars and it's enabled in settings */}
-                {hasCigars && showCountryPanel && <BrowseByCountryDrawer cigars={cigars} navigate={navigate} theme={theme} isCollapsed={panelStates.country} onToggle={() => handlePanelToggle('country')} />}
-            </div>
-
-            {isBrowseByModeOpen && (
-                <div id="pnlBrowseByModePanel" className="fixed bottom-20 left-0 right-0 bg-gray-900/80 backdrop-blur-sm p-4 z-40 border-t border-gray-700">
-                    <div className="max-w-md mx-auto">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 id="browseByMode" className="text-xl font-bold text-amber-400 flex items-center"><BrowseIcon className="w-5 h-5 mr-2" /> {currentBrowseConfig.title}</h3>
-                            <button onClick={() => setIsBrowseByModeOpen(false)} className="text-amber-400 font-semibold">Done</button>
-                        </div>
-                        <div className="mb-4 max-h-64 overflow-y-auto space-y-2">
-                            {browseMode === 'wrapper' && wrapperData.map(({ wrapper, quantity }) => (
-                                <button
-                                    key={wrapper}
-                                    onClick={() => { navigate('HumidorsScreen', { preFilterWrapper: wrapper }); setIsBrowseByModeOpen(false); }}
-                                    className="w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors flex justify-between items-center"
-                                >
-                                    <span className="text-gray-300">{wrapper}</span>
-                                    <span className="text-gray-400">({quantity})</span>
-                                </button>
-                            ))}
-                            {browseMode === 'strength' && strengthData.map(({ label, quantity, filterValue }) => (
-                                <button
-                                    key={label}
-                                    onClick={() => { navigate('HumidorsScreen', { preFilterStrength: filterValue }); setIsBrowseByModeOpen(false); }}
-                                    className="w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors flex justify-between items-center"
-                                >
-                                    <span className="text-gray-300">{label}</span>
-                                    <span className="text-gray-400">({quantity})</span>
-                                </button>
-                            ))}
-                            {browseMode === 'country' && countryData.map(({ label, quantity, filterValue }) => (
-                                <button
-                                    key={label}
-                                    onClick={() => { navigate('HumidorsScreen', { preFilterCountry: filterValue }); setIsBrowseByModeOpen(false); }}
-                                    className="w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors flex justify-between items-center"
-                                >
-                                    <span className="text-gray-300">{label}</span>
-                                    <span className="text-gray-400">({quantity})</span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
+// const Dashboard = ({ navigate, cigars, humidors, theme, showWrapperPanel, showStrengthPanel, showCountryPanel, showLiveEnvironment, showInventoryAnalysis, panelStates, setPanelStates, dashboardPanelVisibility }) => {
+//     const [roxyTip, setRoxyTip] = useState('');
+//     const [modalState, setModalState] = useState({ isOpen: false, content: '', isLoading: false });
+//     const [isBrowseByModeOpen, setIsBrowseByModeOpen] = useState(false);
+//     const [browseMode, setBrowseMode] = useState('');
+
+//     useEffect(() => {
+//         // Pick a random tip from Roxy's corner on component mount.
+//         setRoxyTip(roxysTips[Math.floor(Math.random() * roxysTips.length)]);
+//     }, []);
+
+//     // Memoized calculation for chart data and statistics.
+//     const { totalValue, totalCigars } = useMemo(() => {
+//         const value = cigars.reduce((acc, cigar) => acc + (cigar.price * cigar.quantity), 0);
+//         const count = cigars.reduce((sum, c) => sum + c.quantity, 0);
+
+//         return {
+//             totalValue: value,
+//             totalCigars: count
+//         };
+//     }, [cigars]);
+
+//     // --- Data for Browse By Panel ---
+//     const wrapperData = useMemo(() => {
+//         if (browseMode !== 'wrapper') return [];
+//         const counts = cigars.reduce((acc, cigar) => {
+//             const wrapper = cigar.wrapper || 'Unknown';
+//             acc[wrapper] = (acc[wrapper] || 0) + cigar.quantity;
+//             return acc;
+//         }, {});
+//         return Object.entries(counts)
+//             .map(([wrapper, quantity]) => ({ wrapper, quantity }))
+//             .sort((a, b) => a.wrapper.localeCompare(b.wrapper));
+//     }, [cigars, browseMode]);
+
+//     const strengthData = useMemo(() => {
+//         if (browseMode !== 'strength') return [];
+//         const strengthCategories = [
+//             { label: 'Mild Cigars', filterValue: 'Mild' },
+//             { label: 'Mild to Medium Cigars', filterValue: 'Mild-Medium' },
+//             { label: 'Medium Cigars', filterValue: 'Medium' },
+//             { label: 'Medium to Full Cigars', filterValue: 'Medium-Full' },
+//             { label: 'Full Bodied Cigars', filterValue: 'Full' }
+//         ];
+//         const counts = strengthCategories.map(category => {
+//             const quantity = cigars
+//                 .filter(cigar => cigar.strength === category.filterValue)
+//                 .reduce((sum, cigar) => sum + cigar.quantity, 0);
+//             return { label: category.label, quantity, filterValue: category.filterValue };
+//         });
+//         return counts.filter(item => item.quantity > 0);
+//     }, [cigars, browseMode]);
+
+//     const countryData = useMemo(() => {
+//         if (browseMode !== 'country') return [];
+//         const countryCategories = [
+//             { label: 'Dominican Cigars', filterValue: 'Dominican Republic' },
+//             { label: 'Nicaraguan Cigars', filterValue: 'Nicaragua' },
+//             { label: 'Honduran Cigars', filterValue: 'Honduras' },
+//             { label: 'American Cigars', filterValue: 'USA' },
+//             { label: 'Cuban Cigars', filterValue: 'Cuba' },
+//             { label: 'Mexican Cigars', filterValue: 'Mexico' },
+//             { label: 'Other Countries', filterValue: 'Other' }
+//         ];
+//         const counts = cigars.reduce((acc, cigar) => {
+//             const country = cigar.country || 'Unknown';
+//             const matchedCategory = countryCategories.find(cat => cat.filterValue.toLowerCase() === country.toLowerCase());
+//             const key = matchedCategory ? matchedCategory.label : 'Other Countries';
+//             acc[key] = (acc[key] || 0) + cigar.quantity;
+//             return acc;
+//         }, {});
+//         return countryCategories
+//             .map(category => ({
+//                 label: category.label,
+//                 quantity: counts[category.label] || 0,
+//                 filterValue: category.filterValue
+//             }))
+//             .filter(item => item.quantity > 0)
+//             .sort((a, b) => a.label.localeCompare(b.label));
+//     }, [cigars, browseMode]);
+//     // --- End of Data for Browse By Panel ---
+
+//     // Function to call Gemini API for a collection summary.
+//     const handleSummarizeCollection = async () => {
+//         setModalState({ isOpen: true, content: '', isLoading: true });
+//         const inventorySummary = cigars.map(c => `${c.quantity}x ${c.brand} ${c.name} (${c.strength}, from ${c.country})`).join('\n');
+//         const prompt = `You are an expert tobacconist. I am providing you with my current cigar inventory. Please provide a brief, narrative summary of my collection's character. What are the dominant trends in terms of strength, brand, and country of origin? What does my collection say about my tasting preferences? My inventory is:\n\n${inventorySummary}`;
+
+//         const result = await callGeminiAPI(prompt);
+//         setModalState({ isOpen: true, content: result, isLoading: false });
+//     };
+
+//     const handleBrowseByClick = (mode) => {
+//         if (isBrowseByModeOpen && browseMode === mode) {
+//             setIsBrowseByModeOpen(false);
+//         } else if (isBrowseByModeOpen) {
+//             setIsBrowseByModeOpen(false);
+//             // Use a timeout to allow the panel to animate out before animating back in
+//             setTimeout(() => {
+//                 setBrowseMode(mode);
+//                 setIsBrowseByModeOpen(true);
+//             }, 150); // Adjust timing based on your animation duration
+//         } else {
+//             setBrowseMode(mode);
+//             setIsBrowseByModeOpen(true);
+//         }
+//     };
+
+//     // Generic toggle handler for all panels
+//     const handlePanelToggle = (panelName) => {
+//         setPanelStates(prev => ({ ...prev, [panelName]: !prev[panelName] }));
+//     };
+
+//     // Determine if humidors are present
+//     const hasHumidors = humidors && humidors.length > 0;
+//     // Determine if cigars are present
+//     const hasCigars = cigars && cigars.length > 0;
+
+//     const browseByConfig = {
+//         wrapper: { title: 'Browse by Wrapper', icon: Leaf },
+//         strength: { title: 'Browse by Profile', icon: Cigarette },
+//         country: { title: 'Browse by Country', icon: MapPin },
+//         default: { title: 'Browse by', icon: Filter }
+//     };
+
+//     const currentBrowseConfig = browseByConfig[browseMode] || browseByConfig.default;
+//     const BrowseIcon = currentBrowseConfig.icon;
+
+//     return (
+//         <div className="p-4 pb-24">
+//             {modalState.isOpen && <GeminiModal title="Collection Summary" content={modalState.content} isLoading={modalState.isLoading} onClose={() => setModalState({ isOpen: false, content: '', isLoading: false })} />}
+//             <h1 className={`text-3xl font-bold ${theme.text} mb-2`}>Dashboard</h1>
+//             <p className={`${theme.subtleText} mb-6`}>Your collection's live overview.</p>
+
+//             {hasHumidors && (
+//                 <MyCollectionStatsCards
+//                     totalCigars={totalCigars}
+//                     totalValue={totalValue}
+//                     humidors={humidors}
+//                     theme={theme}
+//                 />
+//             )}
+
+//             {/* New: Roxy's Tips panel when no humidors are present */}
+//             {!hasHumidors && (
+//                 <div className="bg-amber-900/20 border border-amber-800 rounded-xl p-4 mb-6 text-center">
+//                     <h3 className="font-bold text-amber-300 text-lg flex items-center justify-center mb-3">
+//                         <Wind className="w-5 h-5 mr-2" /> Roxy's Tips!
+//                     </h3>
+//                     <p className="text-amber-200 text-sm mb-4">
+//                         Looks like your humidor collection is empty! Add your first humidor and some cigars to get insightful analytics on your dashboard.
+//                     </p>
+//                     <div className="flex flex-col sm:flex-row gap-3">
+//                         <button
+//                             onClick={() => navigate('AddHumidor')}
+//                             className="flex-1 flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-2 rounded-lg hover:bg-amber-600 transition-colors"
+//                         >
+//                             <Plus className="w-4 h-4" /> Add Humidor
+//                         </button>
+//                         {/* Disable Add Cigar if no humidors exist to put them in */}
+//                         <button
+//                             disabled={true}
+//                             title="Add a humidor first to add cigars"
+//                             className="flex-1 flex items-center justify-center gap-2 bg-gray-700 text-gray-500 font-bold py-2 rounded-lg cursor-not-allowed"
+//                         >
+//                             <Cigarette className="w-4 h-4" /> Add Cigar
+//                         </button>
+//                     </div>
+//                 </div>
+//             )}
+
+
+//             <div className="space-y-6">
+
+//                 {/* Browse by mode buttons */}
+//                 <div className="flex justify-center gap-4">
+//                     <button id="btnBrowseByWrapper" onClick={() => handleBrowseByClick('wrapper')} className="p-3 bg-gray-800/50 border border-gray-700 rounded-full text-amber-300 hover:bg-gray-700 transition-colors">
+//                         <Leaf className="w-5 h-5" />
+//                     </button>
+//                     <button id="btnBrowseByStrength" onClick={() => handleBrowseByClick('strength')} className="p-3 bg-gray-800/50 border border-gray-700 rounded-full text-amber-300 hover:bg-gray-700 transition-colors">
+//                         <Cigarette className="w-5 h-5" />
+//                     </button>
+//                     <button id="btnBrowseByCountry" onClick={() => handleBrowseByClick('country')} className="p-3 bg-gray-800/50 border border-gray-700 rounded-full text-amber-300 hover:bg-gray-700 transition-colors">
+//                         <MapPin className="w-5 h-5" />
+//                     </button>
+//                 </div>
+
+//                 {/* Existing Roxy's Corner panel */}
+//                 {/* TODO Refactor into a component named "RoxysCorner" */}
+//                 <div className="bg-amber-900/20 border border-amber-800 rounded-xl overflow-hidden">
+//                     <button onClick={() => handlePanelToggle('roxy')} className="w-full p-4 flex justify-between items-center">
+//                         <h3 className="font-bold text-amber-300 text-lg flex items-center"><Wind className="w-5 h-5 mr-2" /> Roxy's Corner</h3>
+//                         <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${!panelStates.roxy ? 'rotate-180' : ''}`} />
+//                     </button>
+//                     {!panelStates.roxy && (
+//                         <div className="px-4 pb-4">
+//                             {/* New: Friendly message when humidors exist but no cigars */}
+//                             {hasHumidors && !hasCigars ? (
+//                                 <div className="text-amber-200 text-sm mb-4">
+//                                     <p className="mb-3">Woof! Your humidors are looking a bit empty. Add some cigars or move them here to get personalized insights and organize your collection!</p>
+//                                     <div className="flex flex-col sm:flex-row gap-3">
+//                                         <button
+//                                             // Pass the ID of the first humidor if available, otherwise null.
+//                                             // The AddCigar screen should handle the case of no humidor selected.
+//                                             onClick={() => navigate('AddCigar', { humidorId: humidors.length > 0 ? humidors[0].id : null })}
+//                                             className="flex-1 flex items-center justify-center gap-2 bg-amber-500/20 border border-amber-500 text-amber-300 font-bold py-2 rounded-lg hover:bg-amber-500/30 transition-colors"
+//                                         >
+//                                             <Plus className="w-4 h-4" /> Add Cigar
+//                                         </button>
+//                                         <button
+//                                             onClick={() => navigate('HumidorsScreen')}
+//                                             className="flex-1 flex items-center justify-center gap-2 bg-sky-500/20 border border-sky-500 text-sky-300 font-bold py-2 rounded-lg hover:bg-sky-500/30 transition-colors"
+//                                         >
+//                                             <Move className="w-4 h-4" /> Manage & Move
+//                                         </button>
+//                                     </div>
+//                                 </div>
+//                             ) : (
+//                                 <>
+//                                     <p className="text-amber-200 text-sm">{roxyTip}</p>
+//                                     {/* Conditionally render "Ask Roxy for a Summary" if there are cigars */}
+//                                     {hasCigars && (
+//                                         <button onClick={handleSummarizeCollection} className="mt-4 w-full flex items-center justify-center bg-purple-600/20 border border-purple-500 text-purple-300 font-bold py-2 rounded-lg hover:bg-purple-600/30 transition-colors">
+//                                             <Sparkles className="w-5 h-5 mr-2" /> Ask Roxy for a Summary
+//                                         </button>
+//                                     )}
+//                                 </>
+//                             )}
+//                         </div>
+//                     )}
+//                 </div>
+
+//                 {hasCigars && dashboardPanelVisibility.showAgingWellPanel && (
+//                     <AgingWellPanel
+//                         cigars={cigars}
+//                         navigate={navigate}
+//                         theme={theme}
+//                         isCollapsed={panelStates.agingWell}
+//                         onToggle={() => handlePanelToggle('agingWell')}
+//                     />
+//                 )}
+
+
+//                 {/* Conditionally render LiveEnvironmentPanel if there are humidors and it's enabled in settings */}
+//                 {hasHumidors && showLiveEnvironment && <LiveEnvironmentPanel humidors={humidors} theme={theme} isCollapsed={panelStates.liveEnvironment} onToggle={() => handlePanelToggle('liveEnvironment')} />}
+//                 {/* Conditionally render InventoryAnalysisPanel if there are cigars and it's enabled in settings */}
+//                 {hasCigars && showInventoryAnalysis && <InventoryAnalysisPanel cigars={cigars} theme={theme} isCollapsed={panelStates.inventoryAnalysis} onToggle={() => handlePanelToggle('inventoryAnalysis')} />}
+//                 {/* Conditionally render the new InteractiveWorldMapDrawer */}
+//                 {hasCigars && dashboardPanelVisibility.showWorldMap && <InteractiveWorldMapDrawer cigars={cigars} navigate={navigate} theme={theme} isCollapsed={panelStates.worldMap} onToggle={() => handlePanelToggle('worldMap')} />}
+//                 {/* Conditionally render BrowseByWrapperDrawer if there are cigars and it's enabled in settings */}
+//                 {hasCigars && showWrapperPanel && <BrowseByWrapperDrawer cigars={cigars} navigate={navigate} theme={theme} isCollapsed={panelStates.wrapper} onToggle={() => handlePanelToggle('wrapper')} />}
+//                 {/* Conditionally render BrowseByStrengthDrawer if there are cigars and it's enabled in settings */}
+//                 {hasCigars && showStrengthPanel && <BrowseByStrengthDrawer cigars={cigars} navigate={navigate} theme={theme} isCollapsed={panelStates.strength} onToggle={() => handlePanelToggle('strength')} />}
+//                 {/* Conditionally render BrowseByCountryDrawer if there are cigars and it's enabled in settings */}
+//                 {hasCigars && showCountryPanel && <BrowseByCountryDrawer cigars={cigars} navigate={navigate} theme={theme} isCollapsed={panelStates.country} onToggle={() => handlePanelToggle('country')} />}
+//             </div>
+
+//             {isBrowseByModeOpen && (
+//                 <div id="pnlBrowseByModePanel" className="fixed bottom-20 left-0 right-0 bg-gray-900/80 backdrop-blur-sm p-4 z-40 border-t border-gray-700">
+//                     <div className="max-w-md mx-auto">
+//                         <div className="flex justify-between items-center mb-4">
+//                             <h3 id="browseByMode" className="text-xl font-bold text-amber-400 flex items-center"><BrowseIcon className="w-5 h-5 mr-2" /> {currentBrowseConfig.title}</h3>
+//                             <button onClick={() => setIsBrowseByModeOpen(false)} className="text-amber-400 font-semibold">Done</button>
+//                         </div>
+//                         <div className="mb-4 max-h-64 overflow-y-auto space-y-2">
+//                             {browseMode === 'wrapper' && wrapperData.map(({ wrapper, quantity }) => (
+//                                 <button
+//                                     key={wrapper}
+//                                     onClick={() => { navigate('HumidorsScreen', { preFilterWrapper: wrapper }); setIsBrowseByModeOpen(false); }}
+//                                     className="w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors flex justify-between items-center"
+//                                 >
+//                                     <span className="text-gray-300">{wrapper}</span>
+//                                     <span className="text-gray-400">({quantity})</span>
+//                                 </button>
+//                             ))}
+//                             {browseMode === 'strength' && strengthData.map(({ label, quantity, filterValue }) => (
+//                                 <button
+//                                     key={label}
+//                                     onClick={() => { navigate('HumidorsScreen', { preFilterStrength: filterValue }); setIsBrowseByModeOpen(false); }}
+//                                     className="w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors flex justify-between items-center"
+//                                 >
+//                                     <span className="text-gray-300">{label}</span>
+//                                     <span className="text-gray-400">({quantity})</span>
+//                                 </button>
+//                             ))}
+//                             {browseMode === 'country' && countryData.map(({ label, quantity, filterValue }) => (
+//                                 <button
+//                                     key={label}
+//                                     onClick={() => { navigate('HumidorsScreen', { preFilterCountry: filterValue }); setIsBrowseByModeOpen(false); }}
+//                                     className="w-full text-left py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors flex justify-between items-center"
+//                                 >
+//                                     <span className="text-gray-300">{label}</span>
+//                                     <span className="text-gray-400">({quantity})</span>
+//                                 </button>
+//                             ))}
+//                         </div>
+//                     </div>
+//                 </div>
+//             )}
+//         </div>
+//     );
+// };
 
 const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, preFilterWrapper, preFilterStrength, preFilterCountry }) => { // July 5, 2025 - 2:00:00 AM CDT: Added preFilterCountry prop
     const [searchQuery, setSearchQuery] = useState('');
@@ -1675,542 +968,6 @@ const EditHumidor = ({ navigate, db, appId, userId, humidor, goveeApiKey, goveeD
     );
 };
 
-const MyHumidor = ({ humidor, navigate, cigars, humidors, db, appId, userId, theme }) => {
-    const [searchQuery, setSearchQuery] = useState('');
-    const [suggestions, setSuggestions] = useState([]);
-    const [viewMode, setViewMode] = useState('grid');
-    const [isSelectMode, setIsSelectMode] = useState(false);
-    const [selectedCigarIds, setSelectedCigarIds] = useState([]);
-    const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
-    const [isDeleteHumidorModalOpen, setIsDeleteHumidorModalOpen] = useState(false);
-    const [isDeleteCigarsModalOpen, setIsDeleteCigarsModalOpen] = useState(false);
-    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-    const [isManualReadingModalOpen, setIsManualReadingModalOpen] = useState(false);
-    const [isFilterSortModalOpen, setIsFilterSortModalOpen] = useState(false);
-    const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
-    const [filters, setFilters] = useState({ brand: '', country: '', strength: '', flavorNotes: [] });
-    const [sortBy, setSortBy] = useState('name');
-    const [sortOrder, setSortOrder] = useState('asc');
-
-    // --- Auto-fill Missing Cigar Details Banner Logic ---
-    const [showAutofillBanner, setShowAutofillBanner] = useState(true);
-    const [isAutofilling, setIsAutofilling] = useState(false);
-    const [autofillStatus, setAutofillStatus] = useState(""); // For feedback
-
-    // Fields to auto-fill (do NOT include shape, size, length_inches, ring_gauge)
-    const FIELDS_TO_AUTOFILL = [
-        "shortDescription", "description", "wrapper", "binder", "filler", "rating", "flavorNotes", "price"
-    ];
-
-    const filteredAndSortedCigars = useMemo(() => {
-        let currentCigars = cigars.filter(c => c.humidorId === humidor.id);
-
-        if (searchQuery) {
-            currentCigars = currentCigars.filter(cigar => cigar.name.toLowerCase().includes(searchQuery.toLowerCase()) || cigar.brand.toLowerCase().includes(searchQuery.toLowerCase()));
-        }
-
-        if (filters.brand) currentCigars = currentCigars.filter(cigar => cigar.brand === filters.brand);
-        if (filters.country) currentCigars = currentCigars.filter(cigar => cigar.country === filters.country);
-        if (filters.strength) currentCigars = currentCigars.filter(cigar => cigar.strength === filters.strength);
-        if (filters.flavorNotes.length > 0) {
-            currentCigars = currentCigars.filter(cigar => filters.flavorNotes.every(note => cigar.flavorNotes.includes(note)));
-        }
-
-        currentCigars.sort((a, b) => {
-            let valA, valB;
-            switch (sortBy) {
-                case 'name': valA = a.name.toLowerCase(); valB = b.name.toLowerCase(); break;
-                case 'brand': valA = a.brand.toLowerCase(); valB = b.brand.toLowerCase(); break;
-                case 'rating': valA = a.rating || 0; valB = b.rating || 0; break;
-                case 'quantity': valA = a.quantity; valB = b.quantity; break;
-                case 'price': valA = a.price || 0; valB = b.price || 0; break;
-                case 'dateAdded': valA = a.dateAdded; valB = b.dateAdded; break;
-                default: return 0;
-            }
-            if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
-            if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
-            return 0;
-        });
-
-        return currentCigars;
-    }, [cigars, humidor.id, searchQuery, filters, sortBy, sortOrder]);
-
-    // Find cigars with missing fields (only for this humidor)
-    const cigarsWithMissingDetails = filteredAndSortedCigars.filter(cigar =>
-        FIELDS_TO_AUTOFILL.some(field =>
-            cigar[field] === undefined ||
-            cigar[field] === "" ||
-            (Array.isArray(cigar[field]) && cigar[field].length === 0)
-        )
-    );
-
-    const isFilterActive = useMemo(() => {
-        return filters.brand || filters.country || filters.strength || filters.flavorNotes.length > 0;
-    }, [filters]);
-
-    const uniqueBrands = useMemo(() => [...new Set(cigars.filter(c => c.humidorId === humidor.id).map(c => c.brand))].sort(), [cigars, humidor.id]);
-    const uniqueCountries = useMemo(() => [...new Set(cigars.filter(c => c.humidorId === humidor.id).map(c => c.country))].sort(), [cigars, humidor.id]);
-    const availableFlavorNotes = useMemo(() => [...new Set(cigars.filter(c => c.humidorId === humidor.id).flatMap(c => c.flavorNotes))].sort(), [cigars, humidor.id]);
-
-
-
-    const totalQuantity = filteredAndSortedCigars.reduce((sum, c) => sum + c.quantity, 0);
-    const humidorValue = filteredAndSortedCigars.reduce((sum, c) => sum + (c.quantity * (c.price || 0)), 0);
-
-    const handleSearchChange = (e) => {
-        const query = e.target.value;
-        setSearchQuery(query);
-        if (query.length > 1) {
-            const allSuggestions = cigars.filter(c => c.humidorId === humidor.id).map(c => c.brand).concat(cigars.filter(c => c.humidorId === humidor.id).map(c => c.name)).filter(name => name.toLowerCase().includes(query.toLowerCase()));
-            setSuggestions([...new Set(allSuggestions)].slice(0, 5));
-        } else {
-            setSuggestions([]);
-        }
-    };
-
-    const handleClearSearch = () => {
-        setSearchQuery('');
-        setSuggestions([]);
-    };
-
-
-    const handleSuggestionClick = (suggestion) => {
-        setSearchQuery(suggestion);
-        setSuggestions([]);
-    };
-
-    const handleToggleSelectMode = () => {
-        setIsSelectMode(!isSelectMode);
-        setSelectedCigarIds([]);
-    };
-
-    const handleSelectCigar = (cigarId) => {
-        setSelectedCigarIds(prev => prev.includes(cigarId) ? prev.filter(id => id !== cigarId) : [...prev, cigarId]);
-    };
-
-    // Function to handle the Move Cigars action
-    const handleMoveCigars = async (destinationHumidorId) => {
-        // Get a new write batch
-        const batch = writeBatch(db);
-        // Iterate over each selected cigar ID
-        selectedCigarIds.forEach(cigarId => {
-            // Correctly reference the cigar document using the cigarId from the loop
-            const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigarId);
-            // Update the humidorId and reset the dateAdded for the moved cigar
-            batch.update(cigarRef, { humidorId: destinationHumidorId, dateAdded: new Date().toISOString() });
-        });
-        // Commit the batch update
-        await batch.commit();
-        // Reset state and navigate to the destination humidor
-        setIsMoveModalOpen(false);
-        setIsSelectMode(false);
-        setSelectedCigarIds([]);
-        navigate('MyHumidor', { humidorId: destinationHumidorId });
-    };
-
-    const handleConfirmDeleteHumidor = async ({ action, destinationHumidorId }) => {
-        const batch = writeBatch(db);
-        const cigarsToDelete = cigars.filter(c => c.humidorId === humidor.id);
-
-        switch (action) {
-            case 'move':
-                cigarsToDelete.forEach(cigar => {
-                    const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
-                    batch.update(cigarRef, { humidorId: destinationHumidorId });
-                });
-                break;
-            case 'export':
-            case 'deleteAll':
-                cigarsToDelete.forEach(cigar => {
-                    const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
-                    batch.delete(cigarRef);
-                });
-                break;
-            default: break;
-        }
-
-        const humidorRef = doc(db, 'artifacts', appId, 'users', userId, 'humidors', humidor.id);
-        batch.delete(humidorRef);
-
-        await batch.commit();
-        setIsDeleteHumidorModalOpen(false);
-        navigate('HumidorsScreen');
-    };
-
-    const handleAutofillMissingDetails = async () => {
-        setIsAutofilling(true);
-        setAutofillStatus("Auto-filling details...");
-
-        for (const cigar of cigarsWithMissingDetails) {
-            // Build prompt for Gemini
-            const missingFields = FIELDS_TO_AUTOFILL.filter(f =>
-                cigar[f] === undefined ||
-                cigar[f] === "" ||
-                (Array.isArray(cigar[f]) && cigar[f].length === 0)
-            );
-            if (!cigar.name || missingFields.length === 0) continue;
-
-            const prompt = `You are a cigar database. Fill in missing details for this cigar as a JSON object.
-Cigar: "${cigar.brand} ${cigar.name}".
-Missing fields: ${missingFields.join(", ")}.
-Schema: { "shortDescription": "string", "description": "string", "wrapper": "string", "binder": "string", "filler": "string", "rating": "number", "flavorNotes": ["string"], "price": "number" }.
-If you cannot determine a value, use "" or [] or 0. Only return the JSON object.`;
-
-            const responseSchema = {
-                type: "OBJECT",
-                properties: {
-                    shortDescription: { type: "STRING" },
-                    description: { type: "STRING" },
-                    wrapper: { type: "STRING" },
-                    binder: { type: "STRING" },
-                    filler: { type: "STRING" },
-                    rating: { type: "NUMBER" },
-                    flavorNotes: { type: "ARRAY", items: { type: "STRING" } },
-                    price: { type: "NUMBER" }
-                }
-            };
-
-            const result = await callGeminiAPI(prompt, responseSchema);
-
-            if (typeof result === "object" && result !== null) {
-                // Only update missing fields
-                const updateData = {};
-                FIELDS_TO_AUTOFILL.forEach(field => {
-                    if (
-                        (!cigar[field] || (Array.isArray(cigar[field]) && cigar[field].length === 0)) &&
-                        result[field] !== undefined
-                    ) {
-                        updateData[field] = result[field];
-                    }
-                });
-                console.log("Fields to update for", cigar.name, updateData);
-                if (Object.keys(updateData).length > 0) {
-                    const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
-                    await updateDoc(cigarRef, updateData);
-                }
-            } else {
-                setAutofillStatus(`Roxy couldn't find any details for "${cigar.name}".`);
-                console.warn("No data returned from Gemini for", cigar.name, result);
-            }
-        }
-        setAutofillStatus("Auto-fill complete!");
-        setIsAutofilling(false);
-        setShowAutofillBanner(false);
-    };
-
-    // Function to handle the confirmation of deleting selected cigars
-    const handleConfirmDeleteCigars = async () => {
-        // Get a new write batch
-        const batch = writeBatch(db);
-        // Iterate over each selected cigar ID
-        selectedCigarIds.forEach(cigarId => {
-            // Correctly reference the cigar document using the cigarId from the loop
-            const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigarId);
-            // Delete the document
-            batch.delete(cigarRef);
-        });
-        // Commit the batch deletion
-        await batch.commit();
-        // Reset the state
-        setIsDeleteCigarsModalOpen(false);
-        setIsSelectMode(false);
-        setSelectedCigarIds([]);
-    };
-
-    const handleSaveManualReading = async (newTemp, newHumidity) => {
-        const humidorRef = doc(db, 'artifacts', appId, 'users', userId, 'humidors', humidor.id);
-        await updateDoc(humidorRef, { temp: newTemp, humidity: newHumidity });
-        setIsManualReadingModalOpen(false);
-    };
-
-    const handleFilterChange = (filterName, value) => setFilters(prev => ({ ...prev, [filterName]: value }));
-
-    const handleFlavorNoteToggle = (note) => {
-        setFilters(prev => ({ ...prev, flavorNotes: prev.flavorNotes.includes(note) ? prev.flavorNotes.filter(n => n !== note) : [...prev.flavorNotes, note] }));
-    };
-
-    const handleSortChange = (sortCriteria) => {
-        if (sortBy === sortCriteria) {
-            setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'));
-        } else {
-            setSortBy(sortCriteria);
-            setSortOrder('asc');
-        }
-    };
-
-    const handleClearFilters = () => {
-        setFilters({ brand: '', country: '', strength: '', flavorNotes: [] });
-    };
-
-    return (
-        <div className="bg-gray-900 min-h-screen pb-24">
-
-
-
-
-            {isManualReadingModalOpen && <ManualReadingModal humidor={humidor} onClose={() => setIsManualReadingModalOpen(false)} onSave={handleSaveManualReading} theme={theme} />}
-            {isMoveModalOpen && <MoveCigarsModal onClose={() => setIsMoveModalOpen(false)} onMove={handleMoveCigars} destinationHumidors={humidors.filter(h => h.id !== humidor.id)} theme={theme} />}
-            <DeleteHumidorModal isOpen={isDeleteHumidorModalOpen} onClose={() => setIsDeleteHumidorModalOpen(false)} onConfirm={handleConfirmDeleteHumidor} humidor={humidor} cigarsInHumidor={filteredAndSortedCigars} otherHumidors={humidors.filter(h => h.id !== humidor.id)} />
-            <DeleteCigarsModal isOpen={isDeleteCigarsModalOpen} onClose={() => setIsDeleteCigarsModalOpen(false)} onConfirm={handleConfirmDeleteCigars} count={selectedCigarIds.length} />
-            {isExportModalOpen && <ExportModal data={filteredAndSortedCigars} dataType="cigar" onClose={() => setIsExportModalOpen(false)} />}
-
-            <div className="relative">
-                {/* ...main MyHumidor content... */}
-                <img src={humidor.image || `https://placehold.co/600x400/3a2d27/ffffff?font=playfair-display&text=${humidor.name.replace(/\s/g, '+')}`} alt={humidor.name} className="w-full h-64 object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
-                <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
-                    <button onClick={() => navigate('HumidorsScreen')} className="p-2 bg-black/50 rounded-full">
-                        <ChevronLeft className="w-7 h-7 text-white" />
-                    </button>
-                    <HumidorActionMenu
-                        onEdit={() => navigate('EditHumidor', { humidorId: humidor.id })}
-                        onTakeReading={() => setIsManualReadingModalOpen(true)}
-                        onExport={() => setIsExportModalOpen(true)}
-                        onDelete={() => setIsDeleteHumidorModalOpen(true)}
-                        onImport={() => navigate('DataSync')} // Navigate to DataSync for import options
-                    />
-
-                </div>
-                <div className="absolute bottom-0 p-4">
-                    <h1 className="text-3xl font-bold text-white">{humidor.name}</h1>
-                    <p className="text-sm text-gray-300">{humidor.shortDescription || humidor.description}</p>
-                </div>
-            </div> {/* End main MyHumidor content */}
-
-            <div className="p-4">
-                <div id="pnlHumidityTemperatureValue" className="flex justify-around items-center bg-gray-800/50 p-3 rounded-xl mb-6 text-center">
-                    <div className="flex flex-col items-center"><Droplets className="w-5 h-5 text-blue-400 mb-1" /><p className="text-sm text-gray-400">Humidity</p><p className="font-bold text-white text-base">{humidor.humidity}%</p></div>
-                    <div className="h-10 w-px bg-gray-700"></div>
-                    <div className="flex flex-col items-center"><Thermometer className="w-5 h-5 text-red-400 mb-1" /><p className="text-sm text-gray-400">Temperature</p><p className="font-bold text-white text-base">{humidor.temp}°F</p></div>
-                    <div className="h-10 w-px bg-gray-700"></div>
-                    <div className="flex flex-col items-center"><svg className="w-5 h-5 text-green-400 mb-1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg><p className="text-sm text-gray-400">Est. Value</p><p className="font-bold text-white text-base">${humidorValue.toFixed(2)}</p></div>
-                </div>
-
-                {/* Search Bar */}
-                <div className="relative mb-4">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input type="text" placeholder="Search this humidor..." value={searchQuery} onChange={handleSearchChange}
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md py-3 pl-12 pr-12 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500" />
-                    {searchQuery && (
-                        <button onClick={handleClearSearch} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
-                            <X className="w-5 h-5" />
-                        </button>
-                    )}
-                    {suggestions.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 bg-gray-700 border border-gray-600 rounded-b-xl mt-1 z-20 overflow-hidden">
-                            {suggestions.map(suggestion => (<div key={suggestion} onMouseDown={() => handleSuggestionClick(suggestion)} className="w-full text-left px-4 py-3 hover:bg-gray-600 transition-colors cursor-pointer">{suggestion}</div>))}
-                        </div>
-                    )}
-                </div>
-
-                <div id="pnlHumidorFilterContainer" className="flex justify-between items-center mb-6 px-2">
-                    <div id="pnlHumidorStats">
-                        <p className="text-sm text-gray-400"><span className="font-bold text-gray-200">{filteredAndSortedCigars.length}</span> Unique Cigars</p>
-                        <p className="text-xs text-gray-400"><span className="font-bold text-gray-200">{totalQuantity}</span> Total Cigars</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {/* Action buttons */}
-                        <button id="btnFilterNew" Tooltip="Filter" onClick={() => setIsFilterPanelOpen(prev => !prev)} className="p-2 rounded-full bg-gray-700 text-white hover:bg-gray-600 transition-colors"><Filter className="w-5 h-5" /></button>
-                        {/* <button id="btnFilter" Tooltip="Filter Modal" onClick={() => setIsFilterSortModalOpen(true)} className="p-2 rounded-full bg-gray-700 text-white hover:bg-gray-600 transition-colors"><Filter className="w-5 h-5" /></button> */}
-                        <div className="flex bg-gray-800 border border-gray-700 rounded-full p-1">
-                            <button onClick={() => setViewMode('grid')} className={`p-2 rounded-full transition-colors duration-200 ${viewMode === 'grid' ? 'bg-amber-500 text-white' : 'text-gray-400'}`}><LayoutGrid className="w-5 h-5" /></button>
-                            <button onClick={() => setViewMode('list')} className={`p-2 rounded-full transition-colors duration-200 ${viewMode === 'list' ? 'bg-amber-500 text-white' : 'text-gray-400'}`}><List className="w-5 h-5" /></button>
-                        </div>
-                        <button onClick={handleToggleSelectMode} className={`p-2 rounded-full transition-colors duration-200 ${isSelectMode ? 'bg-amber-500 text-white' : 'bg-gray-700 text-gray-400'}`}><CheckSquare className="w-5 h-5" /></button>
-                    </div>
-                </div>
-
-                {/* Show the autofill banner if enabled and there are cigars with missing details */}
-                {showAutofillBanner && cigarsWithMissingDetails.length > 0 && (
-                    <div
-                        id="pnlAutofillBanner"
-                        className="relative bg-amber-900/20 border border-amber-800 rounded-xl p-4 mb-4 flex flex-col shadow-lg overflow-hidden"
-                        style={{ boxShadow: '0 2px 12px 0 rgba(255, 193, 7, 0.10)' }}
-                    >
-                        {/* Close button in top right */}
-                        <button
-                            onClick={() => setShowAutofillBanner(false)}
-                            className="absolute top-2 right-2 text-yellow-300 hover:text-white text-2xl font-bold z-10"
-                            aria-label="Close"
-                        >
-                            &times;
-                        </button>
-                        <div className="flex items-center gap-3 mb-2">
-                            <span className="flex items-center justify-center bg-amber-400 rounded-full w-10 h-10 mr-2 shadow">
-                                {/* Use the same icon as Roxy's Corner */}
-                                <svg className="w-7 h-7 text-amber-900" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                    <path d="M3 16s.5-1 2-1 2 1 2 1 1-1 2-1 2 1 2 1 1-1 2-1 2 1 2 1 1-1 2-1 2 1 2 1" />
-                                    <circle cx="12" cy="7" r="4" />
-                                </svg>
-                            </span>
-                            <h3 className="font-bold text-amber-200 text-lg flex items-center">Roxy's Corner</h3>
-                        </div>
-                        <span className="text-amber-100 text-sm mb-3">
-                            Some imported cigars are missing details. Let Roxy auto-fill them for you!
-                        </span>
-                        <button
-                            onClick={handleAutofillMissingDetails}
-                            disabled={isAutofilling}
-                            className="bg-amber-500 text-white font-bold px-4 py-2 rounded-lg hover:bg-amber-600 transition-colors w-full sm:w-auto"
-                        >
-                            {isAutofilling ? "Auto-filling..." : "Auto-fill Details"}
-                        </button>
-                        {autofillStatus && (
-                            <div className="mt-2 text-amber-200 text-xs">{autofillStatus}</div>
-                        )}
-                    </div>
-                )}
-
-                {isFilterActive && (
-                    <div className="flex justify-between items-center mb-4 bg-gray-800 p-3 rounded-lg">
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm text-gray-300">Filtering by:</span>
-                            {filters.brand && <span className="text-xs font-semibold px-2 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50">{filters.brand}</span>}
-                            {filters.country && <span className="text-xs font-semibold px-2 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50">{filters.country}</span>}
-                            {filters.strength && <span className="text-xs font-semibold px-2 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50">{filters.strength}</span>}
-                            {filters.flavorNotes.map(note => <span key={note} className="text-xs font-semibold px-2 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50">{note}</span>)}
-                        </div>
-                        <button onClick={handleClearFilters} className="p-1 rounded-full hover:bg-amber-800 transition-colors text-amber-400"><X className="w-4 h-4" /></button>
-                    </div>
-                )}
-
-                {/* change the grid layout columns */}
-                <div className={viewMode === 'grid' ? "grid grid-cols-1 gap-4" : "flex flex-col gap-4"}>
-                    {filteredAndSortedCigars.map(cigar => (viewMode === 'grid' ? <GridCigarCard key={cigar.id} cigar={cigar} navigate={navigate} isSelectMode={isSelectMode} isSelected={selectedCigarIds.includes(cigar.id)} onSelect={handleSelectCigar} /> : <ListCigarCard key={cigar.id} cigar={cigar} navigate={navigate} isSelectMode={isSelectMode} isSelected={selectedCigarIds.includes(cigar.id)} onSelect={handleSelectCigar} />))}
-                    {filteredAndSortedCigars.length === 0 && (
-                        <div className="col-span-full text-center py-10">
-                            <p className="text-gray-400">No cigars match your search.</p>
-                        </div>
-                    )}
-                </div>
-
-                {/* Floating Action Button for Add Cigar */}
-                {!isSelectMode && (
-                    <button
-                        id="btnAddCigar"
-                        onClick={() => navigate('AddCigar', { humidorId: humidor.id })}
-                        className="fixed bottom-24 right-4 bg-amber-500 text-white p-4 rounded-full shadow-lg hover:bg-amber-600 transition-colors z-20"
-                        aria-label="Add Cigar"
-                    >
-                        <Plus className="w-6 h-6" />
-                    </button>
-                )}
-
-                {/* Panel for Select Mode */}
-                {isSelectMode && (
-                    <div id="pnlSelectMode" className="fixed bottom-20 left-0 right-0 bg-gray-900/80 backdrop-blur-sm p-4 z-20 border-t border-gray-700">
-                        <div className="max-w-md mx-auto">
-                            <div className="flex justify-between items-center mb-2">
-                                <h3 className="text-lg font-bold text-white">{selectedCigarIds.length} Selected</h3>
-                                <button onClick={handleToggleSelectMode} className="text-amber-400 font-semibold">Done</button>
-                            </div>
-                            {selectedCigarIds.length > 0 && (
-                                <div className="flex gap-2">
-                                    <button onClick={() => setIsMoveModalOpen(true)} className="flex-1 flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-full hover:bg-amber-600 transition-colors shadow-lg"><Move className="w-5 h-5" />Move</button>
-                                    <button onClick={() => setIsDeleteCigarsModalOpen(true)} className="flex-1 flex items-center justify-center gap-2 bg-red-600 text-white font-bold py-3 rounded-full hover:bg-red-700 transition-colors shadow-lg"><Trash2 className="w-5 h-5" />Delete</button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}{/* End Panel for Select Mode */}
-
-                {/* Panel for Filter Mode */}
-                {isFilterPanelOpen && (
-                    <div id="pnlFilterMode" className="fixed bottom-20 left-0 right-0 bg-gray-900/80 backdrop-blur-sm p-4 z-20 border-t border-gray-700">
-                        <div className="max-w-md mx-auto">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-xl font-bold text-amber-400 flex items-center"><Filter className="w-5 h-5 mr-2" /> Filter & Sort</h3>
-                                <button onClick={() => setIsFilterPanelOpen(false)} className="text-amber-400 font-semibold">Done</button>
-                            </div>
-                            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-                                {/* Sorting Section */}
-                                <div>
-                                    <h4 className="font-bold text-white text-base mb-2">Sort By</h4>
-                                    <div className="flex flex-wrap gap-2">
-                                        {['name', 'brand', 'rating', 'quantity', 'price', 'dateAdded'].map(criteria => (
-                                            <button
-                                                key={criteria}
-                                                onClick={() => handleSortChange(criteria)}
-                                                className={`px-3 py-1.5 rounded-full text-sm font-semibold flex items-center gap-1 transition-colors ${sortBy === criteria ? 'bg-amber-500 text-white' : 'bg-gray-700 text-gray-300'}`}
-                                            >
-                                                {criteria === 'dateAdded' ? 'Date Added' : criteria.charAt(0).toUpperCase() + criteria.slice(1)}
-                                                {sortBy === criteria && (sortOrder === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />)}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Filtering Section */}
-                                <div className="border-t border-gray-700 pt-4 mt-4">
-                                    <h4 className="font-bold text-white text-base mb-2">Filter By</h4>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className={`${theme.subtleText} text-sm mb-1 block`}>Brand</label>
-                                            <select value={filters.brand} onChange={(e) => handleFilterChange('brand', e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white">
-                                                <option value="">All Brands</option>
-                                                {uniqueBrands.map(brand => <option key={brand} value={brand}>{brand}</option>)}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className={`${theme.subtleText} text-sm mb-1 block`}>Country</label>
-                                            <select value={filters.country} onChange={(e) => handleFilterChange('country', e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white">
-                                                <option value="">All Countries</option>
-                                                {uniqueCountries.map(country => <option key={country} value={country}>{country}</option>)}
-                                            </select>
-                                        </div>
-                                        <div className="col-span-2">
-                                            <label className={`${theme.subtleText} text-sm mb-1 block`}>Strength</label>
-                                            <select value={filters.strength} onChange={(e) => handleFilterChange('strength', e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white">
-                                                <option value="">All Strengths</option>
-                                                {strengthOptions.map(strength => <option key={strength} value={strength}>{strength}</option>)}
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div className="mt-4">
-                                        <label className={`${theme.subtleText} text-sm mb-1 block`}>Flavor Notes</label>
-                                        <div className="flex flex-wrap gap-2">
-                                            {availableFlavorNotes.map(note => (
-                                                <button key={note} onClick={() => handleFlavorNoteToggle(note)} className={`text-xs font-semibold px-2.5 py-1.5 rounded-full transition-all duration-200 ${filters.flavorNotes.includes(note) ? 'bg-amber-500 text-white' : 'bg-gray-700 text-gray-300 border border-gray-600'}`}>
-                                                    {note}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            {/* Panel Actions */}
-                            <div className="flex gap-3 pt-4 mt-4 border-t border-gray-700">
-                                <button onClick={handleClearFilters} className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors flex-grow">Clear Filters</button>
-                                <button onClick={() => setIsFilterPanelOpen(false)} className="bg-amber-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-amber-600 transition-colors flex-grow">Done</button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-            </div>
-
-            {/* Place FilterSortModal here, outside the main content */}
-            {isFilterSortModalOpen && (
-                <FilterSortModal
-                    isOpen={isFilterSortModalOpen}
-                    onClose={() => setIsFilterSortModalOpen(false)}
-                    filters={filters}
-                    sortBy={sortBy}
-                    sortOrder={sortOrder}
-                    onFilterChange={handleFilterChange}
-                    onFlavorNoteToggle={handleFlavorNoteToggle}
-                    onSortChange={handleSortChange}
-                    onClearFilters={handleClearFilters}
-                    uniqueBrands={uniqueBrands}
-                    uniqueCountries={uniqueCountries}
-                    availableFlavorNotes={availableFlavorNotes}
-                    theme={theme}
-                />
-            )}
-
-        </div>
-    );
-};
 
 const CigarDetail = ({ cigar, navigate, db, appId, userId, journalEntries }) => {
     const [modalState, setModalState] = useState({ isOpen: false, type: null, content: '', isLoading: false });
