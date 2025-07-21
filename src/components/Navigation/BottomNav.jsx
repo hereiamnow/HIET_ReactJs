@@ -1,3 +1,14 @@
+// File: BottomNav.jsx
+// Path: src/components/Navigation/BottomNav.jsx
+// Project: Humidor Hub
+// Author: Shawn Miller (hereiamnow@gmail.com)
+// Date: July 21, 2025
+// Time: 10:01 PM CDT
+
+// Description: Bottom navigation component for the main app navigation.
+// Provides tab-based navigation between Dashboard, Humidors, Journal, Alerts, and Settings screens.
+// Features active state highlighting and theme-aware styling.
+
 /**
  * BottomNav - Component for the main app navigation
  * @param {Object} props - Component props
@@ -23,16 +34,15 @@ const BottomNav = ({ activeScreen, navigate, theme }) => {
                 <button
                     key={name}
                     onClick={() => navigate(name)}
-                    className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors ${
-                        activeScreen === name 
-                            ? `${theme.primary} ${theme.primaryBg}` 
-                            : `${theme.subtleText} hover:${theme.text}`
-                    }`}
+                    className={`flex flex-col items-center py-2 px-3 transition-colors ${theme.subtleText} hover:${theme.text}`}
                 >
-                    <Icon className="w-6 h-6 mb-1" />
+                    <Icon className={`w-6 h-6 mb-1 transition-colors ${activeScreen === name
+                        ? `${theme.primary}`
+                        : ''
+                        }`} />
                     <span className="text-xs font-medium">
-                        {name === 'HumidorsScreen' ? 'Humidors' : 
-                         name === 'CigarJournal' ? 'Journal' : name}
+                        {name === 'HumidorsScreen' ? 'Humidors' :
+                            name === 'CigarJournal' ? 'Journal' : name}
                     </span>
                 </button>
             ))}
