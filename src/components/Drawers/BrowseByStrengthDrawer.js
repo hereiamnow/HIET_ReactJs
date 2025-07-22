@@ -1,3 +1,11 @@
+// File: BrowseByStrengthDrawer.js
+// Path: src/components/Drawers/BrowseByStrengthDrawer.js
+// Project: Humidor Hub
+// Author: Shawn Miller (hereiamnow@gmail.com)
+// Date: July 21, 2025
+// Time: 10:30 AM
+// Description: Drawer component for browsing cigars by strength profile with collapsible interface
+
 import React, { useMemo } from 'react';
 import { Cigarette, ChevronDown } from 'lucide-react';
 
@@ -25,10 +33,10 @@ const BrowseByStrengthDrawer = ({ cigars, navigate, theme, isCollapsed, onToggle
     return (
         <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
             <button onClick={onToggle} className="w-full p-4 flex justify-between items-center">
-                <h3 className="font-bold text-amber-300 text-lg flex items-center">
-                    <Cigarette className="w-5 h-5 mr-2" /> Browse by Profile
+                <h3 className={`font-bold ${theme.primary} text-lg flex items-center`}>
+                    <Cigarette className={`w-5 h-5 mr-2 ${theme.primary}`} /> Browse by Profile
                 </h3>
-                <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
+                <ChevronDown className={`w-5 h-5 ${theme.primary} transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
             </button>
             {!isCollapsed && (
                 <div className="px-4 pb-4 space-y-2">
