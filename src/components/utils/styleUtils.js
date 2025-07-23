@@ -1,6 +1,11 @@
-/**
- * Style utility functions for UI components and theming
- */
+// File: styleUtils.js
+// Path: src/components/utils/styleUtils.js
+// Project: Humidor Hub
+// Author: Shawn Miller (hereiamnow@gmail.com)
+// Date: July 14, 2025
+// Time: 9:11 PM CDT
+
+// Description: Style utility functions for UI components and theming
 
 /**
  * A helper function to determine the color of a flavor tag based on the note.

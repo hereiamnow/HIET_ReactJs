@@ -1,6 +1,11 @@
-/**
- * Utility functions index - exports all utility functions for easy importing
- */
+// File: index.js
+// Path: src/components/utils/index.js
+// Project: Humidor Hub
+// Author: Shawn Miller (hereiamnow@gmail.com)
+// Date: July 14, 2025
+// Time: 9:01 PM CDT
+
+// Description: Utility functions index - exports all utility functions for easy importing
 
 // File utilities
 export { downloadFile } from './fileUtils';

@@ -1,4 +1,5 @@
 // File: HumidorsScreen.js
+// Path: src/screens/HumidorsScreen.js
 // Project: Humidor Hub
 // Author: Shawn Miller (hereiamnow@gmail.com)
 // Date: July 20, 2025
@@ -8,7 +9,7 @@
 // and search functionality. Supports pre-filtering by wrapper, strength, or country.
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Filter, LayoutGrid, List, Plus, ChevronLeft } from 'lucide-react';
+import { Search, Filter, LayoutGrid, List, Plus, ChevronLeft, Box } from 'lucide-react';
 import FilterSortModal from '../components/UI/FilterSortModal';
 import GridCigarCard from '../components/Cigar/GridCigarCard';
 import ListCigarCard from '../components/Cigar/ListCigarCard';
@@ -135,7 +136,10 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
     return (
         <div className="p-4 pb-24">
             <div className="flex justify-between items-center mb-4">
-                <h1 className="text-2xl font-bold text-white">My Collection</h1>
+                <div className="flex items-center">
+                    <Box className={`w-8 h-8 mr-3 ${theme.primary}`} />
+                    <h1 className="text-2xl font-bold text-white">My Collection</h1>
+                </div>
                 <button
                     onClick={() => navigate('AddCigar')}
                     className="bg-amber-600 hover:bg-amber-700 text-white p-2 rounded-lg transition-colors"

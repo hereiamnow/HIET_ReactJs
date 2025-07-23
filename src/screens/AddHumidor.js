@@ -1,4 +1,5 @@
 // File: AddHumidor.js
+// Path: src/screens/AddHumidor.js
 // Project: Humidor Hub
 // Author: Shawn Miller (hereiamnow@gmail.com)
 // Date: July 20, 2025

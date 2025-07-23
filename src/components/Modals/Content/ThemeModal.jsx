@@ -46,9 +46,18 @@ const ThemeModal = ({ currentTheme, setTheme, onClose }) => {
                                 </div>
                                 <span className="text-white font-medium">{theme.name}</span>
                                 <div className="flex space-x-1">
-                                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.primaryColor }}></div>
-                                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.secondaryColor }}></div>
-                                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.accentColor }}></div>
+                                    <div
+                                        className="w-3 h-3 rounded-full border border-white"
+                                        style={{ backgroundColor: theme.primaryColor || '#000' }}
+                                    ></div>
+                                    <div
+                                        className="w-3 h-3 rounded-full border border-white"
+                                        style={{ backgroundColor: theme.secondaryColor || '#000' }}
+                                    ></div>
+                                    <div
+                                        className="w-3 h-3 rounded-full border border-white"
+                                        style={{ backgroundColor: theme.accentColor || '#000' }}
+                                    ></div>
                                 </div>
                             </div>
                         </button>

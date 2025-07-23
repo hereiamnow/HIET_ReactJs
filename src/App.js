@@ -1,4 +1,5 @@
 // File: App.js
+// Path: src\App.js
 // Project: Humidor Hub
 // Author: Shawn Miller (hereiamnow@gmail.com)
 // Date: July 20, 2025
@@ -30,7 +31,7 @@ import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simp
 
 
 // lucide-react provides a set of clean, modern icons used throughout the app.
-import { ArrowUp, ArrowDown, CheckSquare, AlertTriangle, BarChart2, Bell, Box, Calendar as CalendarIcon, Check, ChevronDown, ChevronLeft, Cigarette, Database, DollarSign, Download, Droplets, Edit, Filter, Info, LayoutGrid, Leaf, List, LoaderCircle, MapPin, Minus, Move, Palette, PieChart as PieChartIcon, Plus, Search, Sparkles, Star, Tag, Thermometer, Trash2, Upload, UploadCloud, User, Wind, X, Zap, Github, Bug, BookText } from 'lucide-react';
+import { ArrowUp, ArrowDown, CheckSquare, AlertTriangle, BarChart2, Bell, Box, Calendar as CalendarIcon, Check, ChevronDown, ChevronLeft, Cigarette, Database, DollarSign, Download, Droplets, Edit, Filter, Info, LayoutGrid, Leaf, List, LoaderCircle, MapPin, Minus, Move, Palette, PieChart as PieChartIcon, Plus, Search, Settings as SettingsIcon, Sparkles, Star, Tag, Thermometer, Trash2, Upload, UploadCloud, User, Wind, X, Zap, Github, Bug, BookText } from 'lucide-react';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import Papa from 'papaparse'; // Import papaparse for CSV parsing and exporting.
 // Import Firebase libraries for database and authentication
@@ -2155,7 +2156,10 @@ const SettingsScreen = ({ navigate, theme, setTheme, dashboardPanelVisibility, s
     return (
         <div className="p-4 pb-24">
             {isThemeModalOpen && <ThemeModal currentTheme={theme} setTheme={setTheme} onClose={() => setIsThemeModalOpen(false)} />}
-            <h1 className="text-3xl font-bold text-white mb-6">Settings</h1>
+            <div className="flex items-center mb-6">
+                <SettingsIcon className={`w-8 h-8 mr-3 ${theme.primary}`} />
+                <h1 className="text-3xl font-bold text-white">Settings</h1>
+            </div>
             <div className="space-y-4">
                 <SettingItem icon={User} title="Profile" subtitle="Manage your account details" onClick={() => navigate('Profile')} />
                 <SettingItem icon={LayoutGrid} title="Dashboard Components" subtitle="Customize what appears on your dashboard" onClick={() => navigate('DashboardSettings')} />

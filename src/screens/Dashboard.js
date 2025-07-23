@@ -1,14 +1,25 @@
+// File: AddHumidor.js
+// Path: src/screens/AddHumidor.js
+// Project: Humidor Hub
+// Author: Shawn Miller (hereiamnow@gmail.com)
+// Date: July 17, 2025
+// Time: 7:32 AM CDT
+
+// Description: Add Humidor screen component - form for creating new humidors
+// with validation and Firebase integration
+
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-    Wind, 
-    ChevronDown, 
-    Leaf, 
-    Cigarette, 
-    MapPin, 
-    Filter, 
-    Plus, 
-    Move, 
-    Sparkles 
+import {
+    Wind,
+    ChevronDown,
+    Leaf,
+    Cigarette,
+    MapPin,
+    Filter,
+    Plus,
+    Move,
+    Sparkles,
+    BarChart2
 } from 'lucide-react';
 import { roxysTips } from '../constants/roxysTips';
 import { callGeminiAPI } from '../services/geminiService';
@@ -26,19 +37,19 @@ import {
     AgingWellPanel
 } from '../components/Panels';
 
-const Dashboard = ({ 
-    navigate, 
-    cigars, 
-    humidors, 
-    theme, 
-    showWrapperPanel, 
-    showStrengthPanel, 
-    showCountryPanel, 
-    showLiveEnvironment, 
-    showInventoryAnalysis, 
-    panelStates, 
-    setPanelStates, 
-    dashboardPanelVisibility 
+const Dashboard = ({
+    navigate,
+    cigars,
+    humidors,
+    theme,
+    showWrapperPanel,
+    showStrengthPanel,
+    showCountryPanel,
+    showLiveEnvironment,
+    showInventoryAnalysis,
+    panelStates,
+    setPanelStates,
+    dashboardPanelVisibility
 }) => {
     const [roxyTip, setRoxyTip] = useState('');
     const [modalState, setModalState] = useState({ isOpen: false, content: '', isLoading: false });
@@ -170,14 +181,17 @@ const Dashboard = ({
     return (
         <div className="p-4 pb-24">
             {modalState.isOpen && (
-                <GeminiModal 
-                    title="Collection Summary" 
-                    content={modalState.content} 
-                    isLoading={modalState.isLoading} 
-                    onClose={() => setModalState({ isOpen: false, content: '', isLoading: false })} 
+                <GeminiModal
+                    title="Collection Summary"
+                    content={modalState.content}
+                    isLoading={modalState.isLoading}
+                    onClose={() => setModalState({ isOpen: false, content: '', isLoading: false })}
                 />
             )}
-            <h1 className={`text-3xl font-bold ${theme.text} mb-2`}>Dashboard</h1>
+            <div className="flex items-center mb-2">
+                <BarChart2 className={`w-8 h-8 mr-3 ${theme.primary}`} />
+                <h1 className={`text-3xl font-bold ${theme.text}`}>Dashboard</h1>
+            </div>
             <p className={`${theme.subtleText} mb-6`}>Your collection's live overview.</p>
 
             {hasHumidors && (
@@ -220,24 +234,24 @@ const Dashboard = ({
             <div className="space-y-6">
                 {/* Browse by mode buttons */}
                 <div className="flex justify-center gap-4">
-                    <button 
-                        id="btnBrowseByWrapper" 
-                        onClick={() => handleBrowseByClick('wrapper')} 
-                        className="p-3 bg-gray-800/50 border border-gray-700 rounded-full text-amber-300 hover:bg-gray-700 transition-colors"
+                    <button
+                        id="btnBrowseByWrapper"
+                        onClick={() => handleBrowseByClick('wrapper')}
+                        className={`p-3 bg-gray-800/50 border border-gray-700 rounded-full ${theme.primary} hover:bg-gray-700 transition-colors`}
                     >
                         <Leaf className="w-5 h-5" />
                     </button>
-                    <button 
-                        id="btnBrowseByStrength" 
-                        onClick={() => handleBrowseByClick('strength')} 
-                        className="p-3 bg-gray-800/50 border border-gray-700 rounded-full text-amber-300 hover:bg-gray-700 transition-colors"
+                    <button
+                        id="btnBrowseByStrength"
+                        onClick={() => handleBrowseByClick('strength')}
+                        className={`p-3 bg-gray-800/50 border border-gray-700 rounded-full ${theme.primary} hover:bg-gray-700 transition-colors`}
                     >
                         <Cigarette className="w-5 h-5" />
                     </button>
-                    <button 
-                        id="btnBrowseByCountry" 
-                        onClick={() => handleBrowseByClick('country')} 
-                        className="p-3 bg-gray-800/50 border border-gray-700 rounded-full text-amber-300 hover:bg-gray-700 transition-colors"
+                    <button
+                        id="btnBrowseByCountry"
+                        onClick={() => handleBrowseByClick('country')}
+                        className={`p-3 bg-gray-800/50 border border-gray-700 rounded-full ${theme.primary} hover:bg-gray-700 transition-colors`}
                     >
                         <MapPin className="w-5 h-5" />
                     </button>
@@ -279,8 +293,8 @@ const Dashboard = ({
                                     <p className="text-amber-200 text-sm">{roxyTip}</p>
                                     {/* Conditionally render "Ask Roxy for a Summary" if there are cigars */}
                                     {hasCigars && (
-                                        <button 
-                                            onClick={handleSummarizeCollection} 
+                                        <button
+                                            onClick={handleSummarizeCollection}
                                             className="mt-4 w-full flex items-center justify-center bg-purple-600/20 border border-purple-500 text-purple-300 font-bold py-2 rounded-lg hover:bg-purple-600/30 transition-colors"
                                         >
                                             <Sparkles className="w-5 h-5 mr-2" /> Ask Roxy for a Summary
@@ -304,65 +318,65 @@ const Dashboard = ({
 
                 {/* Conditionally render LiveEnvironmentPanel if there are humidors and it's enabled in settings */}
                 {hasHumidors && showLiveEnvironment && (
-                    <LiveEnvironmentPanel 
-                        humidors={humidors} 
-                        theme={theme} 
-                        isCollapsed={panelStates.liveEnvironment} 
-                        onToggle={() => handlePanelToggle('liveEnvironment')} 
+                    <LiveEnvironmentPanel
+                        humidors={humidors}
+                        theme={theme}
+                        isCollapsed={panelStates.liveEnvironment}
+                        onToggle={() => handlePanelToggle('liveEnvironment')}
                     />
                 )}
-                
+
                 {/* Conditionally render InventoryAnalysisPanel if there are cigars and it's enabled in settings */}
                 {hasCigars && showInventoryAnalysis && (
-                    <InventoryAnalysisPanel 
-                        cigars={cigars} 
-                        theme={theme} 
-                        isCollapsed={panelStates.inventoryAnalysis} 
-                        onToggle={() => handlePanelToggle('inventoryAnalysis')} 
+                    <InventoryAnalysisPanel
+                        cigars={cigars}
+                        theme={theme}
+                        isCollapsed={panelStates.inventoryAnalysis}
+                        onToggle={() => handlePanelToggle('inventoryAnalysis')}
                     />
                 )}
-                
+
                 {/* Conditionally render the new InteractiveWorldMapDrawer */}
                 {hasCigars && dashboardPanelVisibility.showWorldMap && (
-                    <InteractiveWorldMapDrawer 
-                        cigars={cigars} 
-                        navigate={navigate} 
-                        theme={theme} 
-                        isCollapsed={panelStates.worldMap} 
-                        onToggle={() => handlePanelToggle('worldMap')} 
+                    <InteractiveWorldMapDrawer
+                        cigars={cigars}
+                        navigate={navigate}
+                        theme={theme}
+                        isCollapsed={panelStates.worldMap}
+                        onToggle={() => handlePanelToggle('worldMap')}
                     />
                 )}
-                
+
                 {/* Conditionally render BrowseByWrapperDrawer if there are cigars and it's enabled in settings */}
                 {hasCigars && showWrapperPanel && (
-                    <BrowseByWrapperDrawer 
-                        cigars={cigars} 
-                        navigate={navigate} 
-                        theme={theme} 
-                        isCollapsed={panelStates.wrapper} 
-                        onToggle={() => handlePanelToggle('wrapper')} 
+                    <BrowseByWrapperDrawer
+                        cigars={cigars}
+                        navigate={navigate}
+                        theme={theme}
+                        isCollapsed={panelStates.wrapper}
+                        onToggle={() => handlePanelToggle('wrapper')}
                     />
                 )}
-                
+
                 {/* Conditionally render BrowseByStrengthDrawer if there are cigars and it's enabled in settings */}
                 {hasCigars && showStrengthPanel && (
-                    <BrowseByStrengthDrawer 
-                        cigars={cigars} 
-                        navigate={navigate} 
-                        theme={theme} 
-                        isCollapsed={panelStates.strength} 
-                        onToggle={() => handlePanelToggle('strength')} 
+                    <BrowseByStrengthDrawer
+                        cigars={cigars}
+                        navigate={navigate}
+                        theme={theme}
+                        isCollapsed={panelStates.strength}
+                        onToggle={() => handlePanelToggle('strength')}
                     />
                 )}
-                
+
                 {/* Conditionally render BrowseByCountryDrawer if there are cigars and it's enabled in settings */}
                 {hasCigars && showCountryPanel && (
-                    <BrowseByCountryDrawer 
-                        cigars={cigars} 
-                        navigate={navigate} 
-                        theme={theme} 
-                        isCollapsed={panelStates.country} 
-                        onToggle={() => handlePanelToggle('country')} 
+                    <BrowseByCountryDrawer
+                        cigars={cigars}
+                        navigate={navigate}
+                        theme={theme}
+                        isCollapsed={panelStates.country}
+                        onToggle={() => handlePanelToggle('country')}
                     />
                 )}
             </div>

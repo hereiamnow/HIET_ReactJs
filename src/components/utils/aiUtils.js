@@ -1,6 +1,12 @@
-/**
- * AI utility functions for image generation and AI-related operations
- */
+// File: aiUtils.js
+// Path: src/components/utils/aiUtils.js
+// Project: Humidor Hub
+// Author: Shawn Miller (hereiamnow@gmail.com)
+// Date: July 14, 2025
+// Time: 10:06 PM CDT
+
+// Description: Utility functions for AI image generation using the Gemini API
+// This file contains functions to generate images using the Gemini (Imagen 3) API.
 
 /**
  * Generates an image using the Gemini (Imagen 3) API.

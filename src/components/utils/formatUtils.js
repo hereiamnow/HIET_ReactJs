@@ -1,6 +1,11 @@
-/**
- * Formatting utility functions for dates, strings, and data display
- */
+// File: formatUtils.js
+// Path: src/components/utils/formatUtils.js
+// Project: Humidor Hub
+// Author: Shawn Miller (hereiamnow@gmail.com)
+// Date: July 14, 2025
+// Time: 10:06 PM CDT
+
+// Description: Formatting utility functions for dates, strings, and data display
 
 /**
  * Formats an ISO date string into a more readable format (e.g., "July 5, 2025").

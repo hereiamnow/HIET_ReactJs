@@ -9,10 +9,10 @@ const LiveEnvironmentPanel = ({ humidors, theme }) => {
     return (
         <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
             <button onClick={() => setIsCollapsed(!isCollapsed)} className="w-full p-4 flex justify-between items-center">
-                <h3 className="font-bold text-amber-300 text-lg flex items-center">
-                    <Thermometer className="w-5 h-5 mr-2" /> Live Environment
+                <h3 className={`font-bold ${theme.primary} text-lg flex items-center`}>
+                    <Thermometer className={`w-5 h-5 mr-2 ${theme.primary}`} /> Live Environment
                 </h3>
-                <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
+                <ChevronDown className={`w-5 h-5 ${theme.primary} transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
             </button>
             {!isCollapsed && (
                 <div className="px-4 pb-4">

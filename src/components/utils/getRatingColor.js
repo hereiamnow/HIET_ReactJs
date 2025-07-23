@@ -1,7 +1,12 @@
+// File: getRatingColor.js
+// Path: src/components/utils/getRatingColor.js
+// Project: Humidor Hub
+// Author: Shawn Miller (hereiamnow@gmail.com)
+// Date: July 14, 2025
+// Time: 8:46 PM CDT
 
-/**
- * A helper function to determine the color of the rating badge based on the score.
- */
+// Description: A helper function to determine the color of the rating badge based on the score.
+
 export const getRatingColor = (rating) => {
     if (rating >= 95) return 'bg-blue-500/80 border-blue-400';
     if (rating >= 90) return 'bg-green-500/80 border-green-400';

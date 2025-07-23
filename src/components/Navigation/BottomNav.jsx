@@ -29,7 +29,7 @@ const BottomNav = ({ activeScreen, navigate, theme }) => {
     ];
 
     return (
-        <div className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto ${theme.card} border-t ${theme.border} flex justify-around py-2 z-50`}>
+        <div className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto ${theme.card.replace('/50', '/90')} backdrop-blur-sm border-t ${theme.border} flex justify-around py-2 z-50`}>
             {navItems.map(({ name, icon: Icon }) => (
                 <button
                     key={name}

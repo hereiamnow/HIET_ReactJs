@@ -1,6 +1,11 @@
-/**
- * File utility functions for handling downloads and file operations
- */
+// File: fileUtils.js
+// Path: src/components/utils/fileUtils.js
+// Project: Humidor Hub
+// Author: Shawn Miller (hereiamnow@gmail.com)
+// Date: July 14, 2025
+// Time: 10:06 PM CDT
+
+// Description: File utility functions for handling downloads and file operations
 
 /**
  * A helper function to trigger a file download in the browser.
