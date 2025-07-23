@@ -8,10 +8,16 @@
 // Description: Calculates the age of a cigar based on its added date.
 // Returns a human-readable string like "1 Year, 2 Months".
 
-export const calculateAge = (isoString) => {
-    if (!isoString) return 'N/A';
+export const calculateAge = (isoString, returnDays = false) => {
+    if (!isoString) return returnDays ? 0 : 'N/A';
     const startDate = new Date(isoString);
     const now = new Date();
+
+    // If returnDays is true, return the total number of days
+    if (returnDays) {
+        const diffTime = Math.abs(now - startDate);
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
 
     let years = now.getFullYear() - startDate.getFullYear();
     let months = now.getMonth() - startDate.getMonth();
