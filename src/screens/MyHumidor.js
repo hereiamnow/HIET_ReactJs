@@ -318,7 +318,6 @@ If you cannot determine a value, use "" or [] or 0. Only return the JSON object.
                 </div>
                 <div className="absolute bottom-0 p-4">
                     <div className="flex items-center">
-                        <Box className={`w-8 h-8 mr-3 ${theme.primary}`} />
                         <h1 className="text-3xl font-bold text-white">{humidor.name}</h1>
                     </div>
                     <p className="text-sm text-gray-300">{humidor.shortDescription || humidor.description}</p>

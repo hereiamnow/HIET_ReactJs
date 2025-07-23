@@ -78,7 +78,6 @@ import {
 
 // Import panel components
 import {
-    LiveEnvironmentPanel,
     InventoryAnalysisPanel,
     MyCollectionStatsCards,
     AgingWellPanel
@@ -2014,11 +2013,6 @@ const DashboardSettingsScreen = ({ navigate, theme, dashboardPanelVisibility, se
             </div>
             <div className="bg-gray-800/50 p-4 rounded-xl space-y-2">
                 <ToggleSwitch
-                    label="Live Environment"
-                    isChecked={dashboardPanelVisibility.showLiveEnvironment}
-                    onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showLiveEnvironment: !prev.showLiveEnvironment }))}
-                />
-                <ToggleSwitch
                     label="Inventory Analysis"
                     isChecked={dashboardPanelVisibility.showInventoryAnalysis}
                     onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showInventoryAnalysis: !prev.showInventoryAnalysis }))}
@@ -2549,7 +2543,7 @@ export default function App() {
         showWrapperPanel: false,
         showStrengthPanel: false,
         showCountryPanel: false,
-        showLiveEnvironment: true,
+
         showInventoryAnalysis: true,
         showWorldMap: true,
         showAgingWellPanel: true,
@@ -2730,7 +2724,7 @@ export default function App() {
                     showWrapperPanel={dashboardPanelVisibility.showWrapperPanel}
                     showStrengthPanel={dashboardPanelVisibility.showStrengthPanel}
                     showCountryPanel={dashboardPanelVisibility.showCountryPanel}
-                    showLiveEnvironment={dashboardPanelVisibility.showLiveEnvironment}
+
                     showInventoryAnalysis={dashboardPanelVisibility.showInventoryAnalysis}
                     panelStates={dashboardPanelStates}
                     setPanelStates={setDashboardPanelStates}
@@ -2780,7 +2774,7 @@ export default function App() {
             case 'Profile':
                 return <ProfileScreen navigate={navigate} cigars={cigars} humidors={humidors} theme={theme} userId={userId} auth={auth} />;
             default:
-                return <Dashboard navigate={navigate} cigars={cigars} humidors={humidors} theme={theme} showWrapperPanel={dashboardPanelVisibility.showWrapperPanel} showStrengthPanel={dashboardPanelVisibility.showStrengthPanel} showCountryPanel={dashboardPanelVisibility.showCountryPanel} showLiveEnvironment={dashboardPanelVisibility.showLiveEnvironment} showInventoryAnalysis={dashboardPanelVisibility.showInventoryAnalysis} panelStates={dashboardPanelStates} setPanelStates={setDashboardPanelStates} />;
+                return <Dashboard navigate={navigate} cigars={cigars} humidors={humidors} theme={theme} showWrapperPanel={dashboardPanelVisibility.showWrapperPanel} showStrengthPanel={dashboardPanelVisibility.showStrengthPanel} showCountryPanel={dashboardPanelVisibility.showCountryPanel} showInventoryAnalysis={dashboardPanelVisibility.showInventoryAnalysis} panelStates={dashboardPanelStates} setPanelStates={setDashboardPanelStates} />;
         }
     }; //end of renderScreen function
 

@@ -31,7 +31,6 @@ import {
     InteractiveWorldMapDrawer
 } from '../components/Drawers';
 import {
-    LiveEnvironmentPanel,
     InventoryAnalysisPanel,
     MyCollectionStatsCards,
     AgingWellPanel
@@ -45,7 +44,6 @@ const Dashboard = ({
     showWrapperPanel,
     showStrengthPanel,
     showCountryPanel,
-    showLiveEnvironment,
     showInventoryAnalysis,
     panelStates,
     setPanelStates,
@@ -316,15 +314,7 @@ const Dashboard = ({
                     />
                 )}
 
-                {/* Conditionally render LiveEnvironmentPanel if there are humidors and it's enabled in settings */}
-                {hasHumidors && showLiveEnvironment && (
-                    <LiveEnvironmentPanel
-                        humidors={humidors}
-                        theme={theme}
-                        isCollapsed={panelStates.liveEnvironment}
-                        onToggle={() => handlePanelToggle('liveEnvironment')}
-                    />
-                )}
+
 
                 {/* Conditionally render InventoryAnalysisPanel if there are cigars and it's enabled in settings */}
                 {hasCigars && showInventoryAnalysis && (
