@@ -32,20 +32,20 @@ const ThemeModal = ({ currentTheme, setTheme, onClose }) => {
 
     return (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[100]" onClick={onClose}>
-            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-3xl p-8 w-full max-w-lg shadow-2xl border border-gray-700/50" onClick={e => e.stopPropagation()}>
+            <div className={`${currentTheme.card} rounded-3xl p-8 w-full max-w-lg shadow-2xl ${currentTheme.borderColor} border`} onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-8">
                     <div className="flex items-center">
-                        <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-2 rounded-xl mr-3">
-                            <Palette className="w-6 h-6 text-white" />
+                        <div className={`${currentTheme.primaryBg} p-2 rounded-xl mr-3 shadow-lg`}>
+                            <Palette className={`w-6 h-6 ${currentTheme.text}`} />
                         </div>
                         <div>
-                            <h3 className="text-2xl font-bold text-white">Choose Theme</h3>
-                            <p className="text-gray-400 text-sm">Personalize your experience</p>
+                            <h3 className={`text-2xl font-bold ${currentTheme.text}`}>Choose Theme</h3>
+                            <p className={`${currentTheme.subtleText} text-sm`}>Personalize your experience</p>
                         </div>
                     </div>
                     <button
                         onClick={onClose}
-                        className="text-gray-400 hover:text-white hover:bg-gray-700 p-2 rounded-lg transition-all"
+                        className={`${currentTheme.subtleText} hover:${currentTheme.text} ${currentTheme.button} p-2 rounded-lg transition-all`}
                     >
                         <X className="w-6 h-6" />
                     </button>
@@ -64,12 +64,12 @@ const ThemeModal = ({ currentTheme, setTheme, onClose }) => {
                                     onClose();
                                 }}
                                 className={`group relative p-5 rounded-2xl border-2 transition-all duration-300 transform hover:scale-105 ${isSelected
-                                        ? 'border-amber-500 bg-gradient-to-br from-amber-500/20 to-orange-500/10 shadow-lg shadow-amber-500/25'
-                                        : 'border-gray-600 hover:border-gray-500 hover:bg-gray-700/30'
+                                        ? `${currentTheme.borderColor.replace('border-', 'border-')} bg-gradient-to-br ${currentTheme.primary.replace('text-', 'from-')}/20 ${currentTheme.primary.replace('text-', 'to-')}/10 shadow-lg`
+                                        : `${currentTheme.borderColor} hover:${currentTheme.borderColor.replace('gray-700', 'gray-500')} hover:${currentTheme.card}/30`
                                     }`}
                             >
                                 {isSelected && (
-                                    <div className="absolute -top-2 -right-2 bg-amber-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                                    <div className={`absolute -top-2 -right-2 ${currentTheme.primaryBg} ${currentTheme.text} rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold`}>
                                         ✓
                                     </div>
                                 )}
@@ -96,8 +96,8 @@ const ThemeModal = ({ currentTheme, setTheme, onClose }) => {
                                     </div>
 
                                     <div className="text-center">
-                                        <span className="text-white font-semibold text-sm block">{theme.name}</span>
-                                        <span className="text-gray-400 text-xs">
+                                        <span className={`${currentTheme.text} font-semibold text-sm block`}>{theme.name}</span>
+                                        <span className={`${currentTheme.subtleText} text-xs`}>
                                             {theme.name === 'Classic Light' ? 'Light Mode' : 'Dark Mode'}
                                         </span>
                                     </div>
