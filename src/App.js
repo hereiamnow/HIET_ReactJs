@@ -130,19 +130,6 @@ import SmartImageModal from './components/Modals/Composite/SmartImageModal';
 // Initialize Firebase Authentication token
 const initialAuthToken = typeof window !== "undefined" && window.initialAuthToken ? window.initialAuthToken : null;
 
-// List of countries known for producing cigars, used in the app for filtering and categorization.
-const cigarCountries = [
-    "United States",
-    "Mexico",
-    "Cuba",
-    "Dominican Republic",
-    "Honduras",
-    "Nicaragua"
-];
-
-// URL for the world map data used in the Map component.
-const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
-
 const SettingsScreen = ({ navigate, theme, setTheme, dashboardPanelVisibility, setDashboardPanelVisibility, selectedFont, setSelectedFont }) => {
     const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
     const appVersion = process.env.REACT_APP_VERSION || '1.1.0-dev';
