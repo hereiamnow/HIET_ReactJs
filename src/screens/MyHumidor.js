@@ -308,6 +308,7 @@ If you cannot determine a value, use "" or [] or 0. Only return the JSON object.
                         <ChevronLeft className="w-7 h-7 text-white" />
                     </button>
                     <HumidorActionMenu
+                        onAddCigar={() => navigate('AddCigar', { humidorId: humidor.id })}
                         onEdit={() => navigate('EditHumidor', { humidorId: humidor.id })}
                         onTakeReading={() => setIsManualReadingModalOpen(true)}
                         onExport={() => setIsExportModalOpen(true)}

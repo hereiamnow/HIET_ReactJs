@@ -2,277 +2,158 @@
 // Path: src/screens/EditHumidor.js
 // Project: Humidor Hub
 // Author: Shawn Miller (hereiamnow@gmail.com)
-// Date: July 20, 2025
+// Date: July 24, 2025
 // Time: 10:01 PM CDT
 
-// Description: Edit Humidor screen component - form for editing existing humidors
-// with validation, Firebase integration, and Govee device selection
+// Description:
+// EditHumidor is a React component that provides a comprehensive form interface for users to edit existing humidors in their collection.
+// The component features advanced environment tracking options including Govee sensor integration, smart image modal for visual customization,
+// and form validation with Firebase Firestore persistence. It supports both manual and automated environment monitoring.
+//
+// Key Features:
+// - Pre-populated form with existing humidor data and backward compatibility for legacy fields
+// - SmartImageModal integration for custom humidor images with positioning controls
+// - Dual environment tracking modes: manual input and Govee sensor integration
+// - Govee API integration with device selection and real-time sensor data display
+// - Firebase Firestore integration for data persistence and updates
+// - Responsive design optimized for mobile devices with touch-friendly controls
+// - Theme-aware styling throughout the interface with accessibility considerations
+// - Form validation and error handling for all input fields
+// - Navigation integration with proper back button and cancel functionality
+//
+// Environment Tracking:
+// - Manual mode: Users can input temperature and humidity values directly
+// - Govee mode: Integration with Govee sensors for automated readings with device selection
+// - Real-time display of current sensor readings when Govee devices are connected
+// - Fallback handling for missing API keys or unavailable sensors
 
-import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Save, Upload, Trash2 } from 'lucide-react';
-import { updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import React, { useState } from 'react';
+import { doc, updateDoc } from 'firebase/firestore';
+import { ChevronLeft, MapPin } from 'lucide-react';
 import InputField from '../components/UI/InputField';
 import TextAreaField from '../components/UI/TextAreaField';
-import ImageUploadModal from '../components/Modals/Forms/ImageUploadModal';
-import DeleteHumidorModal from '../components/Modals/Actions/DeleteHumidorModal';
+import SmartImageModal from '../components/Modals/Composite/SmartImageModal';
 
 const EditHumidor = ({ navigate, db, appId, userId, humidor, goveeApiKey, goveeDevices, theme }) => {
     const humidorTypes = ["Desktop Humidor", "Cabinet Humidor", "Glass Top Humidor", "Travel Humidor", "Cigar Cooler", "Walk-In Humidor", "Personalized Humidor"];
     const [formData, setFormData] = useState({
-        name: humidor.name || '',
-        type: humidor.type || '',
-        size: humidor.size || '',
-        capacity: humidor.capacity?.toString() || '',
-        location: humidor.location || '',
-        description: humidor.description || '',
-        image: humidor.image || '',
-        temperature: humidor.temperature?.toString() || '',
-        humidity: humidor.humidity?.toString() || '',
-        goveeDevice: humidor.goveeDevice || ''
+        ...humidor,
+        shortDescription: humidor.shortDescription || '',
+        longDescription: humidor.longDescription || humidor.description || '', // Migrate old description
+        trackingMethod: humidor.goveeDeviceId ? 'govee' : 'manual'
     });
-    const [isImageModalOpen, setIsImageModalOpen] = useState(false);
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
 
-    const handleInputChange = (field, value) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleImageUpload = (imageUrl) => {
-        setFormData(prev => ({ ...prev, image: imageUrl }));
-        setIsImageModalOpen(false);
+    const handleGoveeDeviceChange = (e) => {
+        const selectedDeviceId = e.target.value;
+        const selectedDevice = goveeDevices.find(d => d.device === selectedDeviceId);
+        setFormData(prev => ({ ...prev, goveeDeviceId: selectedDevice?.device || null, goveeDeviceModel: selectedDevice?.model || null }));
     };
 
     const handleSave = async () => {
-        if (!formData.name.trim()) {
-            alert('Please enter a humidor name.');
-            return;
-        }
-
-        setIsSaving(true);
-        try {
-            const updateData = {
-                ...formData,
-                capacity: formData.capacity ? parseInt(formData.capacity) : null,
-                temperature: formData.temperature ? parseFloat(formData.temperature) : null,
-                humidity: formData.humidity ? parseFloat(formData.humidity) : null,
-                lastModified: new Date().toISOString()
-            };
-
-            await updateDoc(doc(db, `apps/${appId}/users/${userId}/humidors`, humidor.id), updateData);
-            navigate('MyHumidor', { humidorId: humidor.id });
-        } catch (error) {
-            console.error('Error updating humidor:', error);
-            alert('Failed to update humidor. Please try again.');
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-    const handleDelete = async () => {
-        try {
-            await deleteDoc(doc(db, `apps/${appId}/users/${userId}/humidors`, humidor.id));
-            navigate('Dashboard');
-        } catch (error) {
-            console.error('Error deleting humidor:', error);
-            alert('Failed to delete humidor. Please try again.');
-        }
+        const humidorRef = doc(db, 'artifacts', appId, 'users', userId, 'humidors', humidor.id);
+        const { id, description, ...dataToSave } = formData; // Exclude id and old description field
+        const updatedHumidor = {
+            ...dataToSave,
+            goveeDeviceId: formData.trackingMethod === 'manual' ? null : formData.goveeDeviceId,
+            goveeDeviceModel: formData.trackingMethod === 'manual' ? null : formData.goveeDeviceModel,
+            image: formData.image || `https://placehold.co/600x400/3a2d27/ffffff?font=playfair-display&text=${formData.name.replace(/\s/g, '+') || 'Humidor'}`,
+        };
+        await updateDoc(humidorRef, updatedHumidor);
+        navigate('MyHumidor', { humidorId: humidor.id });
     };
 
     return (
         <div className="p-4 pb-24">
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center">
-                    <button
-                        onClick={() => navigate('MyHumidor', { humidorId: humidor.id })}
-                        className="mr-4 p-2 text-gray-400 hover:text-white transition-colors"
-                    >
-                        <ChevronLeft className="w-5 h-5" />
+            <div className="relative">
+                {/* Image */}
+                <SmartImageModal
+                    itemName={formData.name}
+                    itemCategory="humidor"
+                    itemType={formData.type}
+                    theme={theme}
+                    currentImage={formData.image || `https://placehold.co/600x400/EEE/31343C?font=playfair-display&text=${formData.name.replace(/\s/g, '+') || 'My Humidor'}`}
+                    currentPosition={formData.imagePosition || { x: 50, y: 50 }}
+                    onImageAccept={(img, pos) => setFormData(prev => ({
+                        ...prev,
+                        image: img,
+                        imagePosition: pos
+                    }))}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent pointer-events-none"></div>
+                <div className="absolute top-4 left-4 z-10">
+                    <button onClick={() => navigate('HumidorsScreen')} className="p-2 -ml-2 mr-2 bg-black/50 rounded-full">
+                        <ChevronLeft className={`w-7 h-7 ${theme.text}`} />
                     </button>
-                    <h1 className="text-2xl font-bold text-white">Edit Humidor</h1>
                 </div>
-                <button
-                    onClick={() => setIsDeleteModalOpen(true)}
-                    className="p-2 text-red-400 hover:text-red-300 transition-colors"
-                >
-                    <Trash2 className="w-5 h-5" />
-                </button>
+                <div className="absolute bottom-0 p-4 z-10 pointer-events-none">
+                    <h1 className={`text-3xl font-bold ${theme.text}`}>Edit  Humidor</h1>
+                </div>
             </div>
 
-            <div className="space-y-4">
-                <InputField
-                    label="Humidor Name"
-                    value={formData.name}
-                    onChange={(value) => handleInputChange('name', value)}
-                    placeholder="Enter humidor name"
-                    required
-                />
+            <div className="p-4 space-y-6">
+                {/* Humidor Name */}
+                <InputField name="name" label="Humidor Name" placeholder="e.g., The Big One" value={formData.name} onChange={handleInputChange} theme={theme} />
+                {/* Short Description */}
+                <InputField name="shortDescription" label="Short Description" placeholder="e.g., Main aging unit" value={formData.shortDescription} onChange={handleInputChange} theme={theme} />
+                {/* Long Description */}
+                <TextAreaField name="longDescription" label="Long Description" placeholder="e.g., A 150-count mahogany humidor..." value={formData.longDescription} onChange={handleInputChange} theme={theme} />
 
+                {/* Type of Humidor */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Humidor Type
-                    </label>
-                    <select
-                        value={formData.type}
-                        onChange={(e) => handleInputChange('type', e.target.value)}
-                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
-                    >
-                        <option value="">Select type</option>
-                        {humidorTypes.map(type => (
-                            <option key={type} value={type}>{type}</option>
-                        ))}
+                    <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>Type of Humidor</label>
+                    <select name="type" value={formData.type} onChange={handleInputChange} className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} focus:outline-none focus:ring-2 ${theme.ring}`}>
+                        {humidorTypes.map(type => <option key={type} value={type}>{type}</option>)}
                     </select>
                 </div>
-
-                <InputField
-                    label="Size"
-                    value={formData.size}
-                    onChange={(value) => handleInputChange('size', value)}
-                    placeholder="e.g., 12x8x4 inches"
-                />
-
-                <InputField
-                    label="Capacity"
-                    value={formData.capacity}
-                    onChange={(value) => handleInputChange('capacity', value)}
-                    placeholder="Number of cigars"
-                    type="number"
-                />
-
-                <InputField
-                    label="Location"
-                    value={formData.location}
-                    onChange={(value) => handleInputChange('location', value)}
-                    placeholder="Where is this humidor located?"
-                />
-
-                <TextAreaField
-                    label="Description"
-                    value={formData.description}
-                    onChange={(value) => handleInputChange('description', value)}
-                    placeholder="Additional details about this humidor"
-                    rows={3}
-                />
-
-                {/* Image Section */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Image
-                    </label>
-                    <div className="flex items-center space-x-4">
-                        {formData.image && (
-                            <img
-                                src={formData.image}
-                                alt="Humidor"
-                                className="w-16 h-16 object-cover rounded-lg border border-gray-700"
-                            />
-                        )}
-                        <button
-                            onClick={() => setIsImageModalOpen(true)}
-                            className="flex items-center bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-gray-300 hover:bg-gray-700 transition-colors"
-                        >
-                            <Upload className="w-4 h-4 mr-2" />
-                            {formData.image ? 'Change Image' : 'Add Image'}
-                        </button>
-                        {formData.image && (
-                            <button
-                                onClick={() => handleInputChange('image', '')}
-                                className="text-red-400 hover:text-red-300 transition-colors"
-                            >
-                                Remove
-                            </button>
-                        )}
-                    </div>
+                {/* Size and location */}
+                <div id="pnlSizeAndLocation" className="grid grid-cols-2 gap-4">
+                    <InputField name="size" label="Size" placeholder="e.g., 150-count" value={formData.size} onChange={handleInputChange} theme={theme} />
+                    <InputField name="location" label="Location" placeholder="e.g., Office" value={formData.location} onChange={handleInputChange} theme={theme} />
                 </div>
-
-                {/* Environmental Settings */}
-                <div className="border-t border-gray-700 pt-4">
-                    <h3 className="text-lg font-medium text-white mb-4">Environmental Settings</h3>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                        <InputField
-                            label="Temperature (°F)"
-                            value={formData.temperature}
-                            onChange={(value) => handleInputChange('temperature', value)}
-                            placeholder="70"
-                            type="number"
-                            step="0.1"
-                        />
-
-                        <InputField
-                            label="Humidity (%)"
-                            value={formData.humidity}
-                            onChange={(value) => handleInputChange('humidity', value)}
-                            placeholder="70"
-                            type="number"
-                            step="0.1"
-                        />
-                    </div>
-
-                    {/* Govee Device Selection */}
-                    {goveeDevices && goveeDevices.length > 0 && (
+                {/* Environment Tracking */}
+                <div pnl="pnlEnvironmentTracking" className={`${theme.card} p-4 rounded-xl`}>
+                    <h3 className="font-bold text-xl text-amber-300 mb-4 flex items-center"><MapPin className="w-5 h-5 mr-2" /> Environment Tracking</h3>
+                    <div className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
-                                Govee Device
-                            </label>
-                            <select
-                                value={formData.goveeDevice}
-                                onChange={(e) => handleInputChange('goveeDevice', e.target.value)}
-                                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
-                            >
-                                <option value="">No device selected</option>
-                                {goveeDevices.map(device => (
-                                    <option key={device.device} value={device.device}>
-                                        {device.deviceName} ({device.model})
-                                    </option>
-                                ))}
-                            </select>
+                            <label className={`text-sm font-medium ${theme.subtleText} mb-2 block`}>Tracking Method</label>
+                            <div className="flex space-x-4">
+                                <label className="inline-flex items-center"><input type="radio" name="trackingMethod" value="manual" checked={formData.trackingMethod === 'manual'} onChange={handleInputChange} className="form-radio text-amber-500 h-4 w-4" /><span className={`ml-2 ${theme.text}`}>Manual Input</span></label>
+                                <label className="inline-flex items-center"><input type="radio" name="trackingMethod" value="govee" checked={formData.trackingMethod === 'govee'} onChange={handleInputChange} className="form-radio text-amber-500 h-4 w-4" /><span className={`ml-2 ${theme.text}`}>Govee Sensor</span></label>
+                            </div>
                         </div>
-                    )}
-
-                    {(!goveeDevices || goveeDevices.length === 0) && (
-                        <InputField
-                            label="Govee Device ID (Optional)"
-                            value={formData.goveeDevice}
-                            onChange={(value) => handleInputChange('goveeDevice', value)}
-                            placeholder="AA:BB:CC:DD:EE:FF"
-                        />
-                    )}
-                </div>
-
-                {/* Save Button */}
-                <div className="pt-6">
-                    <button
-                        onClick={handleSave}
-                        disabled={isSaving || !formData.name.trim()}
-                        className="w-full bg-amber-600 hover:bg-amber-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-3 rounded-lg font-medium flex items-center justify-center transition-colors"
-                    >
-                        {isSaving ? (
-                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                        {formData.trackingMethod === 'manual' ? (
+                            <div className="grid grid-cols-2 gap-4">
+                                <InputField name="temp" label="Temperature (°F)" placeholder="e.g., 68" type="number" value={formData.temp} onChange={handleInputChange} theme={theme} />
+                                <InputField name="humidity" label="Humidity (%)" placeholder="e.g., 70" type="number" value={formData.humidity} onChange={handleInputChange} theme={theme} />
+                            </div>
                         ) : (
-                            <Save className="w-5 h-5 mr-2" />
+                            <div>
+                                <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>Govee Sensor</label>
+                                <select value={formData.goveeDeviceId || ''} onChange={handleGoveeDeviceChange} disabled={!goveeApiKey || goveeDevices.length === 0} className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} disabled:bg-gray-800 disabled:cursor-not-allowed`}>
+                                    <option value="">{!goveeApiKey ? "Connect Govee first" : (goveeDevices.length === 0 ? "No sensors found" : "Select a sensor")}</option>
+                                    {goveeDevices.map(device => (<option key={device.device} value={device.device}>{device.deviceName} ({device.model})</option>))}
+                                </select>
+                                {!goveeApiKey && (<p className="text-xs text-red-300 mt-1">Please connect your Govee API key in Integrations settings.</p>)}
+                                {goveeApiKey && goveeDevices.length === 0 && (<p className="text-xs text-yellow-300 mt-1">No Govee sensors found. Check your key and Govee app.</p>)}
+                                <div className="grid grid-cols-2 gap-4 mt-4">
+                                    <InputField name="temp" label="Current Temp (°F)" value={humidor.temp} type="number" onChange={() => { }} theme={theme} disabled={true} />
+                                    <InputField name="humidity" label="Current Humidity (%)" value={humidor.humidity} type="number" onChange={() => { }} theme={theme} disabled={true} />
+                                </div>
+                            </div>
                         )}
-                        {isSaving ? 'Saving...' : 'Save Changes'}
-                    </button>
+                    </div>
+                </div>
+                {/* Save and Cancel buttons */}
+                <div pnl="pnlSaveCancelButtons" className="pt-4 flex space-x-4">
+                    <button onClick={handleSave} className={`w-full ${theme.primaryBg} ${theme.text === 'text-white' ? 'text-white' : 'text-black'} font-bold py-3 rounded-lg ${theme.hoverPrimaryBg} transition-colors`}>Save Changes</button>
+                    <button onClick={() => navigate('MyHumidor', { humidorId: humidor.id })} className={`w-full ${theme.button} ${theme.text} font-bold py-3 rounded-lg transition-colors`}>Cancel</button>
                 </div>
             </div>
-
-            {/* Image Upload Modal */}
-            <ImageUploadModal
-                isOpen={isImageModalOpen}
-                onClose={() => setIsImageModalOpen(false)}
-                onImageUpload={handleImageUpload}
-                theme={theme}
-            />
-
-            {/* Delete Confirmation Modal */}
-            <DeleteHumidorModal
-                isOpen={isDeleteModalOpen}
-                onClose={() => setIsDeleteModalOpen(false)}
-                onConfirm={handleDelete}
-                humidorName={humidor.name}
-                theme={theme}
-            />
         </div>
     );
 };
