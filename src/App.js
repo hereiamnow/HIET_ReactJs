@@ -87,9 +87,12 @@ import {
 // Import screens
 import Dashboard from './screens/Dashboard';
 import MyHumidor from './screens/MyHumidor';
+import AddHumidor from './screens/AddHumidor';
 import DeeperStatisticsScreen from './screens/DeeperStatisticsScreen';
 import FontsScreen from './screens/FontsScreen';
 import HumidorsScreen from './screens/HumidorsScreen';
+import NotificationsScreen from './components/Settings/NotificationsScreen';
+
 
 // Import utilities
 import { downloadFile, generateAiImage } from './utils/fileUtils';
@@ -131,138 +134,7 @@ const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
 
 
-const AddHumidor = ({ navigate, db, appId, userId, theme }) => {
-    const humidorTypes = ["Desktop Humidor", "Cabinet Humidor", "Glass Top Humidor", "Travel Humidor", "Cigar Cooler", "Walk-In Humidor", "Personalized Humidor"];
-    const [formData, setFormData] = useState({
-        name: '',
-        shortDescription: '',
-        longDescription: '',
-        size: '',
-        location: '',
-        image: '',
-        type: humidorTypes[0],
-        temp: 70,
-        humidity: 70,
-    });
-    const [trackEnvironment, setTrackEnvironment] = useState(false);
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleSave = async () => {
-        //        if (!db) {
-        //            alert(`Database not initialized.`);
-        //            return;
-        //        }
-        try {
-            const newHumidorData = {
-                ...formData,
-                image: formData.image || `https://placehold.co/600x400/3a2d27/ffffff?font=playfair-display&text=${formData.name.replace(/\s/g, '+') || 'New+Humidor'}`,
-                goveeDeviceId: null,
-                goveeDeviceModel: null,
-                humidity: trackEnvironment ? Number(formData.humidity) : 70,
-                temp: trackEnvironment ? Number(formData.temp) : 68,
-            };
-            const humidorsCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'humidors');
-            await addDoc(humidorsCollectionRef, newHumidorData);
-            navigate('HumidorsScreen');
-        } catch (error) {
-            alert(`Failed to save humidor: ${error.message}`);
-        }
-    };
-
-    // State in the parent form to hold the item's name, image URL, and image position.
-    // This will be passed to the SmartImageModal.
-    const [itemName, setItemName] = useState('Arturo Fuente Hemingway');
-    const [itemImage, setItemImage] = useState('');
-    const [itemImagePosition, setItemImagePosition] = useState({ x: 50, y: 50 });
-
-    // This function is passed to the SmartImageModal and called when the user clicks "Accept Image".
-    // It updates the main form's state with the new image and its position.
-    const handleImageAccept = (image, position) => {
-        setItemImage(image);
-        setItemImagePosition(position);
-    };
-    return (
-        <div className="pb-24">
-            <div className="relative">
-                <SmartImageModal
-                    itemName={formData.name}
-                    itemCategory="humidor"
-                    itemType={formData.type}
-                    theme={theme}
-                    currentImage={formData.image || `https://placehold.co/400x600/5a3825/ffffff?font=playfair-display&text=${formData.name.replace(/\s/g, '+') || 'Humidor'}`}
-                    currentPosition={formData.imagePosition || { x: 50, y: 50 }}
-                    onImageAccept={(img, pos) => setFormData(prev => ({
-                        ...prev,
-                        image: img,
-                        imagePosition: pos
-                    }))}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent pointer-events-none"></div>
-                <div className="absolute top-4 left-4 z-10">
-                    <button onClick={() => navigate('HumidorsScreen')} className="p-2 -ml-2 mr-2 bg-black/50 rounded-full">
-                        <ChevronLeft className={`w-7 h-7 ${theme.text}`} />
-                    </button>
-                </div>
-                <div className="absolute bottom-0 p-4 z-10 pointer-events-none">
-                    <h1 className={`text-3xl font-bold ${theme.text}`}>Add New Humidor</h1>
-                </div>
-            </div>
-            <div className="p-4 space-y-6">
-                <InputField name="name" label="Humidor Name" placeholder="e.g., The Big One" value={formData.name} onChange={handleInputChange} theme={theme} />
-                <InputField name="shortDescription" label="Short Description" placeholder="e.g., Main aging unit" value={formData.shortDescription} onChange={handleInputChange} theme={theme} />
-                <TextAreaField name="longDescription" label="Long Description" placeholder="e.g., A 150-count mahogany humidor with a Spanish cedar interior..." value={formData.longDescription} onChange={handleInputChange} theme={theme} />
-
-                <div>
-                    <label className={`text-sm font-medium ${theme.subtleText} mb-1 block`}>Type of Humidor</label>
-                    <select name="type" value={formData.type} onChange={handleInputChange} className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} focus:outline-none focus:ring-2 ${theme.ring}`}>
-                        {humidorTypes.map(type => <option key={type} value={type}>{type}</option>)}
-                    </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <InputField name="size" label="Size" placeholder="e.g., 150-count" value={formData.size} onChange={handleInputChange} theme={theme} />
-                    <InputField name="location" label="Location" placeholder="e.g., Office" value={formData.location} onChange={handleInputChange} theme={theme} />
-                </div>
-
-                <div className={`${theme.card} p-4 rounded-xl`}>
-                    <div className="flex justify-between items-center">
-                        <h3 className="font-bold text-lg text-amber-300 flex items-center"><Thermometer className="w-5 h-5 mr-2" /> Environment Tracking</h3>
-                        <button onClick={() => setTrackEnvironment(!trackEnvironment)} className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${trackEnvironment ? 'bg-amber-500' : 'bg-gray-600'}`}>
-                            <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${trackEnvironment ? 'translate-x-6' : 'translate-x-1'}`} />
-                        </button>
-                    </div>
-                    {trackEnvironment && (
-                        <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-700">
-                            <InputField name="temp" label="Temperature (°F)" type="number" value={formData.temp} onChange={handleInputChange} theme={theme} />
-                            <InputField name="humidity" label="Humidity (%)" type="number" value={formData.humidity} onChange={handleInputChange} theme={theme} />
-                        </div>
-                    )}
-                </div>
-
-                <div className="pt-4 flex space-x-4">
-                    <button
-                        onClick={handleSave}
-                        className={`w-full ${theme.primaryBg} ${theme.text === 'text-white' ? 'text-white' : 'text-black'} font-bold py-3 rounded-lg ${theme.hoverPrimaryBg} transition-colors`}
-                    >
-                        Save Humidor
-                    </button>
-                    <button
-                        onClick={() => navigate('HumidorsScreen')}
-                        className={`w-full ${theme.button} ${theme.text} font-bold py-3 rounded-lg transition-colors`}
-                    >
-                        Cancel
-                    </button>
-                </div>
-
-
-            </div>
-        </div>
-    );
-};
 
 const EditHumidor = ({ navigate, db, appId, userId, humidor, goveeApiKey, goveeDevices, theme }) => {
     const humidorTypes = ["Desktop Humidor", "Cabinet Humidor", "Glass Top Humidor", "Travel Humidor", "Cigar Cooler", "Walk-In Humidor", "Personalized Humidor"];
@@ -1597,50 +1469,7 @@ const IntegrationsScreen = ({ navigate, goveeApiKey, setGoveeApiKey, goveeDevice
     );
 };
 
-const NotificationsScreen = ({ navigate, humidors }) => {
-    return (
-        <div className="p-4 pb-24">
-            <div className="flex items-center mb-6">
-                <button onClick={() => navigate('Settings')} className="p-2 -ml-2 mr-2">
-                    <ChevronLeft className="w-7 h-7 text-white" />
-                </button>
-                <h1 className="text-3xl font-bold text-white">Notifications</h1>
-            </div>
-            <div className="space-y-6">
-                <div className="bg-gray-800/50 p-4 rounded-xl">
-                    <h3 className="font-bold text-xl text-amber-300 mb-2">Notification Preferences</h3>
-                    <p className="text-gray-400 text-sm mb-4">
-                        Choose how you want to be notified about important events in your humidor collection.
-                    </p>
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <span className="text-gray-300">In-App Alerts</span>
-                            <input type="checkbox" checked readOnly className="accent-amber-500 w-5 h-5" />
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-gray-300">Email Notifications</span>
-                            <input type="checkbox" disabled className="accent-amber-500 w-5 h-5" />
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-gray-300">Push Notifications</span>
-                            <input type="checkbox" disabled className="accent-amber-500 w-5 h-5" />
-                        </div>
-                    </div>
-                </div>
-                <div className="bg-gray-800/50 p-4 rounded-xl">
-                    <h3 className="font-bold text-xl text-amber-300 mb-2">Recent Alerts</h3>
-                    <p className="text-gray-400 text-sm mb-4">
-                        Here you’ll see a history of recent humidity and temperature alerts for your humidors.
-                    </p>
-                    <ul className="text-sm text-gray-300 space-y-2">
-                        <li>No recent alerts. All your humidors are in the safe zone!</li>
-                        {/* Example: <li>Humidity dropped below 68% in "Office Humidor" (July 7, 2025)</li> */}
-                    </ul>
-                </div>
-            </div>
-        </div>
-    );
-};
+
 
 const DataSyncScreen = ({ navigate, db, appId, userId, cigars, humidors }) => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
