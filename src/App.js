@@ -97,6 +97,7 @@ import EditHumidor from './screens/EditHumidor';
 import AddCigar from './screens/AddCigar';
 import EditCigar from './screens/EditCigar';
 import CigarDetail from './screens/CigarDetail';
+import DataSyncScreen from './screens/DataSyncScreen';
 import DeeperStatisticsScreen from './screens/DeeperStatisticsScreen';
 import FontsScreen from './screens/FontsScreen';
 import HumidorsScreen from './screens/HumidorsScreen';
@@ -370,65 +371,6 @@ const IntegrationsScreen = ({ navigate, goveeApiKey, setGoveeApiKey, goveeDevice
                         </div>
                     )}
                 </div>
-            </div>
-        </div>
-    );
-};
-
-const DataSyncScreen = ({ navigate, db, appId, userId, cigars, humidors }) => {
-    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-    const [modalDataType, setModalDataType] = useState(null); // 'cigar' or 'humidor'
-
-    const exportEnvironmentData = () => {
-        let headers = ['humidorId,name,humidity,temp'];
-        let envCsv = humidors.reduce((acc, humidor) => {
-            const { id, name, humidity, temp } = humidor;
-            acc.push([id, name, humidity, temp].join(','));
-            return acc;
-        }, []);
-        downloadFile({ data: [...headers, ...envCsv].join('\n'), fileName: 'humidor_environment_export.csv', fileType: 'text/csv' });
-    };
-
-    const handleOpenExportModal = (type) => {
-        setModalDataType(type);
-        setIsExportModalOpen(true);
-    };
-
-    const handleOpenImportModal = (type) => {
-        setModalDataType(type);
-        setIsImportModalOpen(true);
-    };
-
-    return (
-        <div className="p-4 pb-24">
-            {isImportModalOpen && <ImportCsvModal dataType={modalDataType} data={modalDataType === 'cigar' ? cigars : humidors} db={db} appId={appId} userId={userId} onClose={() => setIsImportModalOpen(false)} humidors={humidors} navigate={navigate} />}
-            {isExportModalOpen && <ExportModal dataType={modalDataType} data={modalDataType === 'cigar' ? cigars : humidors} onClose={() => setIsExportModalOpen(false)} />}
-
-            <div className="flex items-center mb-6">
-                <button onClick={() => navigate('Settings')} className="p-2 -ml-2 mr-2"><ChevronLeft className="w-7 h-7 text-white" /></button>                <h1 className="text-3xl font-bold text-white">Import & Export</h1>
-            </div>
-
-            <div className="space-y-6">
-                <CollapsiblePanel title="Cigar Collection" description="Import or export your individual cigar data." icon={Cigarette}>
-                    <div className="grid grid-cols-1 gap-4">
-                        <button onClick={() => handleOpenImportModal('cigar')} className="w-full flex items-center justify-center gap-2 bg-blue-600/80 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors"><UploadCloud className="w-5 h-5" />Import Cigars from CSV</button>
-                        <button onClick={() => handleOpenExportModal('cigar')} className="w-full flex items-center justify-center gap-2 bg-green-600/80 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-colors"><Download className="w-5 h-5" />Export Cigars</button>
-                    </div>
-                </CollapsiblePanel>
-
-                <CollapsiblePanel title="Humidor Management" description="Transfer your humidor setup and details." icon={Box}>
-                    <div className="grid grid-cols-1 gap-4">
-                        <button onClick={() => handleOpenImportModal('humidor')} className="w-full flex items-center justify-center gap-2 bg-blue-600/80 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors"><UploadCloud className="w-5 h-5" />Import Humidors from CSV</button>
-                        <button onClick={() => handleOpenExportModal('humidor')} className="w-full flex items-center justify-center gap-2 bg-green-600/80 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-colors"><Download className="w-5 h-5" />Export Humidors</button>
-                    </div>
-                </CollapsiblePanel>
-
-                <CollapsiblePanel title="Environment Data" description="Download historical temperature and humidity data for all humidors." icon={Thermometer}>
-                    <div className="grid grid-cols-1 gap-4">
-                        <button onClick={exportEnvironmentData} className="w-full flex items-center justify-center gap-2 bg-purple-600/80 text-white font-bold py-3 rounded-lg hover:bg-purple-700 transition-colors"><Download className="w-5 h-5" />Export Environment CSV</button>
-                    </div>
-                </CollapsiblePanel>
             </div>
         </div>
     );

@@ -20,6 +20,9 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+firebase-debug.log*
+firestore-debug.log*
+pglite-debug.log*
 
 /.vscode
 /.firebase
@@ -29,14 +32,4 @@ yarn-error.log*
 /android/.idea
 
 /misc.xml
-android/app/src/androidTest/java/com/getcapacitor/myapp/ExampleInstrumentedTest.java
-android/app/src/test/java/com/getcapacitor/myapp/ExampleUnitTest.java
-android/app/proguard-rules.pro
-android/gradlew.bat
-android/gradlew
-android/gradle.properties
-pglite-debug.log
-
-
-
-
+android/*
