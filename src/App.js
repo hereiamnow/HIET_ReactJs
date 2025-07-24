@@ -132,10 +132,6 @@ const cigarCountries = [
 // URL for the world map data used in the Map component.
 const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
-
-
-
-
 const EditHumidor = ({ navigate, db, appId, userId, humidor, goveeApiKey, goveeDevices, theme }) => {
     const humidorTypes = ["Desktop Humidor", "Cabinet Humidor", "Glass Top Humidor", "Travel Humidor", "Cigar Cooler", "Walk-In Humidor", "Personalized Humidor"];
     const [formData, setFormData] = useState({
@@ -1468,8 +1464,6 @@ const IntegrationsScreen = ({ navigate, goveeApiKey, setGoveeApiKey, goveeDevice
         </div>
     );
 };
-
-
 
 const DataSyncScreen = ({ navigate, db, appId, userId, cigars, humidors }) => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);

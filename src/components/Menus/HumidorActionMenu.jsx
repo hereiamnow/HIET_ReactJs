@@ -1,7 +1,8 @@
 /**
  * HumidorActionMenu - A dropdown menu for managing humidor actions
- * Provides options to edit, take readings, export, delete, and import cigars
+ * Provides options to add cigars, edit, take readings, export, delete, and import cigars
  * @param {Object} props - Component props
+ * @param {Function} props.onAddCigar - Function to handle add cigar action
  * @param {Function} props.onEdit - Function to handle edit action
  * @param {Function} props.onTakeReading - Function to handle take reading action
  * @param {Function} props.onExport - Function to handle export action
@@ -11,7 +12,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MoreVertical, PencilRuler, ClipboardPenLine, FileDown, FileUp, Trash } from 'lucide-react';
 
-const HumidorActionMenu = ({ onEdit, onTakeReading, onExport, onDelete, onImport }) => {
+const HumidorActionMenu = ({ onAddCigar, onEdit, onTakeReading, onExport, onDelete, onImport }) => {
     const [isOpen, setIsOpen] = useState(false);
     const menuRef = useRef(null);
 
@@ -45,6 +46,8 @@ const HumidorActionMenu = ({ onEdit, onTakeReading, onExport, onDelete, onImport
             </button>
             {isOpen && (
                 <div className="absolute top-full right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-30 overflow-hidden">
+                    <MenuItem icon={PencilRuler} text="Add Cigar" onClick={onAddCigar} className="text-gray-200" />
+                    <div className="border-t border-gray-700 my-1"></div>
                     <MenuItem icon={PencilRuler} text="Edit this Humidor" onClick={onEdit} className="text-gray-200" />
                     <MenuItem icon={ClipboardPenLine} text="Take Manual Reading" onClick={onTakeReading} className="text-gray-200" />
                     <div className="border-t border-gray-700 my-1"></div>
