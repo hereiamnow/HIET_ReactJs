@@ -101,6 +101,7 @@ import DataSyncScreen from './screens/DataSyncScreen';
 import IntegrationsScreen from './screens/IntegrationsScreen';
 import DashboardSettingsScreen from './screens/DashboardSettingsScreen';
 import AlertsScreen from './screens/AlertsScreen';
+import SettingsScreen from './screens/SettingsScreen';
 import DeeperStatisticsScreen from './screens/DeeperStatisticsScreen';
 import FontsScreen from './screens/FontsScreen';
 import HumidorsScreen from './screens/HumidorsScreen';
@@ -128,46 +129,8 @@ import ImportCsvModal from './components/Modals/Data/ImportCsvModal';
 import ExportModal from './components/Modals/Data/ExportModal';
 import SmartImageModal from './components/Modals/Composite/SmartImageModal';
 
-
 // Initialize Firebase Authentication token
 const initialAuthToken = typeof window !== "undefined" && window.initialAuthToken ? window.initialAuthToken : null;
-
-const SettingsScreen = ({ navigate, theme, setTheme, dashboardPanelVisibility, setDashboardPanelVisibility, selectedFont, setSelectedFont }) => {
-    const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
-    const appVersion = process.env.REACT_APP_VERSION || '1.1.0-dev';
-    const SettingItem = ({ icon: Icon, title, subtitle, onClick }) => (
-        <button onClick={onClick} className="w-full flex items-center gap-4 p-4 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-colors text-left">
-            <div className="p-2 bg-gray-700 rounded-full"><Icon className={`w-6 h-6 ${theme.primary}`} /></div>
-            <div>
-                <p className={`font-bold ${theme.text}`}>{title}</p>
-                <p className={`text-xs ${theme.subtleText}`}>{subtitle}</p>
-            </div>
-        </button>
-    );
-
-    return (
-        <div className="p-4 pb-24">
-            {isThemeModalOpen && <ThemeModal currentTheme={theme} setTheme={setTheme} onClose={() => setIsThemeModalOpen(false)} />}
-            <div className="flex items-center mb-6">
-                <SettingsIcon className={`w-8 h-8 mr-3 ${theme.primary}`} />
-                <h1 className="text-3xl font-bold text-white">Settings</h1>
-            </div>
-            <div className="space-y-4">
-                <SettingItem icon={User} title="Profile" subtitle="Manage your account details" onClick={() => navigate('Profile')} />
-                <SettingItem icon={Database} title="Data & Sync" subtitle="Export or import your collection" onClick={() => navigate('DataSync')} />
-                <SettingItem icon={LayoutGrid} title="Dashboard Components" subtitle="Customize what appears on your dashboard" onClick={() => navigate('DashboardSettings')} />
-                {/* <SettingItem icon={Bell} title="Notifications" subtitle="Set up alerts for humidity and temp" onClick={() => navigate('Notifications')} /> */}
-                {/* <SettingItem icon={Zap} title="Integrations" subtitle="Connect to Govee and other services" onClick={() => navigate('Integrations')} /> */}
-                <SettingItem icon={Palette} title="Theme" subtitle={`Current: ${theme.name}`} onClick={() => setIsThemeModalOpen(true)} />
-                <SettingItem icon={Info} title="Fonts" subtitle="Choose your preferred font combination" onClick={() => navigate('Fonts')} disabled={true} />
-                <SettingItem icon={BarChart2} title="Deeper Statistics & Insights" subtitle="Explore advanced stats about your collection" onClick={() => navigate('DeeperStatistics')} />
-                <SettingItem icon={Info} title="About Humidor Hub" subtitle={`Version ${appVersion}`} onClick={() => navigate('About')} />
-            </div>
-        </div>
-    );
-};
-
-
 
 export default function App() {
     const [navigation, setNavigation] = useState({ screen: 'Dashboard', params: {} });
