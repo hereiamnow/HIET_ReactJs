@@ -99,6 +99,7 @@ import EditCigar from './screens/EditCigar';
 import CigarDetail from './screens/CigarDetail';
 import DataSyncScreen from './screens/DataSyncScreen';
 import IntegrationsScreen from './screens/IntegrationsScreen';
+import DashboardSettingsScreen from './screens/DashboardSettingsScreen';
 import DeeperStatisticsScreen from './screens/DeeperStatisticsScreen';
 import FontsScreen from './screens/FontsScreen';
 import HumidorsScreen from './screens/HumidorsScreen';
@@ -236,57 +237,7 @@ const AlertsScreen = ({ navigate, humidors }) => {
     );
 };
 
-const DashboardSettingsScreen = ({ navigate, theme, dashboardPanelVisibility, setDashboardPanelVisibility }) => {
-    const ToggleSwitch = ({ label, isChecked, onToggle }) => (
-        <div className="flex justify-between items-center py-2">
-            <span className="text-gray-300">{label}</span>
-            <button onClick={onToggle} className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${isChecked ? 'bg-amber-500' : 'bg-gray-600'}`}>
-                <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${isChecked ? 'translate-x-6' : 'translate-x-1'}`} />
-            </button>
-        </div>
-    );
 
-    return (
-        <div className="p-4 pb-24">
-            <div className="flex items-center mb-6">
-                <button onClick={() => navigate('Settings')} className="p-2 -ml-2 mr-2"><ChevronLeft className={`w-7 h-7 ${theme.text}`} /></button>
-                <h1 className={`text-3xl font-bold ${theme.text}`}>Dashboard Components</h1>
-            </div>
-            <div className="bg-gray-800/50 p-4 rounded-xl space-y-2">
-                <ToggleSwitch
-                    label="Inventory Analysis"
-                    isChecked={dashboardPanelVisibility.showInventoryAnalysis}
-                    onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showInventoryAnalysis: !prev.showInventoryAnalysis }))}
-                />
-                <ToggleSwitch
-                    label="Interactive World Map"
-                    isChecked={dashboardPanelVisibility.showWorldMap}
-                    onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showWorldMap: !prev.showWorldMap }))}
-                />
-                <ToggleSwitch
-                    label="Browse by Wrapper"
-                    isChecked={dashboardPanelVisibility.showWrapperPanel}
-                    onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showWrapperPanel: !prev.showWrapperPanel }))}
-                />
-                <ToggleSwitch
-                    label="Browse by Strength"
-                    isChecked={dashboardPanelVisibility.showStrengthPanel}
-                    onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showStrengthPanel: !prev.showStrengthPanel }))}
-                />
-                <ToggleSwitch
-                    label="Browse by Country"
-                    isChecked={dashboardPanelVisibility.showCountryPanel}
-                    onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showCountryPanel: !prev.showCountryPanel }))}
-                />
-                <ToggleSwitch
-                    label="Aging Well / From the Cellar"
-                    isChecked={dashboardPanelVisibility.showAgingWellPanel}
-                    onToggle={() => setDashboardPanelVisibility(prev => ({ ...prev, showAgingWellPanel: !prev.showAgingWellPanel }))}
-                />
-            </div>
-        </div>
-    );
-};
 
 export default function App() {
     const [navigation, setNavigation] = useState({ screen: 'Dashboard', params: {} });
