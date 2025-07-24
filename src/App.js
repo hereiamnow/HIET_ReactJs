@@ -89,11 +89,11 @@ import Dashboard from './screens/Dashboard';
 import MyHumidor from './screens/MyHumidor';
 import AddHumidor from './screens/AddHumidor';
 import EditHumidor from './screens/EditHumidor';
+import AddCigar from './screens/AddCigar';
 import DeeperStatisticsScreen from './screens/DeeperStatisticsScreen';
 import FontsScreen from './screens/FontsScreen';
 import HumidorsScreen from './screens/HumidorsScreen';
 import NotificationsScreen from './components/Settings/NotificationsScreen';
-
 
 // Import utilities
 import { downloadFile, generateAiImage } from './utils/fileUtils';
@@ -132,598 +132,6 @@ const cigarCountries = [
 
 // URL for the world map data used in the Map component.
 const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
-
-
-
-const CigarDetail = ({ cigar, navigate, db, appId, userId, journalEntries }) => {
-    const [modalState, setModalState] = useState({ isOpen: false, type: null, content: '', isLoading: false });
-    const [isFlavorModalOpen, setIsFlavorModalOpen] = useState(false);
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-    const [isRoxyOpen, setIsRoxyOpen] = useState(false);
-    const [showSmokeConfirmation, setShowSmokeConfirmation] = useState(false);
-
-    const journalEntriesForCigar = useMemo(() => {
-        return journalEntries
-            .filter(entry => entry.cigarId === cigar.id)
-            .sort((a, b) => new Date(b.dateSmoked) - new Date(a.dateSmoked));
-    }, [journalEntries, cigar.id]);
-
-    const handleSmokeCigar = async () => {
-        if (cigar.quantity > 0) {
-            const newQuantity = cigar.quantity - 1;
-            const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
-            await updateDoc(cigarRef, { quantity: newQuantity });
-            // Navigate to log the experience
-            navigate('AddEditJournalEntry', { cigarId: cigar.id });
-        }
-    };
-
-    const handleDeleteCigar = async () => {
-        const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
-        await deleteDoc(cigarRef);
-        navigate('MyHumidor', { humidorId: cigar.humidorId });
-    };
-
-    const handleSuggestPairings = async () => {
-        setModalState({ isOpen: true, type: 'pairings', content: '', isLoading: true });
-        const prompt = `You are a world-class sommelier and cigar expert. Given the following cigar:\n- Brand: ${cigar.brand}\n- Name: ${cigar.name}\n- Strength: ${cigar.strength}\n- Wrapper: ${cigar.wrapper}\n\nSuggest three diverse drink pairings (e.g., a spirit, a coffee, a non-alcoholic beverage). For each, provide a one-sentence explanation for why it works well. Format the response clearly with headings for each pairing.`;
-        const result = await callGeminiAPI(prompt);
-        setModalState({ isOpen: true, type: 'pairings', content: result, isLoading: false });
-    };
-
-    const handleGenerateNote = async () => {
-        setModalState({ isOpen: true, type: 'notes', content: '', isLoading: true });
-        const prompt = `You are a seasoned cigar aficionado with a poetic command of language. Based on this cigar's profile:\n- Brand: ${cigar.brand}\n- Name: ${cigar.name}\n- Strength: ${cigar.strength}\n- Wrapper: ${cigar.wrapper}\n\nGenerate a short, evocative tasting note (2-3 sentences) that a user could use as inspiration for their own review. Focus on potential flavors and the overall experience.`;
-        const result = await callGeminiAPI(prompt);
-        setModalState({ isOpen: true, type: 'notes', content: result, isLoading: false });
-    };
-
-    const handleFindSimilar = async () => {
-        setModalState({ isOpen: true, type: 'similar', content: '', isLoading: true });
-        const prompt = `You are a cigar expert. A user likes the '${cigar.brand} ${cigar.name}'. Based on its profile (Strength: ${cigar.strength}, Wrapper: ${cigar.wrapper}, Filler: ${cigar.filler}, Origin: ${cigar.country}, Flavors: ${cigar.flavorNotes.join(', ')}), suggest 3 other cigars that they might also enjoy. For each suggestion, provide the Brand and Name, and a 1-sentence reason why it's a good recommendation. Format as a list.`;
-        const result = await callGeminiAPI(prompt);
-        setModalState({ isOpen: true, type: 'similar', content: result, isLoading: false });
-    };
-
-    const handleAgingPotential = async () => {
-        setModalState({ isOpen: true, type: 'aging', content: '', isLoading: true });
-        const timeInHumidor = calculateAge(cigar.dateAdded);
-        const prompt = `You are a master tobacconist and cigar aging expert named Roxy. A user is asking about the aging potential of their cigar.
-
-Cigar Details:
-- Name: ${cigar.brand} ${cigar.name}
-- Wrapper: ${cigar.wrapper}
-- Strength: ${cigar.strength}
-- Time already aged: ${timeInHumidor}
-
-Provide a brief, encouraging, and slightly personalized note about this cigar's aging potential. Mention when it might be at its peak for smoking. Keep it to 2-3 sentences and maintain your persona as a friendly, knowledgeable dog.`;
-        const result = await callGeminiAPI(prompt);
-        setModalState({ isOpen: true, type: 'aging', content: result, isLoading: false });
-    };
-
-    const closeModal = () => setModalState({ isOpen: false, type: null, content: '', isLoading: false });
-
-    const RatingBadge = ({ rating }) => {
-        if (!rating || rating === 0) return null;
-        return (
-            <div
-                className={`flex flex-col items-center justify-center w-16 h-16 rounded-full border-2 aspect-square ${getRatingColor(rating)} bg-gray-900/50 backdrop-blur-sm`}
-                style={{ aspectRatio: '1 / 1' }} // Ensures a perfect circle in all browsers
-            >
-                <span className="text-2xl font-bold text-white">{rating}</span>
-                <span className="text-xs text-white/80 -mt-1">RATED</span>
-            </div>
-        );
-    };
-
-    const DetailItem = ({ label, value }) => (
-        <div><p className="text-xs text-gray-400">{label}</p><p className="font-bold text-white text-sm">{value || 'N/A'}</p></div>
-    );
-
-    return (
-        <div className="pb-24">
-            {modalState.isOpen && <GeminiModal title={modalState.type === 'pairings' ? "Pairing Suggestions" : modalState.type === 'notes' ? "Tasting Note Idea" : modalState.type === 'aging' ? "Aging Potential" : "Similar Smokes"} content={modalState.content} isLoading={modalState.isLoading} onClose={closeModal} />}
-            {isFlavorModalOpen && <FlavorNotesModal cigar={cigar} db={db} appId={appId} userId={userId} onClose={() => setIsFlavorModalOpen(false)} />}
-            <DeleteCigarsModal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} onConfirm={handleDeleteCigar} count={1} />
-            {isExportModalOpen && <ExportModal data={[cigar]} dataType="cigar" onClose={() => setIsExportModalOpen(false)} />}
-
-            <div className="relative">
-                <img src={cigar.image || `https://placehold.co/400x600/5a3825/ffffff?font=playfair-display&text=${cigar.brand.replace(/\s/g, '+')}`} alt={cigar.name} className="w-full h-64 object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
-
-                {/* Page Header Action Buttons */}
-                <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
-                    <button onClick={() => navigate('MyHumidor', { humidorId: cigar.humidorId })} className="p-2 bg-black/50 rounded-full text-white"><ChevronLeft className="w-7 h-7" /></button>
-                    <CigarActionMenu
-                        onEdit={() => navigate('EditCigar', { cigarId: cigar.id })}
-                        onExport={() => setIsExportModalOpen(true)}
-                        onDelete={() => setIsDeleteModalOpen(true)}
-                        onAddJournal={() => navigate('AddEditJournalEntry', { cigarId: cigar.id })}
-                    />
-                </div>
-
-                {/* Title and Rating Badge */}
-                <div className="absolute bottom-0 p-4 w-full flex justify-between items-end">
-                    <div>
-                        <p className="text-gray-300 text-sm font-semibold uppercase">{cigar.brand}</p>
-                        <h1 className="text-3xl font-bold text-white">{cigar.name}</h1>
-                    </div>
-                    <RatingBadge rating={cigar.rating} />
-                </div>
-            </div>
-
-            <div className="p-4 space-y-6">
-                {/* SMOKE THIS! Action Button */}
-                <button onClick={handleSmokeCigar} disabled={cigar.quantity === 0} className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-lg hover:bg-amber-600 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">
-                    <Cigarette className="w-5 h-5" /> Log This Smoke ({cigar.quantity} in stock)
-                </button>
-                {showSmokeConfirmation && (
-                    <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
-                        <Check className="w-5 h-5" />
-                        <span>Enjoy your smoke!</span>
-                    </div>
-                )}
-
-                {/* Cigar Profile Panel */}
-                <div className="bg-gray-800/50 p-4 rounded-xl space-y-4">
-
-                    <div className="flex justify-between items-center">
-                        <h3 className="font-bold text-amber-300 text-lg">Profile</h3>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                        {/* Short Description */}
-                        <div className="col-span-2">                            <p className="text-xs text-gray-400">Short Description</p>
-                            <p className="font-light text-white text-sm break-words">{cigar.shortDescription || 'No short description provided.'}</p>
-                        </div>
-
-                        <DetailItem label="Shape" value={cigar.shape} />
-                        {/* Updated Size display to combine length_inches and ring_gauge */}
-                        <DetailItem label="Size" value={cigar.length_inches && cigar.ring_gauge ? `${cigar.length_inches} x ${cigar.ring_gauge}` : cigar.size} />
-                        <DetailItem label="Origin" value={cigar.country} />
-                        <DetailItem label="Strength" value={cigar.strength} />
-                        <DetailItem label="Wrapper" value={cigar.wrapper} />
-                        <DetailItem label="Binder" value={cigar.binder} />
-                        <DetailItem label="Filler" value={cigar.filler} />
-                        <DetailItem label="My Rating" value={cigar.userRating || 'N/A'} />
-                        {/* <DetailItem label="Price Paid" value={cigar.price ? `$${Number(cigar.price).toFixed(2)}` : 'N/A'} /> */}
-                        <DetailItem label="Date Added" value={formatDate(cigar.dateAdded)} />
-                        <DetailItem label="Time in Humidor" value={calculateAge(cigar.dateAdded)} />
-                    </div>
-
-                    <div className="border-t border-gray-700 pt-4">
-                        <p className="text-xs text-gray-400">Description</p>
-                        <p className="font-light text-white text-sm">{cigar.description || 'No description provided.'}</p>
-                    </div>
-
-                    <div className="border-t border-gray-700 pt-4">
-                        <h4 className="font-bold text-white flex items-center mb-3"><Tag className="w-4 h-4 mr-2 text-amber-400" /> Flavor Notes</h4>
-                        <div className="flex flex-wrap gap-2">
-                            {cigar.flavorNotes && cigar.flavorNotes.length > 0 ?
-                                cigar.flavorNotes.map(note => (<span key={note} className={`text-xs font-semibold px-3 py-1 rounded-full ${getFlavorTagColor(note)}`}>{note}</span>))
-                                : <p className="text-sm text-gray-500">No flavor notes added.</p>
-                            }
-                        </div>
-                    </div>
-                </div>
-
-                {/* Journal History Panel */}
-                <div className="bg-gray-800/50 p-4 rounded-xl space-y-4">
-                    <h3 className="font-bold text-amber-300 text-lg flex items-center"><BookText className="w-5 h-5 mr-2" /> Journal History</h3>
-                    {journalEntriesForCigar.length > 0 ? (
-                        <div className="space-y-4">
-                            {journalEntriesForCigar.map(entry => (
-                                <JournalEntryCard
-                                    key={entry.id}
-                                    entry={entry}
-                                    theme={{ card: 'bg-gray-800' }}
-                                    onEdit={() => navigate('AddEditJournalEntry', { cigarId: cigar.id, entryId: entry.id })}
-                                    onDelete={async (entryId) => {
-                                        if (window.confirm("Delete this entry?")) {
-                                            const entryRef = doc(db, 'artifacts', appId, 'users', userId, 'journalEntries', entryId);
-                                            await deleteDoc(entryRef);
-                                        }
-                                    }}
-                                />
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="text-sm text-gray-500">No journal entries for this cigar yet. Smoke one to add an entry!</p>
-                    )}
-                </div>
-
-
-                {/* Roxy's Corner Collapsible Panel */}
-                <div className="bg-amber-900/20 border border-amber-800 rounded-xl overflow-hidden">
-                    <button onClick={() => setIsRoxyOpen(!isRoxyOpen)} className="w-full p-4 flex justify-between items-center">
-                        <h3 className="font-bold text-amber-300 text-lg flex items-center"><Wind className="w-5 h-5 mr-2" /> Roxy's Corner</h3>
-                        <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isRoxyOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    {isRoxyOpen && (
-                        <div className="px-4 pb-4 space-y-4">
-                            <p className="text-amber-200 text-sm pt-2">Let Roxy help you get the most out of your smoke. What would you like to know?</p>
-                            <button onClick={handleSuggestPairings} className="w-full flex items-center justify-center bg-amber-500/20 border border-amber-500 text-amber-300 font-bold py-3 rounded-lg hover:bg-amber-500/30 transition-colors"><Sparkles className="w-5 h-5 mr-2" /> Suggest Pairings</button>
-                            <button onClick={handleGenerateNote} className="w-full flex items-center justify-center bg-sky-500/20 border border-sky-500 text-sky-300 font-bold py-3 rounded-lg hover:bg-sky-500/30 transition-colors"><Sparkles className="w-5 h-5 mr-2" /> Generate Note Idea</button>
-                            <button onClick={handleFindSimilar} className="w-full flex items-center justify-center bg-green-500/20 border border-green-500 text-green-300 font-bold py-3 rounded-lg hover:bg-green-500/30 transition-colors"><Sparkles className="w-5 h-5 mr-2" /> Find Similar Smokes</button>
-                            <button onClick={handleAgingPotential} className="w-full flex items-center justify-center bg-purple-500/20 border border-purple-500 text-purple-300 font-bold py-3 rounded-lg hover:bg-purple-500/30 transition-colors"><CalendarIcon className="w-5 h-5 mr-2" /> Aging Potential</button>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
-    // Initialize formData with new fields length_inches and ring_gauge
-    const [formData, setFormData] = useState({ brand: '', name: '', shape: '', size: '', wrapper: '', binder: '', filler: '', country: '', strength: '', price: '', rating: '', quantity: 1, image: '', shortDescription: '', description: '', flavorNotes: [], dateAdded: new Date().toISOString().split('T')[0], length_inches: '', ring_gauge: '' });
-    const [strengthSuggestions, setStrengthSuggestions] = useState([]);
-    const [isAutofilling, setIsAutofilling] = useState(false);
-    const [modalState, setModalState] = useState({ isOpen: false, content: '', isLoading: false });
-    const [isFlavorModalOpen, setIsFlavorModalOpen] = useState(false);
-
-    // Refs for flashing effect
-    const lengthInputRef = useRef(null);
-    const gaugeInputRef = useRef(null);
-    const [isLengthFlashing, setIsLengthFlashing] = useState(false);
-    const [isGaugeFlashing, setIsGaugeFlashing] = useState(false);
-
-    // State in the parent form to hold the item's name, image URL, and image position.
-    const [itemName, setItemName] = useState('Arturo Fuente Hemingway');
-    const [itemImage, setItemImage] = useState('');
-    const [itemImagePosition, setItemImagePosition] = useState({ x: 50, y: 50 });
-
-    // This function is passed to the modal and called when the user clicks "Accept Image".
-    // It updates the main form's state with the new image and its position.
-    const handleImageAccept = (image, position) => {
-        setItemImage(image);
-        setItemImagePosition(position);
-    };
-
-
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-
-        if (name === 'strength') {
-            setStrengthSuggestions(value ? strengthOptions.filter(opt => opt.toLowerCase().includes(value.toLowerCase())) : []);
-        } else if (name === 'shape') {
-            // Auto-update length_inches and ring_gauge based on selected shape
-            const dimensions = commonCigarDimensions[value];
-            if (dimensions) {
-                setFormData(prev => ({
-                    ...prev,
-                    length_inches: dimensions.length_inches || '',
-                    ring_gauge: dimensions.ring_gauge || ''
-                }));
-                // Trigger flashing effect for updated fields
-                if (dimensions.length_inches) {
-                    setIsLengthFlashing(true);
-                    setTimeout(() => setIsLengthFlashing(false), 500);
-                }
-                if (dimensions.ring_gauge) {
-                    setIsGaugeFlashing(true);
-                    setTimeout(() => setIsGaugeFlashing(false), 500);
-                }
-            }
-        }
-    };
-
-    const handleSuggestionClick = (value) => {
-        setFormData({ ...formData, strength: value });
-        setStrengthSuggestions([]);
-    };
-
-    const handlePriceBlur = (e) => {
-        const { name, value } = e.target;
-        if (name === 'price' && value) {
-            const formattedPrice = Number(value).toFixed(2);
-            setFormData(prev => ({ ...prev, price: formattedPrice }));
-        }
-    };
-
-    const handleQuantityChange = (newQuantity) => {
-        if (newQuantity >= 0) {
-            setFormData(prev => ({ ...prev, quantity: newQuantity }));
-        }
-    };
-
-    const handleSave = async () => {
-        const newCigar = {
-            ...formData,
-            humidorId: humidorId,
-            dateAdded: new Date(formData.dateAdded).toISOString(),
-            flavorNotes: Array.isArray(formData.flavorNotes) ? formData.flavorNotes : [],
-            rating: Number(formData.rating) || 0,
-            price: Number(formData.price) || 0,
-            quantity: Number(formData.quantity) || 1,
-            length_inches: Number(formData.length_inches) || 0, // Ensure number type
-            ring_gauge: Number(formData.ring_gauge) || 0,     // Ensure number type
-        };
-        const cigarsCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'cigars');
-        await addDoc(cigarsCollectionRef, newCigar);
-        navigate('MyHumidor', { humidorId: humidorId });
-    };
-
-    const handleAutofill = async () => {
-        if (!formData.name) {
-            setModalState({ isOpen: true, content: "Please enter a cigar name to auto-fill.", isLoading: false });
-            return;
-        }
-        setIsAutofilling(true);
-        const prompt = `You are a cigar database. Based on the cigar name "${formData.name}", provide its details as a JSON object. The schema MUST be: { "brand": "string", "shape": "string", "size": "string", "country": "string", "wrapper": "string", "binder": "string", "filler": "string", "strength": "Mild" | "Mild-Medium" | "Medium" | "Medium-Full" | "Full", "flavorNotes": ["string", "string", "string", "string"], "shortDescription": "string", "description": "string", "image": "string", "rating": "number", "price": "number", "length_inches": "number", "ring_gauge": "number" }. If you cannot determine a value, use an empty string "" or an empty array [] or 0 for numbers. Do not include any text or markdown formatting outside of the JSON object.`;
-
-        const responseSchema = {
-            type: "OBJECT",
-            properties: {
-                brand: { type: "STRING" },
-                shape: { type: "STRING" },
-                size: { type: "STRING" },
-                country: { type: "STRING" },
-                wrapper: { type: "STRING" },
-                binder: { type: "STRING" },
-                filler: { type: "STRING" },
-                strength: { type: "STRING", enum: ["Mild", "Mild-Medium", "Medium", "Medium-Full", "Full"] },
-                flavorNotes: { type: "ARRAY", items: { type: "STRING" } },
-                shortDescription: { type: "STRING" },
-                description: { type: "STRING" },
-                image: { type: "STRING" },
-                rating: { type: "NUMBER" },
-                price: { type: "NUMBER" },
-                length_inches: { type: "NUMBER" },
-                ring_gauge: { type: "NUMBER" }
-            },
-            required: ["brand", "shape", "size", "country", "wrapper", "binder", "filler", "strength", "flavorNotes", "shortDescription", "description", "image", "rating", "price", "length_inches", "ring_gauge"]
-        };
-
-        // Call the Gemini API with the prompt and response schema
-        const result = await callGeminiAPI(prompt, responseSchema);
-        console.log("Gemini result for", formData.name, result);
-
-        if (typeof result === 'object' && result !== null) {
-            const updatedFields = [];
-            const currentFormData = { ...formData }; // Get a snapshot of the current state
-
-            // Determine which fields will be updated
-            for (const key in result) {
-                const hasExistingValue = currentFormData[key] && (!Array.isArray(currentFormData[key]) || currentFormData[key].length > 0);
-                const hasNewValue = result[key] && (!Array.isArray(result[key]) || result[key].length > 0);
-
-                if (!hasExistingValue && hasNewValue) {
-                    updatedFields.push(key);
-                }
-            }
-
-            if (updatedFields.length > 0) {
-                // Apply the updates to the form state
-                setFormData(prevData => {
-                    const updatedData = { ...prevData };
-                    updatedFields.forEach(key => {
-                        updatedData[key] = result[key];
-                    });
-                    return updatedData;
-                });
-
-                // Create a user-friendly list of changes for the modal
-                const changesList = updatedFields
-                    .map(field => `- ${field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`)
-                    .join('\n');
-                const modalContent = `Woof! Roxy found some details for you and updated the following:\n\n${changesList}`;
-                setModalState({ isOpen: true, content: modalContent, isLoading: false });
-                setTimeout(() => setModalState({ isOpen: false, content: '', isLoading: false }), 8000); // Show for 8 seconds
-            } else {
-                // If no fields were updated, show a different message
-                setModalState({ isOpen: true, content: "Ruff! Roxy looked, but all your details seem to be filled in already. Good job!", isLoading: false });
-                setTimeout(() => setModalState({ isOpen: false, content: '', isLoading: false }), 5000); // Disappear after 5 seconds
-            }
-        } else {
-            console.error("Gemini API response was not a valid object:", result);
-            setModalState({ isOpen: true, content: `Ruff! Roxy couldn't fetch details. Try a different name or fill manually. Error: ${result}`, isLoading: false });
-            setTimeout(() => setModalState({ isOpen: false, content: '', isLoading: false }), 5000); // Disappear after 5 seconds
-        }
-
-        setIsAutofilling(false);
-    };
-
-    const closeModal = () => setModalState({ isOpen: false, content: '', isLoading: false });
-
-    // Function to update flavor notes from modal
-    const handleFlavorNotesUpdate = (newNotes) => {
-        setFormData(prev => ({ ...prev, flavorNotes: newNotes }));
-    };
-
-    return (
-        <div className="pb-24">
-            {modalState.isOpen && <GeminiModal title="Auto-fill Status" content={modalState.content} isLoading={modalState.isLoading} onClose={closeModal} />}
-            {isFlavorModalOpen && <FlavorNotesModal cigar={{ flavorNotes: formData.flavorNotes }} db={db} appId={appId} userId={userId} onClose={() => setIsFlavorModalOpen(false)} setSelectedNotes={handleFlavorNotesUpdate} />}
-
-            <div className="relative">
-                <SmartImageModal
-                    itemName={formData.name}
-                    theme={theme}
-                    currentImage={formData.image || `https://placehold.co/400x600/5a3825/ffffff?font=playfair-display&text=${formData.name.replace(/\s/g, '+') || 'Cigar+Image'}`}
-                    currentPosition={formData.imagePosition || { x: 50, y: 50 }}
-                    onImageAccept={(img, pos) => setFormData(prev => ({
-                        ...prev,
-                        image: img,
-                        imagePosition: pos
-                    }))}
-                />
-                {/* <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div> */}
-                <div className="absolute top-4 left-4">
-                    <button onClick={() => navigate('MyHumidor', { humidorId })} className="p-2 -ml-2 mr-2 bg-black/50 rounded-full">
-                        <ChevronLeft className={`w-7 h-7 ${theme.text}`} />
-                    </button>
-                </div>
-                <div className="absolute bottom-0 p-4">
-                    <h1 className={`text-3xl font-bold ${theme.text}`}>Add New Cigar</h1>
-                </div>
-            </div>
-
-            {/* Cigar Name and Details */}
-            <div id="pnlCigarNameAndDetails" className="p-4 space-y-4">
-                {/* Name / Line */}
-                <InputField name="name" label="Name / Line" placeholder="e.g., 1964 Anniversary" value={formData.name} onChange={handleInputChange} theme={theme} />
-                {/* Auto-fill Button */}
-                <button onClick={handleAutofill} disabled={isAutofilling} className="w-full flex items-center justify-center gap-2 bg-purple-600/20 border border-purple-500 text-purple-300 font-bold py-2 rounded-lg hover:bg-purple-600/30 transition-colors disabled:opacity-50">
-                    {isAutofilling ? <LoaderCircle className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                    {isAutofilling ? 'Thinking...' : '✨ Auto-fill Details'}
-                </button>
-                {/* Short Description */}
-                <InputField name="shortDescription" label="Short Description" placeholder="Brief overview of the cigar..." value={formData.shortDescription} onChange={handleInputChange} theme={theme} />
-                {/* Description */}
-                <TextAreaField name="description" label="Description" placeholder="Notes on this cigar..." value={formData.description} onChange={handleInputChange} theme={theme} />
-                {/* Brand */}
-                <InputField name="brand" label="Brand" placeholder="e.g., Padrón" value={formData.brand} onChange={handleInputChange} theme={theme} />
-                <div id="pnlShapeAndSize" className="grid grid-cols-2 gap-3">
-                    <AutoCompleteInputField
-                        name="shape"
-                        label="Shape"
-                        placeholder="e.g., Toro"
-                        value={formData.shape}
-                        onChange={handleInputChange}
-                        suggestions={cigarShapes}
-                        theme={theme}
-                    />
-                    <InputField name="size" label="Size" placeholder="e.g., 5.5x50" value={formData.size} onChange={handleInputChange} theme={theme} />
-                </div>
-                {/* Length and Ring Gauge */}
-                <div id="pnlLengthAndRing" className="grid grid-cols-2 gap-3">
-                    <AutoCompleteInputField
-                        name="length_inches"
-                        label="Length (inches)"
-                        placeholder="e.g., 6"
-                        type="number"
-                        value={formData.length_inches}
-                        onChange={handleInputChange}
-                        theme={theme}
-                        className={isLengthFlashing ? 'ring-2 ring-amber-400 animate-pulse' : ''}
-                        inputRef={lengthInputRef}
-                        suggestions={cigarLengths}
-                    />
-                    <AutoCompleteInputField
-                        name="ring_gauge"
-                        label="Ring Gauge"
-                        placeholder="e.g., 52"
-                        type="number"
-                        value={formData.ring_gauge}
-                        onChange={handleInputChange}
-                        theme={theme}
-                        className={isGaugeFlashing ? 'ring-2 ring-amber-400 animate-pulse' : ''}
-                        inputRef={gaugeInputRef}
-                        suggestions={cigarRingGauges}
-                    />
-                </div>
-                {/* Wrapper and Binder */}
-                <div id="pnlWrapperAndBinder" className="grid grid-cols-2 gap-3">
-                    <AutoCompleteInputField
-                        name="wrapper"
-                        label="Wrapper"
-                        placeholder="e.g., Maduro"
-                        value={formData.wrapper}
-                        onChange={handleInputChange}
-                        suggestions={cigarWrapperColors}
-                        theme={theme}
-                    />
-                    <AutoCompleteInputField
-                        name="binder"
-                        label="Binder"
-                        placeholder="e.g., Nicaraguan"
-                        value={formData.binder}
-                        onChange={handleInputChange}
-                        suggestions={cigarBinderTypes}
-                        theme={theme}
-                    />
-                </div>
-                {/* Filler and Country */}
-                <div id="pnlFillerAndCountry" className="grid grid-cols-2 gap-3">
-                    <AutoCompleteInputField
-                        name="filler"
-                        label="Filler"
-                        placeholder="e.g., Dominican"
-                        value={formData.filler}
-                        onChange={handleInputChange}
-                        suggestions={cigarFillerTypes}
-                        theme={theme}
-                    />
-                    <AutoCompleteInputField
-                        name="country"
-                        label="Country"
-                        placeholder="e.g., Cuba"
-                        value={formData.country}
-                        onChange={handleInputChange}
-                        suggestions={cigarCountryOfOrigin}
-                        theme={theme}
-                    />
-                </div>
-                {/* Profile and Price */}
-                <div id="pnlProfileAndPrice" className="grid grid-cols-2 gap-3">
-                    <div className="relative">
-                        <AutoCompleteInputField
-                            name="profile"
-                            label="Profile"
-                            placeholder="e.g., Full"
-                            value={formData.strength}
-                            onChange={handleInputChange}
-                            suggestions={strengthOptions}
-                            theme={theme}
-                        />
-
-                        {strengthSuggestions.length > 0 && (
-                            <div className="absolute top-full left-0 right-0 bg-gray-700 border border-gray-600 rounded-b-xl mt-1 z-20 overflow-hidden">
-                                {strengthSuggestions.map(suggestion => (<div key={suggestion} onMouseDown={() => handleSuggestionClick(suggestion)} className="w-full text-left px-4 py-3 hover:bg-gray-600 transition-colors cursor-pointer">{suggestion}</div>))}
-                            </div>
-                        )}
-                    </div>
-                    {/* TODO: Add to Gimini lookup as MSRP price */}
-                    <InputField name="price" label="Price" placeholder="e.g., 23.50" type="number" value={formData.price} onChange={handleInputChange} theme={theme} />
-                </div>
-                {/* Rating and Date Added */}
-                <div id="pnlRatingAndDate" className="grid grid-cols-2 gap-3">
-                    <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} onChange={handleInputChange} theme={theme} />
-                    <InputField name="dateAdded" Tooltip="Date Added to Humidor" label="Date Added" type="date" value={formData.dateAdded} onChange={handleInputChange} theme={theme} />
-                </div>
-                {/* User Rating */}
-                <div id="pnlUserRating" className="grid grid-cols-2 gap-3">
-                    <InputField
-                        name="userRating"
-                        label="User Rating"
-                        placeholder="e.g., 90"
-                        type="number"
-                        value={formData.userRating}
-                        onChange={handleInputChange}
-                        theme={theme}
-                    />
-                </div>
-                {/* Flavor Notes */}
-                <div id="pnlFlavorNotes" className="bg-gray-800/50 p-4 rounded-md">
-                    <div className="flex justify-between items-center mb-3">
-                        <h3 className="font-bold text-amber-300 text-lg flex items-center"><Tag className="w-5 h-5 mr-3 text-amber-400" /> Flavor Notes</h3>
-                        <button type="button" onClick={() => setIsFlavorModalOpen(true)} className="text-gray-400 hover:text-amber-400 p-1"><Edit className="w-4 h-4" /></button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        {formData.flavorNotes.length > 0 ? (
-                            formData.flavorNotes.map(note => (<span key={note} className={`text-xs font-semibold px-3 py-1 rounded-full ${getFlavorTagColor(note)}`}>{note}</span>))
-                        ) : (
-                            <p className="text-sm text-gray-500">No notes selected. Click the edit icon to add some!</p>
-                        )}
-                    </div>
-                </div>
-                {/* QuantityControl Component */}
-                <div id="pnlQuantity" className="flex flex-col items-center py-4">
-                    <label className={`text-sm font-medium ${theme.subtleText} mb-2`}>Quantity</label>
-                    <QuantityControl quantity={formData.quantity} onChange={handleQuantityChange} theme={theme} />
-                </div>
-            </div>
-            {/* Save/Cancel Buttons */}
-            <div id="pnlSaveCancelButtons" className="pt-4 flex space-x-4">
-                <button onClick={handleSave} className={`w-full ${theme.primaryBg} ${theme.text === 'text-white' ? 'text-white' : 'text-black'} font-bold py-3 rounded-lg ${theme.hoverPrimaryBg} transition-colors`}>Save Cigar</button>
-                <button onClick={() => navigate('MyHumidor', { humidorId })} className={`w-full ${theme.button} ${theme.text} font-bold py-3 rounded-lg transition-colors`}>Cancel</button>
-            </div>
-        </div>
-    );
-};
 
 const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
     const [formData, setFormData] = useState({ ...cigar, shortDescription: cigar.shortDescription || '', description: cigar.description || '', flavorNotes: cigar.flavorNotes || [], dateAdded: cigar.dateAdded ? cigar.dateAdded.split('T')[0] : new Date().toISOString().split('T')[0], length_inches: cigar.length_inches || '', ring_gauge: cigar.ring_gauge || '' });
@@ -1097,6 +505,261 @@ Do not include any text or markdown formatting outside of the JSON object.`;
     );
 };
 
+const CigarDetail = ({ cigar, navigate, db, appId, userId, journalEntries }) => {
+    const [modalState, setModalState] = useState({ isOpen: false, type: null, content: '', isLoading: false });
+    const [isFlavorModalOpen, setIsFlavorModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+    const [isRoxyOpen, setIsRoxyOpen] = useState(false);
+    const [showSmokeConfirmation, setShowSmokeConfirmation] = useState(false);
+
+    const journalEntriesForCigar = useMemo(() => {
+        return journalEntries
+            .filter(entry => entry.cigarId === cigar.id)
+            .sort((a, b) => new Date(b.dateSmoked) - new Date(a.dateSmoked));
+    }, [journalEntries, cigar.id]);
+
+    const handleSmokeCigar = async () => {
+        if (cigar.quantity > 0) {
+            const newQuantity = cigar.quantity - 1;
+            const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
+            await updateDoc(cigarRef, { quantity: newQuantity });
+            // Navigate to log the experience
+            navigate('AddEditJournalEntry', { cigarId: cigar.id });
+        }
+    };
+
+    const handleDeleteCigar = async () => {
+        const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
+        await deleteDoc(cigarRef);
+        navigate('MyHumidor', { humidorId: cigar.humidorId });
+    };
+
+    const handleSuggestPairings = async () => {
+        setModalState({ isOpen: true, type: 'pairings', content: '', isLoading: true });
+        const prompt = `You are a world-class sommelier and cigar expert. Given the following cigar:\n- Brand: ${cigar.brand}\n- Name: ${cigar.name}\n- Strength: ${cigar.strength}\n- Wrapper: ${cigar.wrapper}\n\nSuggest three diverse drink pairings (e.g., a spirit, a coffee, a non-alcoholic beverage). For each, provide a one-sentence explanation for why it works well. Format the response clearly with headings for each pairing.`;
+        const result = await callGeminiAPI(prompt);
+        setModalState({ isOpen: true, type: 'pairings', content: result, isLoading: false });
+    };
+
+    const handleGenerateNote = async () => {
+        setModalState({ isOpen: true, type: 'notes', content: '', isLoading: true });
+        const prompt = `You are a seasoned cigar aficionado with a poetic command of language. Based on this cigar's profile:\n- Brand: ${cigar.brand}\n- Name: ${cigar.name}\n- Strength: ${cigar.strength}\n- Wrapper: ${cigar.wrapper}\n\nGenerate a short, evocative tasting note (2-3 sentences) that a user could use as inspiration for their own review. Focus on potential flavors and the overall experience.`;
+        const result = await callGeminiAPI(prompt);
+        setModalState({ isOpen: true, type: 'notes', content: result, isLoading: false });
+    };
+
+    const handleFindSimilar = async () => {
+        setModalState({ isOpen: true, type: 'similar', content: '', isLoading: true });
+        const prompt = `You are a cigar expert. A user likes the '${cigar.brand} ${cigar.name}'. Based on its profile (Strength: ${cigar.strength}, Wrapper: ${cigar.wrapper}, Filler: ${cigar.filler}, Origin: ${cigar.country}, Flavors: ${cigar.flavorNotes.join(', ')}), suggest 3 other cigars that they might also enjoy. For each suggestion, provide the Brand and Name, and a 1-sentence reason why it's a good recommendation. Format as a list.`;
+        const result = await callGeminiAPI(prompt);
+        setModalState({ isOpen: true, type: 'similar', content: result, isLoading: false });
+    };
+
+    const handleAgingPotential = async () => {
+        setModalState({ isOpen: true, type: 'aging', content: '', isLoading: true });
+        const timeInHumidor = calculateAge(cigar.dateAdded);
+        const prompt = `You are a master tobacconist and cigar aging expert named Roxy. A user is asking about the aging potential of their cigar.
+
+Cigar Details:
+- Name: ${cigar.brand} ${cigar.name}
+- Wrapper: ${cigar.wrapper}
+- Strength: ${cigar.strength}
+- Time already aged: ${timeInHumidor}
+
+Provide a brief, encouraging, and slightly personalized note about this cigar's aging potential. Mention when it might be at its peak for smoking. Keep it to 2-3 sentences and maintain your persona as a friendly, knowledgeable dog.`;
+        const result = await callGeminiAPI(prompt);
+        setModalState({ isOpen: true, type: 'aging', content: result, isLoading: false });
+    };
+
+    const closeModal = () => setModalState({ isOpen: false, type: null, content: '', isLoading: false });
+
+    const RatingBadge = ({ rating }) => {
+        if (!rating || rating === 0) return null;
+        return (
+            <div
+                className={`flex flex-col items-center justify-center w-16 h-16 rounded-full border-2 aspect-square ${getRatingColor(rating)} bg-gray-900/50 backdrop-blur-sm`}
+                style={{ aspectRatio: '1 / 1' }} // Ensures a perfect circle in all browsers
+            >
+                <span className="text-2xl font-bold text-white">{rating}</span>
+                <span className="text-xs text-white/80 -mt-1">RATED</span>
+            </div>
+        );
+    };
+
+    const DetailItem = ({ label, value }) => (
+        <div><p className="text-xs text-gray-400">{label}</p><p className="font-bold text-white text-sm">{value || 'N/A'}</p></div>
+    );
+
+    return (
+        <div className="pb-24">
+            {modalState.isOpen && <GeminiModal title={modalState.type === 'pairings' ? "Pairing Suggestions" : modalState.type === 'notes' ? "Tasting Note Idea" : modalState.type === 'aging' ? "Aging Potential" : "Similar Smokes"} content={modalState.content} isLoading={modalState.isLoading} onClose={closeModal} />}
+            {isFlavorModalOpen && <FlavorNotesModal cigar={cigar} db={db} appId={appId} userId={userId} onClose={() => setIsFlavorModalOpen(false)} />}
+            <DeleteCigarsModal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} onConfirm={handleDeleteCigar} count={1} />
+            {isExportModalOpen && <ExportModal data={[cigar]} dataType="cigar" onClose={() => setIsExportModalOpen(false)} />}
+
+            <div className="relative">
+                <img src={cigar.image || `https://placehold.co/400x600/5a3825/ffffff?font=playfair-display&text=${cigar.brand.replace(/\s/g, '+')}`} alt={cigar.name} className="w-full h-64 object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
+
+                {/* Page Header Action Buttons */}
+                <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
+                    <button onClick={() => navigate('MyHumidor', { humidorId: cigar.humidorId })} className="p-2 bg-black/50 rounded-full text-white"><ChevronLeft className="w-7 h-7" /></button>
+                    <CigarActionMenu
+                        onEdit={() => navigate('EditCigar', { cigarId: cigar.id })}
+                        onExport={() => setIsExportModalOpen(true)}
+                        onDelete={() => setIsDeleteModalOpen(true)}
+                        onAddJournal={() => navigate('AddEditJournalEntry', { cigarId: cigar.id })}
+                    />
+                </div>
+
+                {/* Title and Rating Badge */}
+                <div className="absolute bottom-0 p-4 w-full flex justify-between items-end">
+                    <div>
+                        <p className="text-gray-300 text-sm font-semibold uppercase">{cigar.brand}</p>
+                        <h1 className="text-3xl font-bold text-white">{cigar.name}</h1>
+                    </div>
+                    <RatingBadge rating={cigar.rating} />
+                </div>
+            </div>
+
+            <div className="p-4 space-y-6">
+                {/* SMOKE THIS! Action Button */}
+                <button onClick={handleSmokeCigar} disabled={cigar.quantity === 0} className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-lg hover:bg-amber-600 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">
+                    <Cigarette className="w-5 h-5" /> Log This Smoke ({cigar.quantity} in stock)
+                </button>
+                {showSmokeConfirmation && (
+                    <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
+                        <Check className="w-5 h-5" />
+                        <span>Enjoy your smoke!</span>
+                    </div>
+                )}
+
+                {/* Cigar Profile Panel */}
+                <div className="bg-gray-800/50 p-4 rounded-xl space-y-4">
+
+                    <div className="flex justify-between items-center">
+                        <h3 className="font-bold text-amber-300 text-lg">Profile</h3>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                        {/* Short Description */}
+                        <div className="col-span-2">                            <p className="text-xs text-gray-400">Short Description</p>
+                            <p className="font-light text-white text-sm break-words">{cigar.shortDescription || 'No short description provided.'}</p>
+                        </div>
+
+                        <DetailItem label="Shape" value={cigar.shape} />
+                        {/* Updated Size display to combine length_inches and ring_gauge */}
+                        <DetailItem label="Size" value={cigar.length_inches && cigar.ring_gauge ? `${cigar.length_inches} x ${cigar.ring_gauge}` : cigar.size} />
+                        <DetailItem label="Origin" value={cigar.country} />
+                        <DetailItem label="Strength" value={cigar.strength} />
+                        <DetailItem label="Wrapper" value={cigar.wrapper} />
+                        <DetailItem label="Binder" value={cigar.binder} />
+                        <DetailItem label="Filler" value={cigar.filler} />
+                        <DetailItem label="My Rating" value={cigar.userRating || 'N/A'} />
+                        {/* <DetailItem label="Price Paid" value={cigar.price ? `$${Number(cigar.price).toFixed(2)}` : 'N/A'} /> */}
+                        <DetailItem label="Date Added" value={formatDate(cigar.dateAdded)} />
+                        <DetailItem label="Time in Humidor" value={calculateAge(cigar.dateAdded)} />
+                    </div>
+
+                    <div className="border-t border-gray-700 pt-4">
+                        <p className="text-xs text-gray-400">Description</p>
+                        <p className="font-light text-white text-sm">{cigar.description || 'No description provided.'}</p>
+                    </div>
+
+                    <div className="border-t border-gray-700 pt-4">
+                        <h4 className="font-bold text-white flex items-center mb-3"><Tag className="w-4 h-4 mr-2 text-amber-400" /> Flavor Notes</h4>
+                        <div className="flex flex-wrap gap-2">
+                            {cigar.flavorNotes && cigar.flavorNotes.length > 0 ?
+                                cigar.flavorNotes.map(note => (<span key={note} className={`text-xs font-semibold px-3 py-1 rounded-full ${getFlavorTagColor(note)}`}>{note}</span>))
+                                : <p className="text-sm text-gray-500">No flavor notes added.</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                {/* Journal History Panel */}
+                <div className="bg-gray-800/50 p-4 rounded-xl space-y-4">
+                    <h3 className="font-bold text-amber-300 text-lg flex items-center"><BookText className="w-5 h-5 mr-2" /> Journal History</h3>
+                    {journalEntriesForCigar.length > 0 ? (
+                        <div className="space-y-4">
+                            {journalEntriesForCigar.map(entry => (
+                                <JournalEntryCard
+                                    key={entry.id}
+                                    entry={entry}
+                                    theme={{ card: 'bg-gray-800' }}
+                                    onEdit={() => navigate('AddEditJournalEntry', { cigarId: cigar.id, entryId: entry.id })}
+                                    onDelete={async (entryId) => {
+                                        if (window.confirm("Delete this entry?")) {
+                                            const entryRef = doc(db, 'artifacts', appId, 'users', userId, 'journalEntries', entryId);
+                                            await deleteDoc(entryRef);
+                                        }
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-sm text-gray-500">No journal entries for this cigar yet. Smoke one to add an entry!</p>
+                    )}
+                </div>
+
+
+                {/* Roxy's Corner Collapsible Panel */}
+                <div className="bg-amber-900/20 border border-amber-800 rounded-xl overflow-hidden">
+                    <button onClick={() => setIsRoxyOpen(!isRoxyOpen)} className="w-full p-4 flex justify-between items-center">
+                        <h3 className="font-bold text-amber-300 text-lg flex items-center"><Wind className="w-5 h-5 mr-2" /> Roxy's Corner</h3>
+                        <ChevronDown className={`w-5 h-5 text-amber-300 transition-transform duration-300 ${isRoxyOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {isRoxyOpen && (
+                        <div className="px-4 pb-4 space-y-4">
+                            <p className="text-amber-200 text-sm pt-2">Let Roxy help you get the most out of your smoke. What would you like to know?</p>
+                            <button onClick={handleSuggestPairings} className="w-full flex items-center justify-center bg-amber-500/20 border border-amber-500 text-amber-300 font-bold py-3 rounded-lg hover:bg-amber-500/30 transition-colors"><Sparkles className="w-5 h-5 mr-2" /> Suggest Pairings</button>
+                            <button onClick={handleGenerateNote} className="w-full flex items-center justify-center bg-sky-500/20 border border-sky-500 text-sky-300 font-bold py-3 rounded-lg hover:bg-sky-500/30 transition-colors"><Sparkles className="w-5 h-5 mr-2" /> Generate Note Idea</button>
+                            <button onClick={handleFindSimilar} className="w-full flex items-center justify-center bg-green-500/20 border border-green-500 text-green-300 font-bold py-3 rounded-lg hover:bg-green-500/30 transition-colors"><Sparkles className="w-5 h-5 mr-2" /> Find Similar Smokes</button>
+                            <button onClick={handleAgingPotential} className="w-full flex items-center justify-center bg-purple-500/20 border border-purple-500 text-purple-300 font-bold py-3 rounded-lg hover:bg-purple-500/30 transition-colors"><CalendarIcon className="w-5 h-5 mr-2" /> Aging Potential</button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const SettingsScreen = ({ navigate, theme, setTheme, dashboardPanelVisibility, setDashboardPanelVisibility, selectedFont, setSelectedFont }) => {
+    const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
+    const appVersion = process.env.REACT_APP_VERSION || '1.1.0-dev';
+    const SettingItem = ({ icon: Icon, title, subtitle, onClick }) => (
+        <button onClick={onClick} className="w-full flex items-center gap-4 p-4 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-colors text-left">
+            <div className="p-2 bg-gray-700 rounded-full"><Icon className={`w-6 h-6 ${theme.primary}`} /></div>
+            <div>
+                <p className={`font-bold ${theme.text}`}>{title}</p>
+                <p className={`text-xs ${theme.subtleText}`}>{subtitle}</p>
+            </div>
+        </button>
+    );
+
+    return (
+        <div className="p-4 pb-24">
+            {isThemeModalOpen && <ThemeModal currentTheme={theme} setTheme={setTheme} onClose={() => setIsThemeModalOpen(false)} />}
+            <div className="flex items-center mb-6">
+                <SettingsIcon className={`w-8 h-8 mr-3 ${theme.primary}`} />
+                <h1 className="text-3xl font-bold text-white">Settings</h1>
+            </div>
+            <div className="space-y-4">
+                <SettingItem icon={User} title="Profile" subtitle="Manage your account details" onClick={() => navigate('Profile')} />
+                <SettingItem icon={Database} title="Data & Sync" subtitle="Export or import your collection" onClick={() => navigate('DataSync')} />
+                <SettingItem icon={LayoutGrid} title="Dashboard Components" subtitle="Customize what appears on your dashboard" onClick={() => navigate('DashboardSettings')} />
+                {/* <SettingItem icon={Bell} title="Notifications" subtitle="Set up alerts for humidity and temp" onClick={() => navigate('Notifications')} /> */}
+                {/* <SettingItem icon={Zap} title="Integrations" subtitle="Connect to Govee and other services" onClick={() => navigate('Integrations')} /> */}
+                <SettingItem icon={Palette} title="Theme" subtitle={`Current: ${theme.name}`} onClick={() => setIsThemeModalOpen(true)} />
+                <SettingItem icon={Info} title="Fonts" subtitle="Choose your preferred font combination" onClick={() => navigate('Fonts')} disabled={true} />
+                <SettingItem icon={BarChart2} title="Deeper Statistics & Insights" subtitle="Explore advanced stats about your collection" onClick={() => navigate('DeeperStatistics')} />
+                <SettingItem icon={Info} title="About Humidor Hub" subtitle={`Version ${appVersion}`} onClick={() => navigate('About')} />
+            </div>
+        </div>
+    );
+};
+
 const AlertsScreen = ({ navigate, humidors }) => {
     const [alertSettings, setAlertSettings] = useState(
         humidors.map(h => ({ humidorId: h.id, name: h.name, humidityAlert: false, minHumidity: 68, maxHumidity: 72, tempAlert: false, minTemp: 65, maxTemp: 70 }))
@@ -1163,41 +826,6 @@ const AlertsScreen = ({ navigate, humidors }) => {
                         </button>
                     </div>
                 )}
-            </div>
-        </div>
-    );
-};
-
-const SettingsScreen = ({ navigate, theme, setTheme, dashboardPanelVisibility, setDashboardPanelVisibility, selectedFont, setSelectedFont }) => {
-    const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
-    const appVersion = process.env.REACT_APP_VERSION || '1.1.0-dev';
-    const SettingItem = ({ icon: Icon, title, subtitle, onClick }) => (
-        <button onClick={onClick} className="w-full flex items-center gap-4 p-4 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-colors text-left">
-            <div className="p-2 bg-gray-700 rounded-full"><Icon className={`w-6 h-6 ${theme.primary}`} /></div>
-            <div>
-                <p className={`font-bold ${theme.text}`}>{title}</p>
-                <p className={`text-xs ${theme.subtleText}`}>{subtitle}</p>
-            </div>
-        </button>
-    );
-
-    return (
-        <div className="p-4 pb-24">
-            {isThemeModalOpen && <ThemeModal currentTheme={theme} setTheme={setTheme} onClose={() => setIsThemeModalOpen(false)} />}
-            <div className="flex items-center mb-6">
-                <SettingsIcon className={`w-8 h-8 mr-3 ${theme.primary}`} />
-                <h1 className="text-3xl font-bold text-white">Settings</h1>
-            </div>
-            <div className="space-y-4">
-                <SettingItem icon={User} title="Profile" subtitle="Manage your account details" onClick={() => navigate('Profile')} />
-                <SettingItem icon={Database} title="Data & Sync" subtitle="Export or import your collection" onClick={() => navigate('DataSync')} />
-                <SettingItem icon={LayoutGrid} title="Dashboard Components" subtitle="Customize what appears on your dashboard" onClick={() => navigate('DashboardSettings')} />
-                {/* <SettingItem icon={Bell} title="Notifications" subtitle="Set up alerts for humidity and temp" onClick={() => navigate('Notifications')} /> */}
-                {/* <SettingItem icon={Zap} title="Integrations" subtitle="Connect to Govee and other services" onClick={() => navigate('Integrations')} /> */}
-                <SettingItem icon={Palette} title="Theme" subtitle={`Current: ${theme.name}`} onClick={() => setIsThemeModalOpen(true)} />
-                <SettingItem icon={Info} title="Fonts" subtitle="Choose your preferred font combination" onClick={() => navigate('Fonts')} disabled={true} />
-                <SettingItem icon={BarChart2} title="Deeper Statistics & Insights" subtitle="Explore advanced stats about your collection" onClick={() => navigate('DeeperStatistics')} />
-                <SettingItem icon={Info} title="About Humidor Hub" subtitle={`Version ${appVersion}`} onClick={() => navigate('About')} />
             </div>
         </div>
     );
