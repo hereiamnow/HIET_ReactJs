@@ -14,12 +14,14 @@ import {
     ChevronDown,
     Leaf,
     Cigarette,
+    XCircle,
     MapPin,
     Filter,
     Plus,
     Move,
     Sparkles,
-    BarChart2
+    BarChart2,
+    ShieldPlus
 } from 'lucide-react';
 import { roxysTips } from '../constants/roxysTips';
 import { callGeminiAPI } from '../services/geminiService';
@@ -230,8 +232,10 @@ const Dashboard = ({
             )}
 
             <div className="space-y-6">
+
+
                 {/* Browse by mode buttons */}
-                <div className="flex justify-center gap-4">
+                <div id="toolbar-browse-by-mode-buttons" className="flex justify-center gap-4">
                     <button
                         id="btnBrowseByWrapper"
                         onClick={() => handleBrowseByClick('wrapper')}
@@ -244,7 +248,7 @@ const Dashboard = ({
                         onClick={() => handleBrowseByClick('strength')}
                         className={`p-3 bg-gray-800/50 border border-gray-700 rounded-full ${theme.primary} hover:bg-gray-700 transition-colors`}
                     >
-                        <Cigarette className="w-5 h-5" />
+                        <ShieldPlus className="w-5 h-5" />
                     </button>
                     <button
                         id="btnBrowseByCountry"
@@ -378,7 +382,7 @@ const Dashboard = ({
                             <h3 id="browseByMode" className="text-xl font-bold text-amber-400 flex items-center">
                                 <BrowseIcon className="w-5 h-5 mr-2" /> {currentBrowseConfig.title}
                             </h3>
-                            <button onClick={() => setIsBrowseByModeOpen(false)} className="text-amber-400 font-semibold">Done</button>
+                            <button onClick={() => setIsBrowseByModeOpen(false)} className="text-amber-400 font-semibold"><XCircle /></button>
                         </div>
                         <div className="mb-4 max-h-64 overflow-y-auto space-y-2">
                             {browseMode === 'wrapper' && wrapperData.map(({ wrapper, quantity }) => (

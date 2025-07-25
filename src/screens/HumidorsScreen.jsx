@@ -12,7 +12,7 @@
 // browsing with real-time search suggestions and filter management.
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, X, Plus, Thermometer, Droplets } from 'lucide-react';
+import { Search, X, Plus, Thermometer, Droplets, ShieldPlus, MapPin, Leaf } from 'lucide-react';
 import ListCigarCard from '../components/Cigar/ListCigarCard';
 import { parseHumidorSize } from '../utils/formatUtils';
 
@@ -230,11 +230,65 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
                             </div>
                         </div>
 
-                        <button onClick={() => navigate('AddHumidor')} className="flex items-center gap-2 bg-amber-500 text-white font-bold text-sm px-4 py-2 rounded-full hover:bg-amber-600 transition-colors">
-                            <Plus className="w-4 h-4" />
-                            {/* Add Humidor */}
-                        </button>
+                        {/* Browse by mode buttons */}
+                        <div id="toolbar-buttons" className="flex justify-center gap-4">
+                            <div className="relative group">
+                                <button
+                                    id="btnBrowseByWrapper"
+                                    className={`p-3 bg-gray-800/50 border border-gray-700 rounded-full ${theme.primary} hover:bg-gray-700 transition-colors`}
+                                >
+                                    <Leaf className="w-5 h-5" />
+                                </button>
+                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-30">
+                                    Browse by Wrapper
+                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-gray-800"></div>
+                                </div>
+                            </div>
+
+                            <div className="relative group">
+                                <button
+                                    id="btnBrowseByStrength"
+                                    className={`p-3 bg-gray-800/50 border border-gray-700 rounded-full ${theme.primary} hover:bg-gray-700 transition-colors`}
+                                >
+                                    <ShieldPlus className="w-5 h-5" />
+                                </button>
+                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-30">
+                                    Browse by Strength
+                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-gray-800"></div>
+                                </div>
+                            </div>
+
+                            <div className="relative group">
+                                <button
+                                    id="btnBrowseByCountry"
+                                    className={`p-3 bg-gray-800/50 border border-gray-700 rounded-full ${theme.primary} hover:bg-gray-700 transition-colors`}
+                                >
+                                    <MapPin className="w-5 h-5" />
+                                </button>
+                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-30">
+                                    Browse by Country
+                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-gray-800"></div>
+                                </div>
+                            </div>
+
+                            <div className="relative group">
+                                <button
+                                    id="btnAddHumidor"
+                                    onClick={() => navigate('AddHumidor')}
+                                    className="p-3 bg-amber-500 border border-amber-400 rounded-full text-white hover:bg-amber-600 transition-colors">
+                                    <Plus className="w-5 h-5" />
+                                </button>
+                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-30">
+                                    Add Humidor
+                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-gray-800"></div>
+                                </div>
+                            </div>
+
+                        </div>
+
                     </div>
+
+
                     <div className="space-y-6">
                         {humidors.map(humidor => {
                             const cigarsInHumidor = cigars.filter(c => c.humidorId === humidor.id);
