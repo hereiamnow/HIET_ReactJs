@@ -122,7 +122,7 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
                 );
             }
         }
-        // NEW: Apply country filter - July 5, 2025 - 2:00:00 AM CDT
+
         if (activeCountryFilter) {
             if (activeCountryFilter === 'Other') {
                 // Filter for cigars whose country is not explicitly listed in countryCategories
@@ -199,13 +199,40 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
             {searchQuery === '' && !activeWrapperFilter && !activeStrengthFilter && !activeCountryFilter ? (
                 <>
                     <div className="flex justify-between items-center mb-6 px-2">
-                        <div>
-                            <p className="text-sm text-gray-300"><span className="font-bold text-white">{totalUniqueCigars}</span> Unique</p>
-                            <p className="text-xs text-gray-400"><span className="font-bold text-gray-200">{totalQuantity}</span> Total Cigars</p>
+
+                        <div id="pnlHumidorStatsNum" className="relative group">
+                            <div className="bg-gray-800/60 border border-gray-700/50 rounded-lg px-3 py-2 backdrop-blur-sm">
+                                <div className="flex items-center justify-center gap-1">
+                                    <span
+                                        className="font-bold text-amber-400 text-lg hover:text-amber-300 transition-colors cursor-help"
+                                        title="Unique cigars"
+                                    >
+                                        {totalUniqueCigars}
+                                    </span>
+                                    <span className="text-gray-500 font-medium">/</span>
+                                    <span
+                                        className="font-bold text-blue-400 text-lg hover:text-blue-300 transition-colors cursor-help"
+                                        title="Total cigars"
+                                    >
+                                        {totalQuantity}
+                                    </span>
+                                </div>
+                                {/* <div className="text-xs text-gray-500 text-center mt-0.5">cigars</div> */}
+                            </div>
+
+                            {/* Tooltip */}
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-30">
+                                <div className="text-center">
+                                    <div className="text-amber-300">{totalUniqueCigars} unique cigars</div>
+                                    <div className="text-blue-300">{totalQuantity} total cigars</div>
+                                </div>
+                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+                            </div>
                         </div>
+
                         <button onClick={() => navigate('AddHumidor')} className="flex items-center gap-2 bg-amber-500 text-white font-bold text-sm px-4 py-2 rounded-full hover:bg-amber-600 transition-colors">
                             <Plus className="w-4 h-4" />
-                            Add Humidor
+                            {/* Add Humidor */}
                         </button>
                     </div>
                     <div className="space-y-6">

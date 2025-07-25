@@ -10,7 +10,7 @@
  * @param {Function} props.onImport - Function to handle import action
  */
 import React, { useState, useEffect, useRef } from 'react';
-import { MoreVertical, PencilRuler, ClipboardPenLine, FileDown, FileUp, Trash } from 'lucide-react';
+import { MoreVertical, PencilRuler, ClipboardPenLine, FileDown, FileUp, Trash, Plus } from 'lucide-react';
 
 const HumidorActionMenu = ({ onAddCigar, onEdit, onTakeReading, onExport, onDelete, onImport }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -45,16 +45,16 @@ const HumidorActionMenu = ({ onAddCigar, onEdit, onTakeReading, onExport, onDele
                 <MoreVertical className="w-6 h-6" />
             </button>
             {isOpen && (
-                <div className="absolute top-full right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-30 overflow-hidden">
-                    <MenuItem icon={PencilRuler} text="Add Cigar" onClick={onAddCigar} className="text-gray-200" />
+                <div id="pnlHumidorActionMenu" className="absolute top-full right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-30 overflow-hidden">
+                    {/* <div className="border-t border-gray-700 my-1"></div> */}
+                    <MenuItem icon={PencilRuler} text="Edit Humidor" onClick={onEdit} className="text-gray-200" />
+                    <MenuItem icon={ClipboardPenLine} text="Take Reading" onClick={onTakeReading} className="text-gray-200" />
                     <div className="border-t border-gray-700 my-1"></div>
-                    <MenuItem icon={PencilRuler} text="Edit this Humidor" onClick={onEdit} className="text-gray-200" />
-                    <MenuItem icon={ClipboardPenLine} text="Take Manual Reading" onClick={onTakeReading} className="text-gray-200" />
-                    <div className="border-t border-gray-700 my-1"></div>
+                    <MenuItem icon={Plus} text="Add Cigar" onClick={onAddCigar} className="text-gray-200" />
                     <MenuItem icon={FileDown} text="Import Cigars from CSV" onClick={onImport} className="text-gray-200" />
                     <MenuItem icon={FileUp} text="Export Cigars to CSV" onClick={onExport} className="text-gray-200" />
                     <div className="border-t border-gray-700 my-1"></div>
-                    <MenuItem icon={Trash} text="Delete this Humidor" onClick={onDelete} className="text-red-400 hover:bg-red-900/50" />
+                    <MenuItem icon={Trash} text="Delete Humidor" onClick={onDelete} className="text-red-400 hover:bg-red-900/50" />
                 </div>
             )}
         </div>
