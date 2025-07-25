@@ -12,7 +12,7 @@ import { downloadFile } from '../../../utils/fileUtils';
 const ExportModal = ({ data, dataType, onClose }) => {
     const getHeaders = () => {
         if (dataType === 'cigar') {
-            return ['id,name,brand,line,shape,isBoxPress,length_inches,ring_gauge,Size,Country of Origin,wrapper,binder,filler,strength,flavorNotes,rating,userRating,price,quantity,image,shortDescription,description,dateAdded'];
+            return ['id,name,brand,line,shape,isBoxPress,isPuro,length_inches,ring_gauge,Size,Country of Origin,wrapper,binder,filler,strength,flavorNotes,rating,userRating,price,quantity,image,shortDescription,description,dateAdded'];
         } else if (dataType === 'humidor') {
             return ['id,name,shortDescription,longDescription,size,location,image,type,temp,humidity,goveeDeviceId,goveeDeviceModel'];
         }
@@ -24,12 +24,12 @@ const ExportModal = ({ data, dataType, onClose }) => {
         const csvRows = data.reduce((acc, item) => {
             if (dataType === 'cigar') {
                 const {
-                    id, name, brand, line = '', shape, isBoxPress = false, length_inches = 0, ring_gauge = 0,
+                    id, name, brand, line = '', shape, isBoxPress = false, isPuro = false, length_inches = 0, ring_gauge = 0,
                     size, country, wrapper, binder, filler, strength, flavorNotes, rating, userRating = 0,
                     quantity, price, image = '', shortDescription = '', description = '', dateAdded
                 } = item;
                 acc.push([
-                    id, name, brand, line, shape, isBoxPress ? 'TRUE' : 'FALSE', length_inches, ring_gauge,
+                    id, name, brand, line, shape, isBoxPress ? 'TRUE' : 'FALSE', isPuro ? 'TRUE' : 'FALSE', length_inches, ring_gauge,
                     size, country, wrapper, binder, filler, strength, `"${(flavorNotes || []).join(';')}"`,
                     rating, userRating, price, quantity, image, `"${shortDescription}"`, `"${description}"`, dateAdded
                 ].map(field => `"${String(field ?? '').replace(/"/g, '""')}"`).join(',')); // Escape double quotes

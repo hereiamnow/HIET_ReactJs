@@ -21,6 +21,7 @@ export const APP_CIGAR_FIELDS = [
     { key: 'line', label: 'Product Line', required: false },
     { key: 'shape', label: 'Shape', required: false },
     { key: 'isBoxPress', label: 'Is Box Pressed', required: false, type: 'boolean' },
+    { key: 'isPuro', label: 'Is Puro', required: false, type: 'boolean' },
     { key: 'length_inches', label: 'Length (in)', required: false, type: 'number' },
     { key: 'ring_gauge', label: 'Ring Gauge', required: false, type: 'number' },
     { key: 'size', label: 'Size (e.g., 5.5x50)', required: false },

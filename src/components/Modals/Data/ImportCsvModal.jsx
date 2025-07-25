@@ -85,7 +85,7 @@ const ImportCsvModal = ({ dataType, data, db, appId, userId, onClose, humidors, 
     const handleImport = async () => {
         setStep('importing');
         const batch = writeBatch(db);
-        const targetCollectionRef = collection(db, `${appId}_${userId}_${collectionName}`);
+        const targetCollectionRef = collection(db, 'artifacts', appId, 'users', userId, collectionName);
         let count = 0;
 
         csvRows.forEach(row => {
