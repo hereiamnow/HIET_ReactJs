@@ -1,12 +1,15 @@
-// File: MyHumidor.js
-// Path: src/screens/MyHumidor.js
+// File: MyHumidor.jsx
+// Path: src/screens/MyHumidor.jsx
 // Project: Humidor Hub
 // Author: Shawn Miller (hereiamnow@gmail.com)
-// Date: July 20, 2025
-// Time: 10:01 PM CDT
+// Date: July 25, 2025
+// Time: 12:00 PM CST
 
 // Description: My Humidor screen component - displays individual humidor details
-// with cigars, environmental data, and management options
+// with cigars, environmental data, and management options. Features enhanced
+// toolbar with tooltips, attractive cigar count display, search functionality,
+// filtering and sorting capabilities, view mode switching, select mode for
+// bulk operations, and Roxy's AI-powered auto-fill for missing cigar details.
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, Edit, Plus, Search, Filter, LayoutGrid, List, Thermometer, Droplets, Box, DollarSign, Star, Move, Trash2, CheckSquare, ArrowUp, ArrowDown, X } from 'lucide-react';
@@ -300,7 +303,7 @@ If you cannot determine a value, use "" or [] or 0. Only return the JSON object.
             {isExportModalOpen && <ExportModal data={filteredAndSortedCigars} dataType="cigar" onClose={() => setIsExportModalOpen(false)} />}
 
             <div className="relative">
-                {/* ...main MyHumidor content... */}
+
                 <img src={humidor.image || `https://placehold.co/600x400/3a2d27/ffffff?font=playfair-display&text=${humidor.name.replace(/\s/g, '+')}`} alt={humidor.name} className="w-full h-64 object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
                 <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
@@ -323,7 +326,7 @@ If you cannot determine a value, use "" or [] or 0. Only return the JSON object.
                     </div>
                     <p className="text-sm text-gray-300">{humidor.shortDescription || humidor.description}</p>
                 </div>
-            </div> {/* End main MyHumidor content */}
+            </div>
 
             <div className="p-4">
                 <div id="pnlHumidityTemperatureValue" className="flex justify-around items-center bg-gray-800/50 p-3 rounded-xl mb-6 text-center">
@@ -335,7 +338,7 @@ If you cannot determine a value, use "" or [] or 0. Only return the JSON object.
                 </div>
 
                 {/* Search Bar */}
-                <div className="relative mb-4">
+                <div id="pnlSearchBar" className="relative mb-4">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <input type="text" placeholder="Search this humidor..." value={searchQuery} onChange={handleSearchChange}
                         className="w-full bg-gray-800 border border-gray-700 rounded-md py-3 pl-12 pr-12 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500" />
@@ -351,7 +354,7 @@ If you cannot determine a value, use "" or [] or 0. Only return the JSON object.
                     )}
                 </div>
 
-                <div id="pnlHumidorFilterContainer" className="flex justify-between items-center mb-6 px-2">
+                <div id="pnlHumidorToolbar" className="flex justify-between items-center mb-6 px-2">
 
                     <div id="pnlHumidorStatsNum" className="relative group">
                         <div className="bg-gray-800/60 border border-gray-700/50 rounded-lg px-3 py-2 backdrop-blur-sm">
@@ -383,19 +386,79 @@ If you cannot determine a value, use "" or [] or 0. Only return the JSON object.
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        {/* Action buttons */}
-                        <button id="btnFilterNew" Tooltip="Filter" onClick={() => setIsFilterPanelOpen(prev => !prev)} className="p-2 rounded-full bg-gray-700 text-white hover:bg-gray-600 transition-colors"><Filter className="w-5 h-5" /></button>
-                        {/* <button id="btnFilter" Tooltip="Filter Modal" onClick={() => setIsFilterSortModalOpen(true)} className="p-2 rounded-full bg-gray-700 text-white hover:bg-gray-600 transition-colors"><Filter className="w-5 h-5" /></button> */}
-                        <div className="flex bg-gray-800 border border-gray-700 rounded-full p-1">
-                            <button onClick={() => setViewMode('grid')} className={`p-2 rounded-full transition-colors duration-200 ${viewMode === 'grid' ? 'bg-amber-500 text-white' : 'text-gray-400'}`}><LayoutGrid className="w-5 h-5" /></button>
-                            <button onClick={() => setViewMode('list')} className={`p-2 rounded-full transition-colors duration-200 ${viewMode === 'list' ? 'bg-amber-500 text-white' : 'text-gray-400'}`}><List className="w-5 h-5" /></button>
+                    <div id="toolbar-buttons" className="flex justify-center gap-4">
+                        <div className="relative group">
+                            <button
+                                id="btnFilter"
+                                onClick={() => setIsFilterPanelOpen(prev => !prev)}
+                                className={`p-3 bg-gray-800/50 border border-gray-700 rounded-full ${theme.primary} hover:bg-gray-700 transition-colors`}
+                            >
+                                <Filter className="w-5 h-5" />
+                            </button>
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-30">
+                                Filter & Sort
+                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-gray-800"></div>
+                            </div>
                         </div>
-                        <button onClick={handleToggleSelectMode} className={`p-2 rounded-full transition-colors duration-200 ${isSelectMode ? 'bg-amber-500 text-white' : 'bg-gray-700 text-gray-400'}`}><CheckSquare className="w-5 h-5" /></button>
+
+                        <div className="relative group">
+                            <button
+                                onClick={() => setViewMode('grid')}
+                                className={`p-3 bg-gray-800/50 border border-gray-700 rounded-full transition-colors ${viewMode === 'grid' ? 'bg-amber-500 text-white border-amber-400' : `${theme.primary} hover:bg-gray-700`}`}
+                            >
+                                <LayoutGrid className="w-5 h-5" />
+                            </button>
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-30">
+                                Grid View
+                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-gray-800"></div>
+                            </div>
+                        </div>
+
+                        <div className="relative group">
+                            <button
+                                onClick={() => setViewMode('list')}
+                                className={`p-3 bg-gray-800/50 border border-gray-700 rounded-full transition-colors ${viewMode === 'list' ? 'bg-amber-500 text-white border-amber-400' : `${theme.primary} hover:bg-gray-700`}`}
+                            >
+                                <List className="w-5 h-5" />
+                            </button>
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-30">
+                                List View
+                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-gray-800"></div>
+                            </div>
+                        </div>
+
+                        <div className="relative group">
+                            <button
+                                onClick={handleToggleSelectMode}
+                                className={`p-3 bg-gray-800/50 border border-gray-700 rounded-full transition-colors ${isSelectMode ? 'bg-amber-500 text-white border-amber-400' : `${theme.primary} hover:bg-gray-700`}`}
+                            >
+                                <CheckSquare className="w-5 h-5" />
+                            </button>
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-30">
+                                Select Mode
+                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-gray-800"></div>
+                            </div>
+                        </div>
+
+                        <div className="relative group">
+                            <button
+                                id="btnAddCigar"
+                                onClick={() => navigate('AddCigar', { humidorId: humidor.id })}
+                                className="p-3 bg-amber-500 border border-amber-400 rounded-full text-white hover:bg-amber-600 transition-colors"
+                                aria-label="Add Cigar"
+                            >
+                                <Plus className="w-5 h-5" />
+                            </button>
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-30">
+                                Add Cigar
+                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-gray-800"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {/* Show the autofill banner if enabled and there are cigars with missing details */}
+                {/* Show the autofill banner if enabled and there are cigars with missing 
+                details */}
                 {showAutofillBanner && cigarsWithMissingDetails.length > 0 && (
                     <div
                         id="pnlAutofillBanner"
@@ -458,18 +521,6 @@ If you cannot determine a value, use "" or [] or 0. Only return the JSON object.
                         </div>
                     )}
                 </div>
-
-                {/* Floating Action Button for Add Cigar */}
-                {!isSelectMode && (
-                    <button
-                        id="btnAddCigar"
-                        onClick={() => navigate('AddCigar', { humidorId: humidor.id })}
-                        className="fixed bottom-24 right-4 bg-amber-500 text-white p-4 rounded-full shadow-lg hover:bg-amber-600 transition-colors z-20"
-                        aria-label="Add Cigar"
-                    >
-                        <Plus className="w-6 h-6" />
-                    </button>
-                )}
 
                 {/* Panel for Select Mode */}
                 {isSelectMode && (

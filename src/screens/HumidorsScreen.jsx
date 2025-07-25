@@ -230,7 +230,7 @@ const HumidorsScreen = ({ navigate, cigars, humidors, db, appId, userId, theme, 
                             </div>
                         </div>
 
-                        {/* Browse by mode buttons */}
+                        {/* toolbar-buttons */}
                         <div id="toolbar-buttons" className="flex justify-center gap-4">
                             <div className="relative group">
                                 <button
