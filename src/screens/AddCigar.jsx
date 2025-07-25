@@ -61,8 +61,10 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
     // Refs for flashing effect
     const lengthInputRef = useRef(null);
     const gaugeInputRef = useRef(null);
+    const sizeInputRef = useRef(null);
     const [isLengthFlashing, setIsLengthFlashing] = useState(false);
     const [isGaugeFlashing, setIsGaugeFlashing] = useState(false);
+    const [isSizeFlashing, setIsSizeFlashing] = useState(false);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -71,14 +73,24 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
         if (name === 'strength') {
             setStrengthSuggestions(value ? strengthOptions.filter(opt => opt.toLowerCase().includes(value.toLowerCase())) : []);
         } else if (name === 'shape') {
-            // Auto-update length_inches and ring_gauge based on selected shape
+            // Auto-update length_inches, ring_gauge, and size based on selected shape
             const dimensions = commonCigarDimensions[value];
             if (dimensions) {
-                setFormData(prev => ({
-                    ...prev,
+                const updatedData = {
                     length_inches: dimensions.length_inches || '',
                     ring_gauge: dimensions.ring_gauge || ''
+                };
+
+                // Only update size if it's empty or null
+                if (!formData.size || formData.size.trim() === '') {
+                    updatedData.size = `${dimensions.length_inches}x${dimensions.ring_gauge}`;
+                }
+
+                setFormData(prev => ({
+                    ...prev,
+                    ...updatedData
                 }));
+
                 // Trigger flashing effect for updated fields
                 if (dimensions.length_inches) {
                     setIsLengthFlashing(true);
@@ -87,6 +99,11 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                 if (dimensions.ring_gauge) {
                     setIsGaugeFlashing(true);
                     setTimeout(() => setIsGaugeFlashing(false), 500);
+                }
+                // Flash size field if it was updated
+                if (!formData.size || formData.size.trim() === '') {
+                    setIsSizeFlashing(true);
+                    setTimeout(() => setIsSizeFlashing(false), 500);
                 }
             }
         }
@@ -257,10 +274,19 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                         placeholder="e.g., Toro"
                         value={formData.shape}
                         onChange={handleInputChange}
-                        suggestions={cigarShapes}
+                        suggestions={Object.keys(commonCigarDimensions)}
                         theme={theme}
                     />
-                    <InputField name="size" label="Size" placeholder="e.g., 5.5x50" value={formData.size} onChange={handleInputChange} theme={theme} />
+                    <InputField
+                        name="size"
+                        label="Size"
+                        placeholder="e.g., 5.5x50"
+                        value={formData.size}
+                        onChange={handleInputChange}
+                        theme={theme}
+                        className={isSizeFlashing ? 'ring-2 ring-amber-400 animate-pulse' : ''}
+                        inputRef={sizeInputRef}
+                    />
                 </div>
                 {/* Length and Ring Gauge */}
                 <div id="pnlLengthAndRing" className="grid grid-cols-2 gap-3">
@@ -333,23 +359,15 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                 </div>
                 {/* Profile and Price */}
                 <div id="pnlProfileAndPrice" className="grid grid-cols-2 gap-3">
-                    <div className="relative">
-                        <AutoCompleteInputField
-                            name="profile"
-                            label="Profile"
-                            placeholder="e.g., Full"
-                            value={formData.strength}
-                            onChange={handleInputChange}
-                            suggestions={strengthOptions}
-                            theme={theme}
-                        />
-
-                        {strengthSuggestions.length > 0 && (
-                            <div className="absolute top-full left-0 right-0 bg-gray-700 border border-gray-600 rounded-b-xl mt-1 z-20 overflow-hidden">
-                                {strengthSuggestions.map(suggestion => (<div key={suggestion} onMouseDown={() => handleSuggestionClick(suggestion)} className="w-full text-left px-4 py-3 hover:bg-gray-600 transition-colors cursor-pointer">{suggestion}</div>))}
-                            </div>
-                        )}
-                    </div>
+                    <AutoCompleteInputField
+                        name="strength"
+                        label="Profile"
+                        placeholder="e.g., Full"
+                        value={formData.strength}
+                        onChange={handleInputChange}
+                        suggestions={strengthOptions}
+                        theme={theme}
+                    />
                     {/* TODO: Add to Gimini lookup as MSRP price */}
                     <InputField name="price" label="Price" placeholder="e.g., 23.50" type="number" value={formData.price} onChange={handleInputChange} theme={theme} />
                 </div>
@@ -392,8 +410,14 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
             </div>
             {/* Save/Cancel Buttons */}
             <div id="pnlSaveCancelButtons" className="pt-4 flex space-x-4">
-                <button onClick={handleSave} className={`w-full ${theme.primaryBg} ${theme.text === 'text-white' ? 'text-white' : 'text-black'} font-bold py-3 rounded-lg ${theme.hoverPrimaryBg} transition-colors`}>Save Cigar</button>
-                <button onClick={() => navigate('MyHumidor', { humidorId })} className={`w-full ${theme.button} ${theme.text} font-bold py-3 rounded-lg transition-colors`}>Cancel</button>
+                <button 
+                onClick={() => navigate('MyHumidor', { humidorId })} 
+                className={`w-full ${theme.button} ${theme.text} font-bold py-3 rounded-lg transition-colors`}>
+                    Cancel</button>
+                <button 
+                onClick={handleSave} 
+                className={`w-full ${theme.primaryBg} ${theme.text === 'text-white' ? 'text-white' : 'text-black'} font-bold py-3 rounded-lg ${theme.hoverPrimaryBg} transition-colors`}>
+                    Save Cigar</button>
             </div>
         </div>
     );

@@ -61,5 +61,17 @@ export const commonCigarDimensions = {
     'Parejo': { length_inches: null, ring_gauge: null }, // General term
     'Double Robusto': { length_inches: 5.5, ring_gauge: 54 },
     'Grand Corona': { length_inches: 5.6, ring_gauge: 46 },
-    'Presidente': { length_inches: 8, ring_gauge: 52 }
+    'Presidente': { length_inches: 8, ring_gauge: 52 },
+    'Culebra': { length_inches: null, ring_gauge: null }, // Braided cigars, hard to define
+    'Diadema': { length_inches: 8.5, ring_gauge: 55 }, // Large and tapered
+    'Salomon': { length_inches: 7.25, ring_gauge: 57 }, // Figurado style
+    'Petit Corona': { length_inches: 4.5, ring_gauge: 42 },
+    'Petit Robusto': { length_inches: 4, ring_gauge: 50 },
+    'Short Churchill': { length_inches: 4.875, ring_gauge: 48 },
+    'Gigante': { length_inches: 6, ring_gauge: 60 }, // Extra large ring gauge
+    'Gordo': { length_inches: 6, ring_gauge: 60 }, // Similar to Gigante
+    'Magnum': { length_inches: 6.5, ring_gauge: 54 },
+    'Presidente Grande': { length_inches: 9, ring_gauge: 52 }, // Oversized variant
+    'Torpedito': { length_inches: 5, ring_gauge: 50 }, // Smaller torpedo
+    'Mini Cigarillo': { length_inches: 3.5, ring_gauge: 20 }, // Very small
 };
