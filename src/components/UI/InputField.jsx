@@ -11,7 +11,7 @@ const InputField = ({ name, label, placeholder, type = 'text', value, onChange, 
             onChange={onChange}
             onBlur={onBlur}
             ref={inputRef}
-            className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} placeholder-gray-500 focus:outline-none focus:ring-2 ${theme.ring} ${className}`}
+            className={`keeper-ignore w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} placeholder-gray-500 focus:outline-none focus:ring-2 ${theme.ring} ${className}`}
         />
     </div>
 );

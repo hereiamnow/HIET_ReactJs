@@ -50,7 +50,7 @@ const AutoCompleteInputField = ({ name, label, placeholder, value, onChange, sug
                 }}
                 onBlur={handleBlur}
                 ref={inputRef}
-                className={`w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} placeholder-gray-500 focus:outline-none focus:ring-2 ${theme.ring} ${className}`}
+                className={`keeper-ignore w-full ${theme.inputBg} border ${theme.borderColor} rounded-lg py-2 px-3 ${theme.text} placeholder-gray-500 focus:outline-none focus:ring-2 ${theme.ring} ${className}`}
             />
             {showSuggestions && filteredSuggestions.length > 0 && (
                 <div className={`absolute z-10 w-full ${theme.card} border ${theme.borderColor} rounded-lg mt-1 max-h-48 overflow-y-auto shadow-lg`}>

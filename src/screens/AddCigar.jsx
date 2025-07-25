@@ -49,6 +49,7 @@ import GeminiModal from '../components/Modals/Content/GeminiModal';
 import FlavorNotesModal from '../components/Modals/Forms/FlavorNotesModal';
 import { getFlavorTagColor } from '../utils/colorUtils';
 import { callGeminiAPI } from '../services/geminiService';
+import StarRating from '../components/UI/StarRating';
 
 const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
     // Initialize formData with new fields length_inches and ring_gauge
@@ -315,6 +316,7 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                         suggestions={cigarRingGauges}
                     />
                 </div>
+
                 {/* Wrapper and Binder */}
                 <div id="pnlWrapperAndBinder" className="grid grid-cols-2 gap-3">
                     <AutoCompleteInputField
@@ -336,6 +338,7 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                         theme={theme}
                     />
                 </div>
+
                 {/* Filler and Country */}
                 <div id="pnlFillerAndCountry" className="grid grid-cols-2 gap-3">
                     <AutoCompleteInputField
@@ -357,6 +360,7 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                         theme={theme}
                     />
                 </div>
+
                 {/* Profile and Price */}
                 <div id="pnlProfileAndPrice" className="grid grid-cols-2 gap-3">
                     <AutoCompleteInputField
@@ -371,13 +375,15 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                     {/* TODO: Add to Gimini lookup as MSRP price */}
                     <InputField name="price" label="Price" placeholder="e.g., 23.50" type="number" value={formData.price} onChange={handleInputChange} theme={theme} />
                 </div>
+
                 {/* Rating and Date Added */}
                 <div id="pnlRatingAndDate" className="grid grid-cols-2 gap-3">
                     <InputField name="rating" label="Rating" placeholder="e.g., 94" type="number" value={formData.rating} onChange={handleInputChange} theme={theme} />
                     <InputField name="dateAdded" Tooltip="Date Added to Humidor" label="Date Added" type="date" value={formData.dateAdded} onChange={handleInputChange} theme={theme} />
                 </div>
+
                 {/* User Rating */}
-                <div id="pnlUserRating" className="grid grid-cols-2 gap-3">
+                {/* <div id="pnlUserRating" className="grid grid-cols-2 gap-3">
                     <InputField
                         name="userRating"
                         label="User Rating"
@@ -387,7 +393,17 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                         onChange={handleInputChange}
                         theme={theme}
                     />
+                </div> */}
+
+               {/* New User Rating section: */}
+                <div id="pnlUserRating" className="space-y-2">
+                    <label className="text-sm font-medium text-gray-300">My Rating</label>
+                    <StarRating
+                        rating={formData.userRating || 0}
+                        onRatingChange={(rating) => setFormData(prev => ({ ...prev, userRating: rating }))}
+                    />
                 </div>
+
                 {/* Flavor Notes */}
                 <div id="pnlFlavorNotes" className="bg-gray-800/50 p-4 rounded-md">
                     <div className="flex justify-between items-center mb-3">
@@ -410,13 +426,13 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
             </div>
             {/* Save/Cancel Buttons */}
             <div id="pnlSaveCancelButtons" className="pt-4 flex space-x-4">
-                <button 
-                onClick={() => navigate('MyHumidor', { humidorId })} 
-                className={`w-full ${theme.button} ${theme.text} font-bold py-3 rounded-lg transition-colors`}>
+                <button
+                    onClick={() => navigate('MyHumidor', { humidorId })}
+                    className={`w-full ${theme.button} ${theme.text} font-bold py-3 rounded-lg transition-colors`}>
                     Cancel</button>
-                <button 
-                onClick={handleSave} 
-                className={`w-full ${theme.primaryBg} ${theme.text === 'text-white' ? 'text-white' : 'text-black'} font-bold py-3 rounded-lg ${theme.hoverPrimaryBg} transition-colors`}>
+                <button
+                    onClick={handleSave}
+                    className={`w-full ${theme.primaryBg} ${theme.text === 'text-white' ? 'text-white' : 'text-black'} font-bold py-3 rounded-lg ${theme.hoverPrimaryBg} transition-colors`}>
                     Save Cigar</button>
             </div>
         </div>

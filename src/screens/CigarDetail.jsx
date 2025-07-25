@@ -15,16 +15,16 @@
 
 import React, { useState, useMemo } from 'react';
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { 
-    ChevronLeft, 
-    Cigarette, 
-    Check, 
-    Tag, 
-    BookText, 
-    Wind, 
-    ChevronDown, 
-    Sparkles, 
-    Calendar as CalendarIcon 
+import {
+    ChevronLeft,
+    Cigarette,
+    Check,
+    Tag,
+    BookText,
+    Wind,
+    ChevronDown,
+    Sparkles,
+    Calendar as CalendarIcon
 } from 'lucide-react';
 
 // Import UI components
@@ -48,6 +48,9 @@ import JournalEntryCard from '../components/Journal/JournalEntryCard';
 // Import services
 import { callGeminiAPI } from '../services/geminiService';
 
+// Import StarRating component
+import StarRating from '../components/UI/StarRating';
+
 const CigarDetail = ({ cigar, navigate, db, appId, userId, journalEntries }) => {
     const [modalState, setModalState] = useState({ isOpen: false, type: null, content: '', isLoading: false });
     const [isFlavorModalOpen, setIsFlavorModalOpen] = useState(false);
@@ -68,7 +71,7 @@ const CigarDetail = ({ cigar, navigate, db, appId, userId, journalEntries }) => 
             const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
             await updateDoc(cigarRef, { quantity: newQuantity });
             // Navigate to log the experience
-            navigate('AddEditJournalEntry', { cigarId: cigar.id });
+            // navigate('AddEditJournalEntry', { cigarId: cigar.id });
         }
     };
 
@@ -168,8 +171,11 @@ Provide a brief, encouraging, and slightly personalized note about this cigar's 
 
             <div className="p-4 space-y-6">
                 {/* SMOKE THIS! Action Button */}
-                <button onClick={handleSmokeCigar} disabled={cigar.quantity === 0} className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-lg hover:bg-amber-600 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">
-                    <Cigarette className="w-5 h-5" /> Log This Smoke ({cigar.quantity} in stock)
+                <button
+                    onClick={handleSmokeCigar}
+                    disabled={cigar.quantity === 0}
+                    className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-bold py-3 rounded-lg hover:bg-amber-600 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">
+                    <Cigarette className="w-5 h-5" /> Smoke This! ({cigar.quantity} in stock)
                 </button>
                 {showSmokeConfirmation && (
                     <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
@@ -199,7 +205,15 @@ Provide a brief, encouraging, and slightly personalized note about this cigar's 
                         <DetailItem label="Wrapper" value={cigar.wrapper} />
                         <DetailItem label="Binder" value={cigar.binder} />
                         <DetailItem label="Filler" value={cigar.filler} />
-                        <DetailItem label="My Rating" value={cigar.userRating || 'N/A'} />
+                        <div>
+                            <p className="text-xs text-gray-400">My Rating</p>
+                            <StarRating
+                                rating={cigar.userRating || 0}
+                                readonly={true}
+                                size="w-4 h-4"
+                            />
+                        </div>
+                        {/* <DetailItem label="My Rating" value={cigar.userRating || 'N/A'} /> */}
                         {/* <DetailItem label="Price Paid" value={cigar.price ? `${Number(cigar.price).toFixed(2)}` : 'N/A'} /> */}
                         <DetailItem label="Date Added" value={formatDate(cigar.dateAdded)} />
                         <DetailItem label="Time in Humidor" value={calculateAge(cigar.dateAdded)} />
