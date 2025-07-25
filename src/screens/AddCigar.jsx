@@ -121,6 +121,14 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
         }
     };
 
+    // Validate user rating to allowed values: 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5
+    const validateUserRating = (value) => {
+        if (value <= 0) return 0;
+        if (value >= 5) return 5;
+        // Round to nearest 0.5
+        return Math.round(value * 2) / 2;
+    };
+
     const handleSave = async () => {
         const newCigar = {
             ...formData,
@@ -132,6 +140,7 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
             quantity: Number(formData.quantity) || 1,
             length_inches: Number(formData.length_inches) || 0, // Ensure number type
             ring_gauge: Number(formData.ring_gauge) || 0,     // Ensure number type
+            userRating: validateUserRating(Number(formData.userRating) || 0), // Validate user rating
         };
         const cigarsCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'cigars');
         await addDoc(cigarsCollectionRef, newCigar);

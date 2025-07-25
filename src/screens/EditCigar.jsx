@@ -44,6 +44,7 @@ import { getFlavorTagColor } from '../utils/colorUtils';
 
 // Import services
 import { callGeminiAPI } from '../services/geminiService';
+import StarRating from '../components/UI/StarRating';
 
 const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
     const [formData, setFormData] = useState({
@@ -113,6 +114,14 @@ const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
         setStrengthSuggestions([]);
     };
 
+    // Validate user rating to allowed values: 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5
+    const validateUserRating = (value) => {
+        if (value <= 0) return 0;
+        if (value >= 5) return 5;
+        // Round to nearest 0.5
+        return Math.round(value * 2) / 2;
+    };
+
     const handleSave = async () => {
         const cigarRef = doc(db, 'artifacts', appId, 'users', userId, 'cigars', cigar.id);
         const { id, ...dataToSave } = formData;
@@ -120,6 +129,7 @@ const EditCigar = ({ navigate, db, appId, userId, cigar, theme }) => {
         dataToSave.dateAdded = new Date(formData.dateAdded).toISOString();
         dataToSave.length_inches = Number(formData.length_inches) || 0;
         dataToSave.ring_gauge = Number(formData.ring_gauge) || 0;
+        dataToSave.userRating = validateUserRating(Number(formData.userRating) || 0); // Validate user rating
         await updateDoc(cigarRef, dataToSave);
         navigate('CigarDetail', { cigarId: cigar.id });
     };
@@ -383,16 +393,11 @@ Do not include any text or markdown formatting outside of the JSON object.`;
                     />
                 </div>
                 {/* User Rating */}
-                <div id="pnlRatingAndDate" className="grid grid-cols-2 gap-3">
-                    <InputField
-                        name="userRating"
-                        label="User Rating"
-                        placeholder="e.g., 90"
-                        type="number"
-                        value={formData.userRating}
-                        onChange={handleInputChange}
-                        theme={theme}
-                        className={flashingFields.userRating ? 'ring-2 ring-amber-400 animate-pulse' : ''}
+                <div id="pnlUserRating" className="space-y-2">
+                    <label className="text-sm font-medium text-gray-300">My Rating</label>
+                    <StarRating
+                        rating={formData.userRating || 0}
+                        onRatingChange={(rating) => setFormData(prev => ({ ...prev, userRating: rating }))}
                     />
                 </div>
 
