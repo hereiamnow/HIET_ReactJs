@@ -147,7 +147,13 @@ import { parseHumidorSize, formatDate } from './utils/formatUtils';
 // Initialize Firebase Authentication token
 const initialAuthToken = typeof window !== "undefined" && window.initialAuthToken ? window.initialAuthToken : null;
 
+// Debug toggle for development
+const DEBUG = process.env.NODE_ENV === 'development';
+const log = DEBUG ? console.log : () => { };
+
 export default function App() {
+    log('🚀 App component mounted');
+
     const [navigation, setNavigation] = useState({ screen: 'Dashboard', params: {} });
     const [cigars, setCigars] = useState([]);
     const [humidors, setHumidors] = useState([]);
@@ -192,8 +198,23 @@ export default function App() {
     // Extract appId from the Firebase configuration to pass as a prop.
     const appId = firebaseConfigExport.appId;
 
+    // Log initial state after component setup
+    log('📊 Initial state:', {
+        navigation: navigation.screen,
+        cigarCount: cigars.length,
+        humidorCount: humidors.length,
+        isLoading,
+        userId,
+        appId
+    });
+
     // One-time Firebase initialization and authentication
     useEffect(() => {
+        log('🔥 Firebase initialization starting...');
+        log('🔧 Firebase config available:', Object.keys(firebaseConfigExport).length > 0);
+        log('🌐 Environment:', window.location.hostname);
+        log('🎫 Initial auth token present:', !!initialAuthToken);
+
         try {
             // Check if the Firebase config object is available.
             if (Object.keys(firebaseConfigExport).length === 0) {
@@ -204,6 +225,8 @@ export default function App() {
 
             // Initialize the Firebase app with the provided configuration.
             const app = initializeApp(firebaseConfigExport);
+            log('✅ Firebase app initialized successfully');
+
             // Get instances of Firestore and Authentication services.
             const firestoreDb = getFirestore(app);
             const firebaseAuth = getAuth(app);
@@ -214,6 +237,7 @@ export default function App() {
             // This is crucial for development to avoid touching production data.
             const isLocalDev = window.location.hostname === 'localhost';
             if (isLocalDev) {
+                log('🏠 Local development detected - using emulators');
                 console.log("Connecting to local Firebase emulators...");
 
                 // Connect to the Auth emulator. The default port is 9099.
@@ -221,31 +245,45 @@ export default function App() {
 
                 // Connect to the Firestore emulator. The default port is 8080.
                 connectFirestoreEmulator(firestoreDb, 'localhost', 8080);
+            } else {
+                log('☁️ Production environment - using live Firebase');
             }
             // --- END OF EMULATOR SETUP ---
 
             // Set the initialized db and auth instances to state.
             setDb(firestoreDb);
             setAuth(firebaseAuth);
+            log('🔗 Firebase instances set to state');
 
             // Set the Firebase app ID for use in Firestore paths.
             onAuthStateChanged(firebaseAuth, async (user) => {
+                log('👤 Auth state changed:', user ? `User: ${user.uid}` : 'No user');
                 if (user) {
+                    log('🔐 User authentication successful:', {
+                        uid: user.uid,
+                        isAnonymous: user.isAnonymous,
+                        provider: user.providerData[0]?.providerId || 'anonymous'
+                    });
                     setUserId(user.uid);
                     console.log("User signed in:", user.uid);
                 } else {
                     if (isLocalDev || !initialAuthToken) {
                         // Gemini TODO: App hangs here when loading into Capacitor
+                        log('🔄 Starting anonymous sign-in process...');
                         console.log("No user signed in. Using anonymous sign-in.");
                         // Local dev or no token: use anonymous sign-in
                         await signInAnonymously(firebaseAuth);
+                        log('✅ Anonymous sign-in completed');
                     } else {
                         // Production with token: use custom token
+                        log('🎫 Starting custom token sign-in...');
                         console.log("Using custom auth token for sign-in.");
                         try {
                             await signInWithCustomToken(firebaseAuth, initialAuthToken);
+                            log('✅ Custom token sign-in successful');
                         } catch (error) {
                             console.error("Failed to sign in with custom token:", error);
+                            log('⚠️ Custom token failed, falling back to anonymous');
                             await signInAnonymously(firebaseAuth);
                         }
                     }
@@ -262,13 +300,17 @@ export default function App() {
     useEffect(() => {
         // We only proceed if both the database connection and the user ID are available.
         if (db && userId) {
+            log('📡 Setting up Firestore listeners for user:', userId);
+            log('🏢 App ID:', appId);
             setIsLoading(true); // Set loading to true while we fetch data.
 
             // Set up a real-time listener for the 'humidors' collection.
             // `onSnapshot` will automatically update the `humidors` state whenever data changes in Firestore.
             const humidorsCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'humidors');
             const unsubscribeHumidors = onSnapshot(humidorsCollectionRef, (snapshot) => {
+                log('🏠 Humidors data updated:', snapshot.docs.length, 'items');
                 const humidorsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                log('🏠 Humidors:', humidorsData.map(h => ({ id: h.id, name: h.name })));
                 setHumidors(humidorsData);
             }, (error) => {
                 console.error("Error fetching humidors:", error);
@@ -277,9 +319,12 @@ export default function App() {
             // Set up a real-time listener for the 'cigars' collection.
             const cigarsCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'cigars');
             const unsubscribeCigars = onSnapshot(cigarsCollectionRef, (snapshot) => {
+                log('🚬 Cigars data updated:', snapshot.docs.length, 'items');
                 const cigarsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                log('🚬 Sample cigar data:', cigarsData.slice(0, 3));
                 setCigars(cigarsData);
                 setIsLoading(false); // Set loading to false after the initial cigar data is loaded.
+                log('✅ Initial data load complete');
             }, (error) => {
                 console.error("Error fetching cigars:", error);
                 setIsLoading(false);
@@ -288,6 +333,7 @@ export default function App() {
             // Set up a real-time listener for the 'journalEntries' collection.
             const journalEntriesCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'journalEntries');
             const unsubscribeJournalEntries = onSnapshot(journalEntriesCollectionRef, (snapshot) => {
+                log('📔 Journal entries updated:', snapshot.docs.length, 'items');
                 const entriesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 setJournalEntries(entriesData);
             }, (error) => {
@@ -297,6 +343,7 @@ export default function App() {
             // This is a cleanup function. When the component unmounts (or `db`/`userId` changes),
             // it will detach the listeners to prevent memory leaks.
             return () => {
+                log('🧹 Cleaning up Firestore listeners...');
                 console.log("Cleaning up Firestore listeners...");
                 unsubscribeHumidors();
                 console.log("Unsubscribing from humidors updates.");
@@ -305,6 +352,8 @@ export default function App() {
                 unsubscribeJournalEntries();
                 console.log("Unsubscribing from journal entries updates.");
             };
+        } else {
+            log('⏳ Waiting for database and user ID...', { db: !!db, userId });
         }
     }, [db, userId]); // Dependencies for this effect.
 
@@ -318,15 +367,18 @@ export default function App() {
     // Function to handle navigation between screens.
     // It takes the screen name and any parameters to pass to that screen.
     const navigate = (screen, params = {}) => {
+        log('🧭 Navigation:', { from: navigation.screen, to: screen, params });
         setNavigation({ screen, params });
     };
 
     // This function determines which screen component to render based on the current navigation state.
     const renderScreen = () => {
         const { screen, params } = navigation;
+        log('🖥️ Rendering screen:', screen, 'with params:', params);
 
         // A loading screen is shown while Firebase is initializing and fetching data.
         if (isLoading) {
+            log('⏳ Showing loading screen');
             return (
                 <div className={`w-full h-screen flex flex-col items-center justify-center ${theme.bg}`}>
                     <LoaderCircle className={`w-12 h-12 ${theme.primary} animate-spin`} />
@@ -334,6 +386,13 @@ export default function App() {
                 </div>
             );
         }
+
+        // Log data availability for screen rendering
+        log('📊 Data available for screen:', {
+            cigars: cigars.length,
+            humidors: humidors.length,
+            journalEntries: journalEntries.length
+        });
 
         // A `switch` statement is used to select the correct component.
         switch (screen) {
@@ -351,10 +410,21 @@ export default function App() {
                 return <HumidorsScreen navigate={navigate} cigars={cigars} humidors={humidors} db={db} appId={appId} userId={userId} theme={theme} {...params} />;
             case 'MyHumidor':
                 const humidor = humidors.find(h => h.id === params.humidorId);
+                log('🏠 MyHumidor lookup:', {
+                    requestedId: params.humidorId,
+                    found: !!humidor,
+                    availableIds: humidors.map(h => h.id)
+                });
                 return humidor ? <MyHumidor humidor={humidor} navigate={navigate} cigars={cigars} humidors={humidors} db={db} appId={appId} userId={userId} theme={theme} /> : <div>Humidor not found</div>;
             case 'CigarDetail':
                 const cigar = cigars.find(c => c.id === params.cigarId);
-                return cigar ? <CigarDetail cigar={cigar} navigate={navigate} db={db} appId={appId} userId={userId} journalEntries={journalEntries} /> : <div>Cigar not found</div>; case 'AddCigar':
+                log('🚬 CigarDetail lookup:', {
+                    requestedId: params.cigarId,
+                    found: !!cigar,
+                    availableIds: cigars.map(c => c.id).slice(0, 5)
+                });
+                return cigar ? <CigarDetail cigar={cigar} navigate={navigate} db={db} appId={appId} userId={userId} journalEntries={journalEntries} /> : <div>Cigar not found</div>;
+            case 'AddCigar':
                 return <AddCigar navigate={navigate} db={db} appId={appId} userId={userId} humidorId={params.humidorId} theme={theme} />;
             case 'EditCigar':
                 const cigarToEdit = cigars.find(c => c.id === params.cigarId);
@@ -395,11 +465,33 @@ export default function App() {
         }
     }; //end of renderScreen function
 
+    // Add state monitoring effects
+    useEffect(() => {
+        log('📈 State update - Cigars:', cigars.length);
+    }, [cigars]);
+
+    useEffect(() => {
+        log('🏠 State update - Humidors:', humidors.length);
+    }, [humidors]);
+
+    useEffect(() => {
+        log('🎨 Theme changed:', theme.name || 'Unknown theme');
+    }, [theme]);
+
     // If the user is not signed in and Firebase auth is available, show the Firebase Auth UI.
     // This component handles user authentication.
     if (!userId && auth) {
+        log('🔐 Showing Firebase Auth UI');
         return <FirebaseAuthUI auth={auth} onSignIn={setUserId} />;
     }
+
+    // Final render logging
+    log('🎯 Final render with:', {
+        userId,
+        authAvailable: !!auth,
+        currentScreen: navigation.screen,
+        themeLoaded: !!theme
+    });
 
     // The main return statement for the App component.
     return (
