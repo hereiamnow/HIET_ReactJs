@@ -36,9 +36,9 @@
 // - Price formatting with automatic decimal precision
 // - Date handling with proper ISO string conversion for database storage
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { collection, addDoc } from 'firebase/firestore';
-import { ChevronLeft, LoaderCircle, Sparkles, Tag, Edit } from 'lucide-react';
+import { ChevronLeft, LoaderCircle, Sparkles, Tag, Edit, Award } from 'lucide-react';
 import { strengthOptions, commonCigarDimensions, cigarShapes, cigarLengths, cigarRingGauges, cigarWrapperColors, cigarBinderTypes, cigarFillerTypes, cigarCountryOfOrigin } from '../constants/cigarOptions';
 import InputField from '../components/UI/InputField';
 import TextAreaField from '../components/UI/TextAreaField';
@@ -52,8 +52,8 @@ import { callGeminiAPI } from '../services/geminiService';
 import StarRating from '../components/UI/StarRating';
 
 const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
-    // Initialize formData with new fields length_inches and ring_gauge
-    const [formData, setFormData] = useState({ brand: '', name: '', shape: '', size: '', wrapper: '', binder: '', filler: '', country: '', strength: '', price: '', rating: '', quantity: 1, image: '', shortDescription: '', description: '', flavorNotes: [], dateAdded: new Date().toISOString().split('T')[0], length_inches: '', ring_gauge: '' });
+    // Initialize formData with new fields length_inches, ring_gauge, and isPuro
+    const [formData, setFormData] = useState({ brand: '', name: '', shape: '', size: '', wrapper: '', binder: '', filler: '', country: '', strength: '', price: '', rating: '', quantity: 1, image: '', shortDescription: '', description: '', flavorNotes: [], dateAdded: new Date().toISOString().split('T')[0], length_inches: '', ring_gauge: '', isPuro: false });
     const [strengthSuggestions, setStrengthSuggestions] = useState([]);
     const [isAutofilling, setIsAutofilling] = useState(false);
     const [modalState, setModalState] = useState({ isOpen: false, content: '', isLoading: false });
@@ -66,6 +66,97 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
     const [isLengthFlashing, setIsLengthFlashing] = useState(false);
     const [isGaugeFlashing, setIsGaugeFlashing] = useState(false);
     const [isSizeFlashing, setIsSizeFlashing] = useState(false);
+    const [puroDetected, setPuroDetected] = useState(null);
+    const [showPuroNotification, setShowPuroNotification] = useState(false);
+
+    // Comprehensive tobacco country mapping for puro detection
+    const TOBACCO_COUNTRY_MAPPINGS = {
+        // Adjectives to countries
+        'nicaraguan': 'nicaragua',
+        'dominican': 'dominican republic',
+        'cuban': 'cuba',
+        'honduran': 'honduras',
+        'ecuadorian': 'ecuador',
+        'mexican': 'mexico',
+        'brazilian': 'brazil',
+        'cameroon': 'cameroon',
+        'connecticut': 'usa',
+        'pennsylvania': 'usa',
+        'kentucky': 'usa',
+        'peruvian': 'peru',
+        'colombian': 'colombia',
+        'costa rican': 'costa rica',
+        'san andres': 'mexico',
+        'san andrés': 'mexico',
+        'habano': 'ecuador', // Most Habano wrappers are Ecuadorian
+        'corojo': 'honduras', // Traditional Corojo origin
+        'criollo': 'nicaragua', // Common Criollo origin
+        'maduro': null, // Maduro is a process, not origin-specific
+        'natural': null, // Natural is a process, not origin-specific
+        'claro': null, // Claro is a color, not origin-specific
+        'oscuro': null, // Oscuro is a color, not origin-specific
+
+        // Direct country names
+        'nicaragua': 'nicaragua',
+        'dominican republic': 'dominican republic',
+        'cuba': 'cuba',
+        'honduras': 'honduras',
+        'ecuador': 'ecuador',
+        'mexico': 'mexico',
+        'brazil': 'brazil',
+        'usa': 'usa',
+        'peru': 'peru',
+        'colombia': 'colombia',
+        'costa rica': 'costa rica'
+    };
+
+    // Function to extract country from tobacco description
+    const extractCountryFromTobacco = (tobacco) => {
+        if (!tobacco || typeof tobacco !== 'string') return null;
+
+        const normalized = tobacco.toLowerCase().trim();
+
+        // Check for direct matches first
+        for (const [key, country] of Object.entries(TOBACCO_COUNTRY_MAPPINGS)) {
+            if (country && normalized.includes(key)) {
+                return country;
+            }
+        }
+
+        return null;
+    };
+
+    // Function to detect if cigar is a puro
+    const detectPuro = (wrapper, binder, filler) => {
+        const wrapperCountry = extractCountryFromTobacco(wrapper);
+        const binderCountry = extractCountryFromTobacco(binder);
+        const fillerCountry = extractCountryFromTobacco(filler);
+
+        // All three must have identifiable countries and be the same
+        if (wrapperCountry && binderCountry && fillerCountry) {
+            if (wrapperCountry === binderCountry && binderCountry === fillerCountry) {
+                return { isPuro: true, country: wrapperCountry };
+            }
+        }
+
+        return { isPuro: false, country: null };
+    };
+
+    // Effect to detect puro status when tobacco fields change
+    useEffect(() => {
+        const detection = detectPuro(formData.wrapper, formData.binder, formData.filler);
+
+        if (detection.isPuro !== formData.isPuro) {
+            setFormData(prev => ({ ...prev, isPuro: detection.isPuro }));
+            setPuroDetected(detection.country);
+
+            // Show notification when puro is detected
+            if (detection.isPuro && !formData.isPuro) {
+                setShowPuroNotification(true);
+                setTimeout(() => setShowPuroNotification(false), 4000);
+            }
+        }
+    }, [formData.wrapper, formData.binder, formData.filler]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -370,6 +461,59 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                     />
                 </div>
 
+                {/* Puro Detection Section */}
+                {(formData.wrapper || formData.binder || formData.filler) && (
+                    <div className={`p-3 rounded-lg border ${formData.isPuro
+                        ? 'bg-green-900/20 border-green-800'
+                        : 'bg-amber-900/20 border-amber-800'
+                        }`}>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                                <input
+                                    type="checkbox"
+                                    id="isPuro"
+                                    checked={formData.isPuro || false}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, isPuro: e.target.checked }))}
+                                    className="w-4 h-4 text-amber-600 bg-gray-700 border-gray-600 rounded focus:ring-amber-500"
+                                />
+                                <label htmlFor="isPuro" className={`text-sm font-medium flex items-center space-x-2 ${formData.isPuro ? 'text-green-300' : 'text-amber-300'
+                                    }`}>
+                                    <Award className="w-4 h-4" />
+                                    <span>This is a Puro</span>
+                                </label>
+                            </div>
+                            {formData.isPuro && puroDetected && (
+                                <span className="text-xs bg-green-600/20 text-green-300 px-2 py-1 rounded capitalize">
+                                    {puroDetected} Puro
+                                </span>
+                            )}
+                        </div>
+                        {formData.isPuro && puroDetected && (
+                            <p className="text-xs text-green-400 mt-2">
+                                All tobacco components from {puroDetected.charAt(0).toUpperCase() + puroDetected.slice(1)}
+                            </p>
+                        )}
+                        {!formData.isPuro && (formData.wrapper || formData.binder || formData.filler) && (
+                            <p className="text-xs text-amber-400 mt-2">
+                                Mixed origin tobacco blend
+                            </p>
+                        )}
+                    </div>
+                )}
+
+                {/* Puro Detection Notification */}
+                {showPuroNotification && (
+                    <div className="bg-green-900/30 border border-green-700 rounded-lg p-3 animate-pulse">
+                        <div className="flex items-center space-x-2">
+                            <Award className="w-5 h-5 text-green-400" />
+                            <span className="text-green-300 font-medium">Puro Detected!</span>
+                        </div>
+                        <p className="text-xs text-green-400 mt-1">
+                            All tobacco from {puroDetected} - automatically marked as puro
+                        </p>
+                    </div>
+                )}
+
                 {/* Profile and Price */}
                 <div id="pnlProfileAndPrice" className="grid grid-cols-2 gap-3">
                     <AutoCompleteInputField
@@ -404,7 +548,7 @@ const AddCigar = ({ navigate, db, appId, userId, humidorId, theme }) => {
                     />
                 </div> */}
 
-               {/* New User Rating section: */}
+                {/* New User Rating section: */}
                 <div id="pnlUserRating" className="space-y-2">
                     <label className="text-sm font-medium text-gray-300">My Rating</label>
                     <StarRating
