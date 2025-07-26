@@ -1,6 +1,6 @@
 import React from 'react';
-import { Check } from 'lucide-react'; 
-import { getRatingColor } from '../utils/getRatingColor'; 
+import { Check, Award } from 'lucide-react';
+import { getRatingColor } from '../utils/getRatingColor';
 import { calculateAge } from '../utils/calculateAge';
 
 const GridCigarCard = ({ cigar, navigate, isSelectMode, isSelected, onSelect }) => {
@@ -17,9 +17,14 @@ const GridCigarCard = ({ cigar, navigate, isSelectMode, isSelected, onSelect }) 
                         className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute top-2 left-2 bg-black/60 rounded-lg px-2 py-1 max-w-[70%]">
-                        <p className="text-gray-200 text-xs font-semibold uppercase truncate">
+                        <p className="text-gray-200 text-xs font-semibold uppercase truncate flex items-center gap-1">
                             {cigar.brand}
-                            {cigar.country ? ` - ${cigar.country}` : ''}
+                            {cigar.isPuro && <Award className="w-3 h-3 text-amber-400 flex-shrink-0" title="Puro" />}
+                            {cigar.country && (
+                                <span className={cigar.isPuro ? 'text-amber-300' : ''}>
+                                    - {cigar.country}
+                                </span>
+                            )}
                         </p>
                         <h3 className="text-white font-bold text-sm truncate">{cigar.name}</h3>
                     </div>
