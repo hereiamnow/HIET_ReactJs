@@ -1,5 +1,5 @@
-// File: BrowseByWrapperDrawer.js
-// Path: src/components/Drawers/BrowseByWrapperDrawer.js
+// File: BrowseByWrapper.js
+// Path: src/components/Drawers/BrowseByWrapper.js
 // Project: Humidor Hub
 // Author: Shawn Miller (hereiamnow@gmail.com)
 // Date: July 21, 2025
@@ -9,7 +9,7 @@
 import React, { useMemo } from 'react';
 import { Leaf, ChevronDown } from 'lucide-react';
 
-const BrowseByWrapperDrawer = ({ cigars, navigate, theme, isCollapsed, onToggle }) => {
+const BrowseByWrapper = ({ cigars, navigate, theme, isCollapsed, onToggle }) => {
     // Calculate unique wrapper types and their counts
     const wrapperData = useMemo(() => {
         const counts = cigars.reduce((acc, cigar) => {
@@ -24,10 +24,11 @@ const BrowseByWrapperDrawer = ({ cigars, navigate, theme, isCollapsed, onToggle 
     }, [cigars]);
 
     return (
-        <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
+        <div id="pnlBrowseByWrapper" className={`${theme.drawerBg} border ${theme.borderColor} rounded-xl overflow-hidden`}>
             <button onClick={onToggle} className="w-full p-4 flex justify-between items-center">
                 <h3 className={`font-bold ${theme.primary} text-lg flex items-center`}>
-                    <Leaf className={`w-5 h-5 mr-2 ${theme.primary}`} /> Browse by Wrapper
+                    {/* <Leaf className={`w-5 h-5 mr-2 ${theme.primary}`} />  */}
+                    Browse by Wrapper
                 </h3>
                 <ChevronDown className={`w-5 h-5 ${theme.primary} transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
             </button>
@@ -53,4 +54,4 @@ const BrowseByWrapperDrawer = ({ cigars, navigate, theme, isCollapsed, onToggle 
     );
 };
 
-export default BrowseByWrapperDrawer;
+export default BrowseByWrapper;

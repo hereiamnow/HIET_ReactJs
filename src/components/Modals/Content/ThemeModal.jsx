@@ -102,19 +102,32 @@ const ThemeModal = ({ currentTheme, setTheme, onClose }) => {
                                         </span>
                                     </div>
 
-                                    <div className="flex space-x-1.5">
+                                    <div id="pnlColorSwatches" className="flex space-x-1.5">
                                         <div
+                                            id="swatch_text"
                                             className="w-4 h-4 rounded-full border-2 border-white/30 shadow-sm"
                                             style={{ backgroundColor: colors.primary }}
                                         ></div>
                                         <div
+                                            id="swatch_background"
                                             className="w-4 h-4 rounded-full border-2 border-white/30 shadow-sm"
-                                            style={{ backgroundColor: colors.background }}
-                                        ></div>
+                                            style={{ backgroundColor: colors.background }}>
+                                        </div>
                                         <div
+                                            id="swatch_primary"
                                             className="w-4 h-4 rounded-full border-2 border-white/30 shadow-sm"
-                                            style={{ backgroundColor: `${colors.primary}80` }}
-                                        ></div>
+                                            style={{ backgroundColor: `${colors.primary}80` }}></div>
+
+                                        <div
+                                            id="swatch_drawerBg"
+                                            className="w-4 h-4 rounded-full border-2 border-white/30 shadow-sm"
+                                            style={{ backgroundColor: `${colors.drawerBg}80` }}></div>
+
+                                        <div
+                                            id="swatch_drawerBorderColor"
+                                            className="w-4 h-4 rounded-full border-2 border-white/30 shadow-sm"
+                                            style={{ backgroundColor: `${colors.drawerBorderColor}80` }}></div>
+
                                     </div>
                                 </div>
                             </button>

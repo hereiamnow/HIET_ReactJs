@@ -1,5 +1,5 @@
-// File: BrowseByStrengthDrawer.js
-// Path: src/components/Drawers/BrowseByStrengthDrawer.js
+// File: BrowseByStrength.js
+// Path: src/components/Drawers/BrowseByStrength.js
 // Project: Humidor Hub
 // Author: Shawn Miller (hereiamnow@gmail.com)
 // Date: July 21, 2025
@@ -9,7 +9,7 @@
 import React, { useMemo } from 'react';
 import { Cigarette, ChevronDown } from 'lucide-react';
 
-const BrowseByStrengthDrawer = ({ cigars, navigate, theme, isCollapsed, onToggle }) => {
+const BrowseByStrength = ({ cigars, navigate, theme, isCollapsed, onToggle }) => {
     const strengthCategories = useMemo(() => [
         { label: 'Mild Cigars', filterValue: 'Mild' },
         { label: 'Mild to Medium Cigars', filterValue: 'Mild-Medium' },
@@ -31,10 +31,11 @@ const BrowseByStrengthDrawer = ({ cigars, navigate, theme, isCollapsed, onToggle
     }, [cigars, strengthCategories]);
 
     return (
-        <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
+        <div id="pnlBrowseByStrength" className={`${theme.drawerBg} border ${theme.borderColor} rounded-xl overflow-hidden`}>
             <button onClick={onToggle} className="w-full p-4 flex justify-between items-center">
                 <h3 className={`font-bold ${theme.primary} text-lg flex items-center`}>
-                    <Cigarette className={`w-5 h-5 mr-2 ${theme.primary}`} /> Browse by Profile
+                    {/* <Cigarette className={`w-5 h-5 mr-2 ${theme.primary}`} />  */}
+                    Browse by Profile
                 </h3>
                 <ChevronDown className={`w-5 h-5 ${theme.primary} transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
             </button>
@@ -60,4 +61,4 @@ const BrowseByStrengthDrawer = ({ cigars, navigate, theme, isCollapsed, onToggle
     );
 };
 
-export default BrowseByStrengthDrawer;
+export default BrowseByStrength;

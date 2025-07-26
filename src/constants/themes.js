@@ -16,6 +16,9 @@ export const themes = {
         inputBg: "bg-gray-800",
         ring: "focus:ring-amber-500",
         button: "bg-gray-700 hover:bg-gray-600",
+        icon: "",
+        drawerBg:"bg-amber-500/40",
+        drawerBorderColor:"border-gray-700",
         mapHighlightedCountry: "#fbbf24", // amber-300, matches accent
         mapCigarCountry: "#fde68a",       // amber-200, lighter accent
         mapOtherCountry: "#22223b",       // dark blue-gray, fits dark theme
@@ -35,6 +38,9 @@ export const themes = {
         inputBg: "bg-slate-800",
         ring: "focus:ring-sky-500",
         button: "bg-slate-700 hover:bg-slate-600",
+        icon: "",
+        drawerBg:"bg-gray-800/50",
+        drawerBorderColor:"border-gray-700",
         mapHighlightedCountry: "#38bdf8", // sky-400, matches theme accent
         mapCigarCountry: "#7dd3fc",       // sky-300, lighter accent
         mapOtherCountry: "#1e293b",       // slate-800, fits dark blue theme
@@ -54,6 +60,9 @@ export const themes = {
         inputBg: "bg-stone-800",
         ring: "focus:ring-orange-500",
         button: "bg-stone-700 hover:bg-stone-600",
+        icon: "",
+        drawerBg:"bg-gray-800/50",
+        drawerBorderColor:"border-gray-700",
         mapHighlightedCountry: "#fbbf24", // amber-300, matches accent
         mapCigarCountry: "#fed7aa",       // orange-200, warm lighter accent
         mapOtherCountry: "#3b2f23",       // stone-900, fits leather theme
@@ -62,10 +71,10 @@ export const themes = {
     },
     "Classic Light": {
         name: "Classic Light",
-        bg: "bg-gray-100",
-        card: "bg-white/60",
-        text: "text-gray-800",
-        subtleText: "text-gray-500",
+        bg: "bg-gray-50",
+        card: "bg-white/80",
+        text: "text-gray-900",
+        subtleText: "text-gray-600",
         primary: "text-amber-700",
         primaryBg: "bg-amber-600",
         hoverPrimaryBg: "hover:bg-amber-700",
@@ -73,6 +82,9 @@ export const themes = {
         inputBg: "bg-white",
         ring: "focus:ring-amber-500",
         button: "bg-gray-200 hover:bg-gray-300",
+        icon: "",
+        drawerBg:"bg-gray-800/50",
+        drawerBorderColor:"border-gray-700",
         mapHighlightedCountry: "#f59e0b", // amber-400, matches accent
         mapCigarCountry: "#fde68a",       // amber-200, lighter accent
         mapOtherCountry: "#f3f4f6",       // gray-100, fits light theme

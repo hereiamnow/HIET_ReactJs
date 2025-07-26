@@ -49,12 +49,12 @@ import GridCigarCard from './components/Cigar/GridCigarCard';
 import ListCigarCard from './components/Cigar/ListCigarCard';
 
 // Components - Drawers
-import {
-    BrowseByCountryDrawer,
-    BrowseByStrengthDrawer,
-    BrowseByWrapperDrawer,
-    InteractiveWorldMapDrawer
-} from './components/Drawers';
+// import {
+//     BrowseByCountry,
+//     BrowseByStrength,
+//     BrowseByWrapper,
+//     InteractiveWorldMap
+// } from './components/Drawers';
 
 // Components - Journal
 import AddEditJournalEntry from './components/Journal/AddEditJournalEntry';
@@ -93,7 +93,11 @@ import BottomNav from './components/Navigation/BottomNav';
 import {
     AgingWellPanel,
     InventoryAnalysisPanel,
-    MyCollectionStatsCards
+    MyCollectionStatsCards,
+    BrowseByCountry,
+    BrowseByStrength,
+    BrowseByWrapper,
+    InteractiveWorldMap
 } from './components/Panels';
 
 // Components - Settings

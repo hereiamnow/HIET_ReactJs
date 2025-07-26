@@ -1,5 +1,5 @@
-// File: InteractiveWorldMapDrawer.js
-// Path: src/components/Drawers/InteractiveWorldMapDrawer.js
+// File: InteractiveWorldMap.js
+// Path: src/components/Drawers/InteractiveWorldMap.js
 // Project: Humidor Hub
 // Author: Shawn Miller (hereiamnow@gmail.com)
 // Date: July 21, 2025
@@ -23,7 +23,7 @@ const cigarCountries = [
 // URL for the world map data used in the Map component.
 const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
-const InteractiveWorldMapDrawer = ({ cigars, navigate, theme, isCollapsed, onToggle }) => {
+const InteractiveWorldMap = ({ cigars, navigate, theme, isCollapsed, onToggle }) => {
     const countryCounts = useMemo(() => {
         return cigars.reduce((acc, cigar) => {
             const country = cigar.country || 'Unknown';
@@ -96,10 +96,11 @@ const InteractiveWorldMapDrawer = ({ cigars, navigate, theme, isCollapsed, onTog
     };
 
     return (
-        <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
+        <div id="pnlBrowseWorldMap" className={`${theme.drawerBg} border ${theme.borderColor} rounded-xl overflow-hidden`}>
             <button onClick={onToggle} className="w-full p-4 flex justify-between items-center">
                 <h3 className={`font-bold ${theme.primary} text-lg flex items-center`}>
-                    <MapPin className={`w-5 h-5 mr-2 ${theme.primary}`} /> World Map
+                    {/* <MapPin className={`w-5 h-5 mr-2 ${theme.primary}`} /> */}
+                    World Map
                 </h3>
                 <ChevronDown className={`w-5 h-5 ${theme.primary} transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
             </button>
@@ -200,4 +201,4 @@ const InteractiveWorldMapDrawer = ({ cigars, navigate, theme, isCollapsed, onTog
     );
 };
 
-export default InteractiveWorldMapDrawer;
+export default InteractiveWorldMap;

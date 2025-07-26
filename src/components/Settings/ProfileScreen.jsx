@@ -102,7 +102,8 @@ const ProfileScreen = ({ navigate, cigars, humidors, theme, userId, auth }) => {
 
                 {/* --- Subscription Panel --- */}
                 <SubscriptionPanel subscription={subscription} />
-
+                
+                {/* --- Gemini API Key --- */}
                 <GeminiKeySection></GeminiKeySection>
                 
                 <button

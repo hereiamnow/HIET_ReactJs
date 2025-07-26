@@ -1,5 +1,5 @@
-// File: BrowseByCountryDrawer.js
-// Path: src/components/Drawers/BrowseByCountryDrawer.js
+// File: BrowseByCountry.js
+// Path: src/components/Drawers/BrowseByCountry.js
 // Project: Humidor Hub
 // Author: Shawn Miller (hereiamnow@gmail.com)
 // Date: July 21, 2025
@@ -9,7 +9,7 @@
 import React, { useMemo } from 'react';
 import { MapPin, ChevronDown } from 'lucide-react';
 
-const BrowseByCountryDrawer = ({ cigars, navigate, theme, isCollapsed, onToggle }) => {
+const BrowseByCountry = ({ cigars, navigate, theme, isCollapsed, onToggle }) => {
     const countryCategories = useMemo(() => [
         { label: 'Dominican Cigars', filterValue: 'Dominican Republic' },
         { label: 'Nicaraguan Cigars', filterValue: 'Nicaragua' },
@@ -52,10 +52,11 @@ const BrowseByCountryDrawer = ({ cigars, navigate, theme, isCollapsed, onToggle 
     }, [cigars, countryCategories]);
 
     return (
-        <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
+        <div id="pnlBrowseByCountry" className={`${theme.drawerBg} border ${theme.borderColor} rounded-xl overflow-hidden`}>
             <button onClick={onToggle} className="w-full p-4 flex justify-between items-center">
                 <h3 className={`font-bold ${theme.primary} text-lg flex items-center`}>
-                    <MapPin className={`w-5 h-5 mr-2 ${theme.primary}`} /> Browse by Country of Origin
+                    {/* <MapPin className={`w-5 h-5 mr-2 ${theme.primary}`} />  */}
+                    Browse by Country of Origin
                 </h3>
                 <ChevronDown className={`w-5 h-5 ${theme.primary} transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} />
             </button>
@@ -81,4 +82,4 @@ const BrowseByCountryDrawer = ({ cigars, navigate, theme, isCollapsed, onToggle 
     );
 };
 
-export default BrowseByCountryDrawer;
+export default BrowseByCountry;

@@ -1,37 +1,51 @@
-// File: AddHumidor.js
-// Path: src/screens/AddHumidor.js
+// File: Dashboard.jsx
+// Path: src/screens/Dashboard.jsx
 // Project: Humidor Hub
 // Author: Shawn Miller (hereiamnow@gmail.com)
 // Date: July 17, 2025
 // Time: 7:32 AM CDT
 
-// Description: Add Humidor screen component - form for creating new humidors
-// with validation and Firebase integration
+// Description: Dashboard screen component - main overview of user's cigar collection
+// Features: Collection statistics, browse by filters, Roxy's tips, interactive panels
+// Includes: Gemini AI integration for collection summaries, dynamic panel management
 
+// React imports
 import React, { useState, useEffect, useMemo } from 'react';
+
+// Third-party library imports
 import {
-    Wind,
-    ChevronDown,
-    Leaf,
-    Cigarette,
-    XCircle,
-    MapPin,
-    Filter,
-    Plus,
-    Move,
-    Sparkles,
     BarChart2,
-    ShieldPlus
+    ChevronDown,
+    Cigarette,
+    Filter,
+    Leaf,
+    MapPin,
+    Move,
+    Plus,
+    ShieldPlus,
+    Sparkles,
+    Wind,
+    XCircle
 } from 'lucide-react';
+
+// Local constants
 import { roxysTips } from '../constants/roxysTips';
+
+// Services
 import { callGeminiAPI } from '../services/geminiService';
+
+// Components - Modals
 import GeminiModal from '../components/Modals/Content/GeminiModal';
+
+// Components - Drawers
 import {
-    BrowseByWrapperDrawer,
-    BrowseByStrengthDrawer,
-    BrowseByCountryDrawer,
-    InteractiveWorldMapDrawer
+    BrowseByWrapper,
+    BrowseByStrength,
+    BrowseByCountry,
+    InteractiveWorldMap
 } from '../components/Drawers';
+
+// Components - Panels
 import {
     InventoryAnalysisPanel,
     MyCollectionStatsCards,
@@ -51,20 +65,40 @@ const Dashboard = ({
     setPanelStates,
     dashboardPanelVisibility
 }) => {
+    // Debug: Log props on component render
+    console.log('Dashboard props:', {
+        cigarsCount: cigars?.length || 0,
+        humidorsCount: humidors?.length || 0,
+        showWrapperPanel,
+        showStrengthPanel,
+        showCountryPanel,
+        showInventoryAnalysis,
+        panelStates,
+        dashboardPanelVisibility
+    });
+
+    // State for Roxy's random tip display
     const [roxyTip, setRoxyTip] = useState('');
+    // State for Gemini AI modal (collection summary)
     const [modalState, setModalState] = useState({ isOpen: false, content: '', isLoading: false });
+    // State for browse by mode panel visibility
     const [isBrowseByModeOpen, setIsBrowseByModeOpen] = useState(false);
+    // State for current browse mode (wrapper, strength, country)
     const [browseMode, setBrowseMode] = useState('wrapper');
 
     useEffect(() => {
-        // Pick a random tip from Roxy's corner on component mount.
-        setRoxyTip(roxysTips[Math.floor(Math.random() * roxysTips.length)]);
+        // Pick a random tip from Roxy's corner on component mount
+        const randomTip = roxysTips[Math.floor(Math.random() * roxysTips.length)];
+        console.log('Selected Roxy tip:', randomTip);
+        setRoxyTip(randomTip);
     }, []);
 
-    // Memoized calculation for chart data and statistics.
+    // Memoized calculation for chart data and statistics
     const { totalValue, totalCigars } = useMemo(() => {
         const value = cigars.reduce((acc, cigar) => acc + (cigar.price * cigar.quantity), 0);
         const count = cigars.reduce((sum, c) => sum + c.quantity, 0);
+
+        console.log('Collection stats calculated:', { totalValue: value, totalCigars: count });
 
         return {
             totalValue: value,
@@ -73,6 +107,7 @@ const Dashboard = ({
     }, [cigars]);
 
     // --- Data for Browse By Panel ---
+    // Memoized wrapper data for browse by wrapper functionality
     const wrapperData = useMemo(() => {
         if (browseMode !== 'wrapper') return [];
         const counts = cigars.reduce((acc, cigar) => {
@@ -80,11 +115,15 @@ const Dashboard = ({
             acc[wrapper] = (acc[wrapper] || 0) + cigar.quantity;
             return acc;
         }, {});
-        return Object.entries(counts)
+        const result = Object.entries(counts)
             .map(([wrapper, quantity]) => ({ wrapper, quantity }))
             .sort((a, b) => a.wrapper.localeCompare(b.wrapper));
+
+        console.log('Wrapper data calculated:', result);
+        return result;
     }, [cigars, browseMode]);
 
+    // Memoized strength data for browse by strength functionality
     const strengthData = useMemo(() => {
         if (browseMode !== 'strength') return [];
         const strengthCategories = [
@@ -100,9 +139,13 @@ const Dashboard = ({
                 .reduce((sum, cigar) => sum + cigar.quantity, 0);
             return { label: category.label, quantity, filterValue: category.filterValue };
         });
-        return counts.filter(item => item.quantity > 0);
+        const result = counts.filter(item => item.quantity > 0);
+
+        console.log('Strength data calculated:', result);
+        return result;
     }, [cigars, browseMode]);
 
+    // Memoized country data for browse by country functionality
     const countryData = useMemo(() => {
         if (browseMode !== 'country') return [];
         const countryCategories = [
@@ -121,7 +164,7 @@ const Dashboard = ({
             acc[key] = (acc[key] || 0) + cigar.quantity;
             return acc;
         }, {});
-        return countryCategories
+        const result = countryCategories
             .map(category => ({
                 label: category.label,
                 quantity: counts[category.label] || 0,
@@ -129,23 +172,44 @@ const Dashboard = ({
             }))
             .filter(item => item.quantity > 0)
             .sort((a, b) => a.label.localeCompare(b.label));
+
+        console.log('Country data calculated:', result);
+        return result;
     }, [cigars, browseMode]);
     // --- End of Data for Browse By Panel ---
 
-    // Function to call Gemini API for a collection summary.
+    // Function to call Gemini API for a collection summary
     const handleSummarizeCollection = async () => {
+        console.log('Starting collection summary generation...');
         setModalState({ isOpen: true, content: '', isLoading: true });
+
+        // Create inventory summary for Gemini API
         const inventorySummary = cigars.map(c => `${c.quantity}x ${c.brand} ${c.name} (${c.strength}, from ${c.country})`).join('\n');
+        console.log('Inventory summary for Gemini:', inventorySummary);
+
         const prompt = `You are an expert tobacconist. I am providing you with my current cigar inventory. Please provide a brief, narrative summary of my collection's character. What are the dominant trends in terms of strength, brand, and country of origin? What does my collection say about my tasting preferences? My inventory is:\n\n${inventorySummary}`;
 
-        const result = await callGeminiAPI(prompt);
-        setModalState({ isOpen: true, content: result, isLoading: false });
+        try {
+            const result = await callGeminiAPI(prompt);
+            console.log('Gemini API response received:', result);
+            setModalState({ isOpen: true, content: result, isLoading: false });
+        } catch (error) {
+            console.error('Error calling Gemini API:', error);
+            setModalState({ isOpen: true, content: 'Error generating summary. Please try again.', isLoading: false });
+        }
     };
 
+    // Handle browse by mode button clicks with animation timing
     const handleBrowseByClick = (mode) => {
+        console.log('Browse by mode clicked:', mode, 'Current mode:', browseMode, 'Panel open:', isBrowseByModeOpen);
+
         if (isBrowseByModeOpen && browseMode === mode) {
+            // Same mode clicked - close panel
+            console.log('Closing browse panel (same mode)');
             setIsBrowseByModeOpen(false);
         } else if (isBrowseByModeOpen) {
+            // Different mode clicked - animate out then in
+            console.log('Switching browse mode with animation');
             setIsBrowseByModeOpen(false);
             // Use a timeout to allow the panel to animate out before animating back in
             setTimeout(() => {
@@ -153,6 +217,8 @@ const Dashboard = ({
                 setIsBrowseByModeOpen(true);
             }, 150); // Adjust timing based on your animation duration
         } else {
+            // Panel closed - open with new mode
+            console.log('Opening browse panel with mode:', mode);
             setBrowseMode(mode);
             setIsBrowseByModeOpen(true);
         }
@@ -160,6 +226,7 @@ const Dashboard = ({
 
     // Generic toggle handler for all panels
     const handlePanelToggle = (panelName) => {
+        console.log('Toggling panel:', panelName, 'Current state:', panelStates[panelName]);
         setPanelStates(prev => ({ ...prev, [panelName]: !prev[panelName] }));
     };
 
@@ -168,9 +235,12 @@ const Dashboard = ({
     // Determine if cigars are present
     const hasCigars = cigars && cigars.length > 0;
 
+    console.log('Collection status:', { hasHumidors, hasCigars });
+
+    // Configuration for browse by mode buttons and panels
     const browseByConfig = {
         wrapper: { title: 'Browse by Wrapper', icon: Leaf },
-        strength: { title: 'Browse by Profile', icon: Cigarette },
+        strength: { title: 'Browse by Profile', icon: Leaf },
         country: { title: 'Browse by Country', icon: MapPin },
         default: { title: 'Browse by', icon: Filter }
     };
@@ -330,9 +400,9 @@ const Dashboard = ({
                     />
                 )}
 
-                {/* Conditionally render the new InteractiveWorldMapDrawer */}
+                {/* Conditionally render the new InteractiveWorldMap */}
                 {hasCigars && dashboardPanelVisibility.showWorldMap && (
-                    <InteractiveWorldMapDrawer
+                    <InteractiveWorldMap
                         cigars={cigars}
                         navigate={navigate}
                         theme={theme}
@@ -341,9 +411,9 @@ const Dashboard = ({
                     />
                 )}
 
-                {/* Conditionally render BrowseByWrapperDrawer if there are cigars and it's enabled in settings */}
+                {/* Conditionally render BrowseByWrapper if there are cigars and it's enabled in settings */}
                 {hasCigars && showWrapperPanel && (
-                    <BrowseByWrapperDrawer
+                    <BrowseByWrapper
                         cigars={cigars}
                         navigate={navigate}
                         theme={theme}
@@ -352,9 +422,9 @@ const Dashboard = ({
                     />
                 )}
 
-                {/* Conditionally render BrowseByStrengthDrawer if there are cigars and it's enabled in settings */}
+                {/* Conditionally render BrowseByStrength if there are cigars and it's enabled in settings */}
                 {hasCigars && showStrengthPanel && (
-                    <BrowseByStrengthDrawer
+                    <BrowseByStrength
                         cigars={cigars}
                         navigate={navigate}
                         theme={theme}
@@ -363,9 +433,9 @@ const Dashboard = ({
                     />
                 )}
 
-                {/* Conditionally render BrowseByCountryDrawer if there are cigars and it's enabled in settings */}
+                {/* Conditionally render BrowseByCountry if there are cigars and it's enabled in settings */}
                 {hasCigars && showCountryPanel && (
-                    <BrowseByCountryDrawer
+                    <BrowseByCountry
                         cigars={cigars}
                         navigate={navigate}
                         theme={theme}
@@ -376,7 +446,7 @@ const Dashboard = ({
             </div>
 
             {isBrowseByModeOpen && (
-                <div id="pnlBrowseByModePanel" className="fixed bottom-20 left-0 right-0 bg-gray-900/80 backdrop-blur-sm p-4 z-40 border-t border-gray-700">
+                <div id="pnlBrowseByModePanel" className={`fixed bottom-20 left-0 right-0 ${theme.drawerBg} backdrop-blur-sm p-4 z-40 border-t ${theme.drawerBorderColor}`}>
                     <div className="max-w-md mx-auto">
                         <div className="flex justify-between items-center mb-4">
                             <h3 id="browseByMode" className="text-xl font-bold text-amber-400 flex items-center">
