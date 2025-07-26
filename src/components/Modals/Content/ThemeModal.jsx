@@ -64,8 +64,8 @@ const ThemeModal = ({ currentTheme, setTheme, onClose }) => {
                                     onClose();
                                 }}
                                 className={`group relative p-5 rounded-2xl border-2 transition-all duration-300 transform hover:scale-105 ${isSelected
-                                        ? `${currentTheme.borderColor.replace('border-', 'border-')} bg-gradient-to-br ${currentTheme.primary.replace('text-', 'from-')}/20 ${currentTheme.primary.replace('text-', 'to-')}/10 shadow-lg`
-                                        : `${currentTheme.borderColor} hover:${currentTheme.borderColor.replace('gray-700', 'gray-500')} hover:${currentTheme.card}/30`
+                                    ? `${currentTheme.borderColor.replace('border-', 'border-')} bg-gradient-to-br ${currentTheme.primary.replace('text-', 'from-')}/20 ${currentTheme.primary.replace('text-', 'to-')}/10 shadow-lg`
+                                    : `${currentTheme.borderColor} hover:${currentTheme.borderColor.replace('gray-700', 'gray-500')} hover:${currentTheme.card}/30`
                                     }`}
                             >
                                 {isSelected && (

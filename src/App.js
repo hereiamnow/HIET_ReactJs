@@ -158,7 +158,25 @@ export default function App() {
     const [cigars, setCigars] = useState([]);
     const [humidors, setHumidors] = useState([]);
     const [journalEntries, setJournalEntries] = useState([]);
-    const [theme, setTheme] = useState(themes["Humidor Hub"]);
+    // Initialize theme from localStorage or default to "Humidor Hub"
+    const [theme, setTheme] = useState(() => {
+        try {
+            const savedTheme = localStorage.getItem('humidor-hub-theme');
+            if (savedTheme) {
+                const parsedTheme = JSON.parse(savedTheme);
+                // Verify the saved theme still exists in our themes object
+                const themeExists = Object.values(themes).find(t => t.name === parsedTheme.name);
+                if (themeExists) {
+                    log('🎨 Restored theme from localStorage:', parsedTheme.name);
+                    return parsedTheme;
+                }
+            }
+        } catch (error) {
+            console.warn('Failed to load saved theme:', error);
+        }
+        log('🎨 Using default theme: Humidor Hub');
+        return themes["Humidor Hub"];
+    });
     const [goveeApiKey, setGoveeApiKey] = useState('');
     const [goveeDevices, setGoveeDevices] = useState([]);
 
@@ -434,7 +452,7 @@ export default function App() {
             case 'Fonts':
                 return <FontsScreen navigate={navigate} selectedFont={selectedFont} setSelectedFont={setSelectedFont} theme={theme} />;
             case 'Settings':
-                return <SettingsScreen navigate={navigate} theme={theme} setTheme={setTheme} dashboardPanelVisibility={dashboardPanelVisibility} setDashboardPanelVisibility={setDashboardPanelVisibility} selectedFont={selectedFont} setSelectedFont={setSelectedFont} />;
+                return <SettingsScreen navigate={navigate} theme={theme} setTheme={handleSetTheme} dashboardPanelVisibility={dashboardPanelVisibility} setDashboardPanelVisibility={setDashboardPanelVisibility} selectedFont={selectedFont} setSelectedFont={setSelectedFont} />;
             case 'AddHumidor':
                 return <AddHumidor navigate={navigate} db={db} appId={appId} userId={userId} theme={theme} />;
             case 'EditHumidor':
@@ -474,9 +492,22 @@ export default function App() {
         log('🏠 State update - Humidors:', humidors.length);
     }, [humidors]);
 
+    // Save theme to localStorage whenever it changes
     useEffect(() => {
         log('🎨 Theme changed:', theme.name || 'Unknown theme');
+        try {
+            localStorage.setItem('humidor-hub-theme', JSON.stringify(theme));
+            log('💾 Theme saved to localStorage:', theme.name);
+        } catch (error) {
+            console.warn('Failed to save theme to localStorage:', error);
+        }
     }, [theme]);
+
+    // Create a wrapper function for setTheme that handles persistence
+    const handleSetTheme = (newTheme) => {
+        log('🎨 Setting new theme:', newTheme.name);
+        setTheme(newTheme);
+    };
 
     // If the user is not signed in and Firebase auth is available, show the Firebase Auth UI.
     // This component handles user authentication.
